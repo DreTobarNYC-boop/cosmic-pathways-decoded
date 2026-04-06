@@ -1,0 +1,121 @@
+{
+  "app": {
+    "name": "DCode",
+    "loading": "Loading..."
+  },
+  "header": {
+    "signOut": "Sign out"
+  },
+  "onboarding": {
+    "title": "Complete Your Blueprint",
+    "subtitle": "To decode your cosmic identity, we need your birth details.",
+    "fullName": "Full Birth Name",
+    "fullNamePlaceholder": "Your full birth name",
+    "fullNameHint": "Used for numerology — expression, soul urge, and personality numbers",
+    "dob": "Date of Birth",
+    "birthPlace": "Place of Birth",
+    "birthPlacePlaceholder": "City, Country",
+    "birthPlaceHint": "Needed for accurate house placements in your birth chart",
+    "birthTime": "Time of Birth",
+    "birthTimeHint": "For rising sign & house calculations — check your birth certificate",
+    "submit": "Unlock Your Blueprint",
+    "submitting": "Decoding..."
+  },
+  "auth": {
+    "signUpTitle": "Enter The Chambers",
+    "signInTitle": "Welcome Back",
+    "signUpSubtitle": "Create your account to unlock your cosmic blueprint.",
+    "signInSubtitle": "Sign in to access your chambers.",
+    "email": "Email",
+    "emailPlaceholder": "you@example.com",
+    "password": "Password",
+    "createAccount": "Create Account",
+    "signIn": "Sign In",
+    "alreadyHaveAccount": "Already have an account?",
+    "needAccount": "Need an account?",
+    "signInLink": "Sign in",
+    "signUpLink": "Sign up",
+    "accountCreated": "Account created! Check your email to verify."
+  },
+  "briefing": {
+    "yourDailyHoroscope": "Your Daily Horoscope",
+    "elementSign": "{{element}} Sign",
+    "path": "Path {{number}}",
+    "universalDay": "Universal Day",
+    "personalDay": "Personal Day",
+    "errorMessage": "The stars are momentarily obscured. Refresh to try again."
+  },
+  "schumann": {
+    "title": "Schumann Resonance",
+    "live": "Live",
+    "baseFrequency": "Base Frequency"
+  },
+  "chambers": {
+    "scanYourPalm": "Scan Your Palm",
+    "palmReading": "Palm Reading",
+    "theOracle": "The Oracle",
+    "aiGuide": "AI Guide",
+    "frequencyScanner": "Frequency Scanner",
+    "consciousness": "Consciousness",
+    "theStars": "The Stars",
+    "astrology": "Astrology",
+    "theNumbers": "The Numbers",
+    "numerology": "Numerology",
+    "thePalm": "The Palm",
+    "theDynasty": "The Dynasty",
+    "chineseZodiac": "Chinese Zodiac",
+    "sonicAlchemy": "Sonic Alchemy",
+    "sound": "Sound",
+    "theVault": "The Vault",
+    "sacredCodes": "Sacred Codes",
+    "theMaps": "The Maps",
+    "location": "Location",
+    "theSanctum": "The Sanctum",
+    "journal": "Journal"
+  },
+  "chamberPages": {
+    "stars": {
+      "title": "Stars",
+      "subtitle": "Birth Chart & Horoscopes",
+      "placeholder": "The Stars chamber is being aligned. Birth chart readings coming soon."
+    },
+    "numbers": {
+      "title": "Numbers",
+      "subtitle": "Numerology Profile",
+      "placeholder": "The Numbers chamber is computing. Full numerology profile coming soon."
+    },
+    "sanctum": {
+      "title": "Sanctum",
+      "subtitle": "Private Journal",
+      "placeholder": "Your encrypted private journal. Coming soon."
+    }
+  },
+  "universalDayMeanings": {
+    "1": "New beginnings & initiative",
+    "2": "Cooperation & balance",
+    "3": "Creativity & self-expression",
+    "4": "Foundation & discipline",
+    "5": "Change & freedom",
+    "6": "Harmony & responsibility",
+    "7": "Reflection & inner wisdom",
+    "8": "Power & abundance",
+    "9": "Completion & humanitarianism",
+    "11": "Spiritual insight & intuition",
+    "22": "Master builder energy",
+    "33": "Master teacher vibration"
+  },
+  "personalDayMeanings": {
+    "1": "Your personal power peaks — initiate boldly",
+    "2": "Seek partnerships and listen deeply",
+    "3": "Express yourself — creativity flows freely",
+    "4": "Build structures that support your vision",
+    "5": "Embrace the unexpected — adventure calls",
+    "6": "Nurture your closest relationships",
+    "7": "Retreat inward — meditation reveals answers",
+    "8": "Financial and career energy is amplified",
+    "9": "Release what no longer serves your evolution",
+    "11": "Heightened intuition — trust your visions",
+    "22": "Manifest your grandest ambitions today",
+    "33": "Your compassion transforms those around you"
+  }
+}
