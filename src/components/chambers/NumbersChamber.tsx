@@ -493,7 +493,7 @@ function CompatibilityTab({ lifePath }: { lifePath: number }) {
 
         <div className="space-y-4">
           <div>
-            <p className="text-xs font-semibold text-green-400 mb-2">✦ Best Matches</p>
+            <p className="text-xs font-semibold text-primary mb-2">✦ Best Matches</p>
             <div className="flex gap-2">
               {compat.best.map(n => (
                 <NumberCircle key={n} value={n} color="green" size="sm" />
