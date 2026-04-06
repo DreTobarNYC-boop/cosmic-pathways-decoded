@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { ChamberLayout } from "@/components/ChamberLayout";
-import { Play, Pause, Volume2, Sparkles } from "lucide-react";
+import { Play, Pause, Volume2 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import {
   SOLFEGGIO_FREQUENCIES,
@@ -184,28 +184,6 @@ export function VaultChamber({ onBack }: { onBack: () => void }) {
           </div>
         </div>
 
-        {/* Sacred Codes (Grabovoi) */}
-        <div>
-          <h3 className="font-display text-xs uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2">
-            <Sparkles className="w-3.5 h-3.5 text-primary" />
-            Sacred Codes
-          </h3>
-          <div className="space-y-2">
-            {SACRED_CODES.map((sc) => (
-              <div
-                key={sc.code}
-                className="card-cosmic rounded-xl p-4 flex items-center justify-between"
-              >
-                <div>
-                  <p className="font-display text-lg font-bold tracking-wider text-primary">
-                    {sc.code}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{sc.purpose}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
     </ChamberLayout>
   );
