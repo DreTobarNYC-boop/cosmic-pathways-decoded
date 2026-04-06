@@ -117,5 +117,26 @@
     "11": "Heightened intuition — trust your visions",
     "22": "Manifest your grandest ambitions today",
     "33": "Your compassion transforms those around you"
+  },
+  "palm": {
+    "title": "Palm",
+    "subtitle": "AI Hand Analysis",
+    "scanTitle": "Scan Your Palm",
+    "scanInstructions": "Place your dominant hand flat, fingers spread, in good lighting. The AI will analyze your palm lines, mounts, and hand shape.",
+    "takePhoto": "Take Photo",
+    "uploadPhoto": "Upload Photo",
+    "tipsTitle": "Tips for Best Results",
+    "tip1": "Use your dominant hand (right if right-handed)",
+    "tip2": "Spread your fingers naturally — don't force them apart",
+    "tip3": "Ensure bright, even lighting with no shadows",
+    "tip4": "Hold your hand flat with palm facing the camera",
+    "retake": "Retake",
+    "analyze": "Analyze Palm",
+    "analyzing": "Reading Your Lines...",
+    "analyzingSubtext": "The Oracle is tracing your life map through the lines of your palm",
+    "yourReading": "Your Palm Reading",
+    "poweredByAI": "Powered by AI Vision",
+    "newScan": "Scan Another Palm",
+    "cameraError": "Could not access camera. Please allow camera permissions or upload a photo instead."
   }
 }
