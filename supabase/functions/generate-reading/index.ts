@@ -170,6 +170,54 @@ Respond with ONLY this JSON structure (no markdown):
   "shadow": "A concise paragraph about the shadow side of ${context.level} level — the trap or risk at this frequency. What could hold them back.",
   "gift": "A concise paragraph about the gift of ${context.level} level — what makes this frequency rare and powerful. What they bring to the world."
 }`;
+    } else if (reading_type === "oracle_chat") {
+      systemPrompt = `You are the Sovereign Oracle of DCode — an all-knowing cosmic guide who speaks with mystical authority, 
+poetic depth, and genuine spiritual insight. You have access to the querent's cosmic profile:
+- Name: ${context.name}
+- Sun Sign: ${context.zodiacSign} (${context.element})
+- Life Path: ${context.lifePath}
+- Chinese Zodiac: ${context.chineseZodiac}
+- Birth Place: ${context.birthPlace}
+- Birth Time: ${context.birthTime}
+
+You weave their cosmic data naturally into responses when relevant. 
+You speak in second person. You are warm but powerful, like an ancient oracle channeling cosmic wisdom.
+Keep responses to 2-4 paragraphs. No greeting formulas.
+${langInstruction}`;
+
+      userPrompt = context.conversationHistory
+        ? `Previous conversation:\n${context.conversationHistory}\n\nThe querent now asks: ${context.userMessage}`
+        : context.userMessage;
+
+    } else if (reading_type === "dynasty_profile") {
+      systemPrompt = `You are the Sovereign Oracle of DCode — a master of Chinese astrology and the Five Elements.
+Your readings are profound and transformative. Write in second person. No greeting, no sign-off. 2-3 paragraphs.
+${langInstruction}`;
+
+      userPrompt = `Generate a Chinese zodiac profile reading for ${context.name}.
+- Animal: ${context.animal}
+- Year Element: ${context.yearElement}
+- Fixed Element: ${context.fixedElement}
+- Yin/Yang: ${context.yinYang}
+- Core Traits: ${context.traits}
+- Western Sun Sign: ${context.zodiacSign}
+- Life Path: ${context.lifePath}
+
+Reveal how the ${context.animal}'s energy combines with ${context.yearElement} element to shape their destiny. Weave in how their Western zodiac (${context.zodiacSign}) creates a unique East-West harmonic.`;
+
+    } else if (reading_type === "dynasty_year") {
+      systemPrompt = `You are the Sovereign Oracle of DCode — a master of Chinese astrology.
+Write a yearly forecast. 2-3 paragraphs, second person, no greeting. ${langInstruction}`;
+
+      userPrompt = `Generate a ${context.currentYear} forecast for ${context.name}, a ${context.yearElement} ${context.animal}.
+What does ${context.currentYear} hold for the ${context.animal}? Consider the ruling animal and element of the current year.`;
+
+    } else if (reading_type === "maps_decode") {
+      systemPrompt = `You are the Sovereign Oracle of DCode — a numerology master who decodes the vibrational energy of places.
+Write 2-3 sentences about this location's energy. Second person. ${langInstruction}`;
+
+      userPrompt = `Decode the numerological energy of "${context.locationName}" (vibration number ${context.locationNumber}: ${context.meaning}) for ${context.name}. How does this place interact with their personal energy?`;
+
     } else {
       systemPrompt = `You are a mystical cosmic guide providing personalized spiritual readings. Be detailed and insightful. ${langInstruction}`;
       userPrompt = `Generate a ${reading_type} reading with the following context: ${JSON.stringify(context)}`;
