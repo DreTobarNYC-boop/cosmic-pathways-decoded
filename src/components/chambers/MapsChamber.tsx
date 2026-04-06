@@ -55,7 +55,16 @@ export function MapsChamber({ onBack }: { onBack: () => void }) {
       const { data, error } = await supabase.functions.invoke("generate-reading", {
         body: {
           reading_type: "maps_decode",
-          context: { name, locationName: location.trim(), locationNumber: num, meaning: LOCATION_MEANINGS[num]?.vibe, language: i18n.language },
+          context: {
+            name,
+            locationName: location.trim(),
+            locationNumber: num,
+            meaning: LOCATION_MEANINGS[num]?.vibe,
+            birthPlace: profile?.birthPlace || "Unknown",
+            birthTime: profile?.birthTime || "Unknown",
+            dateOfBirth: profile?.dateOfBirth || "Unknown",
+            language: i18n.language,
+          },
         },
       });
       if (error) throw error;

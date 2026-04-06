@@ -14,6 +14,8 @@ import { ChevronRight } from "lucide-react";
 interface DailyBriefingProps {
   dob: Date;
   name: string;
+  birthPlace?: string | null;
+  birthTime?: string | null;
   onOpenStars?: () => void;
 }
 
@@ -24,7 +26,7 @@ function getPreview(text: string): string {
   return sentences.slice(0, 2).join("").trim();
 }
 
-export function DailyBriefing({ dob, name, onOpenStars }: DailyBriefingProps) {
+export function DailyBriefing({ dob, name, birthPlace, birthTime, onOpenStars }: DailyBriefingProps) {
   const { t, i18n } = useTranslation();
   const today = new Date();
   const zodiac = getZodiacFromDOB(dob);
@@ -48,6 +50,8 @@ export function DailyBriefing({ dob, name, onOpenStars }: DailyBriefingProps) {
       universalDay,
       personalDay,
       name,
+      birthPlace: birthPlace || "Unknown",
+      birthTime: birthTime || "Unknown",
       language: lang,
     },
     fallback: getFallbackHoroscope(zodiac.element, today),
@@ -112,7 +116,7 @@ export function DailyBriefing({ dob, name, onOpenStars }: DailyBriefingProps) {
           <span className="text-muted-foreground/30">·</span>
           <span className="text-primary/80">{t("briefing.path", { number: lifePath })}</span>
           <span className="text-muted-foreground/30">·</span>
-          <span>戌 {chineseZodiac}</span>
+          <span>{chineseZodiac}</span>
           <ChevronRight className="w-3 h-3 ml-auto text-muted-foreground/40" />
         </div>
       </button>

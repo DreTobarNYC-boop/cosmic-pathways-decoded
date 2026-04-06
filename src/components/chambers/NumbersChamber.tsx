@@ -221,6 +221,8 @@ export function NumbersChamber({ onBack }: { onBack: () => void }) {
     element: zodiac?.element || "Unknown",
     chineseZodiac: chineseZodiac || "Unknown",
     date: dateStr,
+    birthPlace: profile?.birthPlace || "Unknown",
+    birthTime: profile?.birthTime || "Unknown",
     language: i18n.language,
   };
 

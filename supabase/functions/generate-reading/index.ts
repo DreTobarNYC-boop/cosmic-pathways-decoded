@@ -49,6 +49,8 @@ ${langInstruction}`;
 - Sun Sign: ${context.zodiacSign} (${context.element} element)
 - Life Path Number: ${context.lifePath}
 - Chinese Zodiac: ${context.chineseZodiac}
+- Birth Place: ${context.birthPlace || "Unknown"}
+- Birth Time: ${context.birthTime || "Unknown"}
 - Date: ${context.date}
 - Universal Day Number: ${context.universalDay}
 - Personal Day Number: ${context.personalDay}
@@ -128,6 +130,8 @@ Aim for 3-5 sentences. ${langInstruction}`;
 - Personal Month: ${context.personalMonth}
 - Personal Year: ${context.personalYear}
 - Sun Sign: ${context.zodiacSign}
+- Birth Place: ${context.birthPlace || "Unknown"}
+- Birth Time: ${context.birthTime || "Unknown"}
 - Date: ${context.date}
 
 Weave their personal day number and universal day energy into a single cohesive reading about today's numerological vibration. Make it feel like a channeled message.`;
@@ -144,6 +148,8 @@ Aim for 2-3 paragraphs. ${langInstruction}`;
 - Personality: ${context.personalityNum}
 - Sun Sign: ${context.zodiacSign} (${context.element})
 - Chinese Zodiac: ${context.chineseZodiac}
+- Birth Place: ${context.birthPlace || "Unknown"}
+- Birth Time: ${context.birthTime || "Unknown"}
 
 Reveal the deep significance of Life Path ${context.lifePath} — their soul's purpose, innate gifts, core challenges, and ultimate destiny. Weave in how their expression and soul urge numbers create a unique harmonic with their life path.`;
 
@@ -156,6 +162,11 @@ ${langInstruction}`;
       const answersDetail = context.answers ? JSON.stringify(context.answers) : "[]";
 
       userPrompt = `Generate a consciousness frequency reading for ${context.name}.
+
+Their profile:
+- Birth Place: ${context.birthPlace || "Unknown"}
+- Birth Time: ${context.birthTime || "Unknown"}
+- Date of Birth: ${context.dateOfBirth || "Unknown"}
 
 Their quiz results:
 - Consciousness Level: ${context.level} (${context.emotion})
@@ -179,6 +190,8 @@ ${langInstruction}`;
 - Sun Sign: ${context.zodiacSign} (${context.element})
 - Life Path: ${context.lifePath}
 - Chinese Zodiac: ${context.chineseZodiac}
+- Birth Place: ${context.birthPlace || "Unknown"}
+- Birth Time: ${context.birthTime || "Unknown"}
 - Universal Day: ${context.universalDay}
 - Personal Day: ${context.personalDay}
 - Date: ${context.date}
@@ -217,6 +230,8 @@ ${langInstruction}`;
 - Core Traits: ${context.traits}
 - Western Sun Sign: ${context.zodiacSign}
 - Life Path: ${context.lifePath}
+- Birth Place: ${context.birthPlace || "Unknown"}
+- Birth Time: ${context.birthTime || "Unknown"}
 
 Reveal how the ${context.animal}'s energy combines with ${context.yearElement} element to shape their destiny. Weave in how their Western zodiac (${context.zodiacSign}) creates a unique East-West harmonic.`;
 
@@ -225,6 +240,8 @@ Reveal how the ${context.animal}'s energy combines with ${context.yearElement} e
 Write a yearly forecast. 2-3 paragraphs, second person, no greeting. ${langInstruction}`;
 
       userPrompt = `Generate a ${context.currentYear} forecast for ${context.name}, a ${context.yearElement} ${context.animal}.
+- Birth Place: ${context.birthPlace || "Unknown"}
+- Birth Time: ${context.birthTime || "Unknown"}
 What does ${context.currentYear} hold for the ${context.animal}? Consider the ruling animal and element of the current year.`;
 
     } else if (reading_type === "dynasty_forecast") {
@@ -232,7 +249,7 @@ What does ${context.currentYear} hold for the ${context.animal}? Consider the ru
 You MUST respond with valid JSON only. No markdown, no code fences, just raw JSON.
 ${langInstruction}`;
 
-      userPrompt = `Generate a 5-year forecast (${context.startYear} to ${context.startYear + 4}) for ${context.name}, a ${context.yearElement} ${context.animal}.
+      userPrompt = `Generate a 5-year forecast (${context.startYear} to ${context.startYear + 4}) for ${context.name}, a ${context.yearElement} ${context.animal}. Birth Place: ${context.birthPlace || "Unknown"}. Birth Time: ${context.birthTime || "Unknown"}.
 
 Respond with ONLY this JSON structure (no markdown):
 {
@@ -251,7 +268,7 @@ Consider the ruling animal and element of each year, and how they interact with 
       systemPrompt = `You are the Sovereign Oracle of DCode — a numerology master who decodes the vibrational energy of places.
 Write 2-3 sentences about this location's energy. Second person. ${langInstruction}`;
 
-      userPrompt = `Decode the numerological energy of "${context.locationName}" (vibration number ${context.locationNumber}: ${context.meaning}) for ${context.name}. How does this place interact with their personal energy?`;
+      userPrompt = `Decode the numerological energy of "${context.locationName}" (vibration number ${context.locationNumber}: ${context.meaning}) for ${context.name}. Birth Place: ${context.birthPlace || "Unknown"}. Birth Time: ${context.birthTime || "Unknown"}. Date of Birth: ${context.dateOfBirth || "Unknown"}. How does this place interact with their personal energy?`;
 
     } else {
       systemPrompt = `You are a mystical cosmic guide providing personalized spiritual readings. Be detailed and insightful. ${langInstruction}`;

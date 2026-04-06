@@ -112,23 +112,26 @@ export function DynastyChamber({ onBack }: { onBack: () => void }) {
   const compat = COMPAT[animal] || { best: [], tension: [] };
   const currentYear = new Date().getFullYear();
 
+  const birthPlace = profile?.birthPlace || "Unknown";
+  const birthTime = profile?.birthTime || "Unknown";
+
   // AI readings
   const profileReading = useCachedReading({
     readingType: "dynasty_profile",
     cacheKey: `${animal}-${yearElement}-${i18n.language}`,
-    context: { name, animal, yearElement, fixedElement: data.element, yinYang: data.yin_yang, traits: data.traits, zodiacSign: zodiac?.sign, lifePath, language: i18n.language },
+    context: { name, animal, yearElement, fixedElement: data.element, yinYang: data.yin_yang, traits: data.traits, zodiacSign: zodiac?.sign, lifePath, birthPlace, birthTime, language: i18n.language },
   });
 
   const yearReading = useCachedReading({
     readingType: "dynasty_year",
     cacheKey: `${animal}-${currentYear}-${i18n.language}`,
-    context: { name, animal, yearElement, currentYear, language: i18n.language },
+    context: { name, animal, yearElement, currentYear, birthPlace, birthTime, language: i18n.language },
   });
 
   const forecastReading = useCachedReading({
     readingType: "dynasty_forecast",
     cacheKey: `${animal}-${currentYear}-5yr-${i18n.language}`,
-    context: { name, animal, yearElement, startYear: currentYear, language: i18n.language },
+    context: { name, animal, yearElement, startYear: currentYear, birthPlace, birthTime, language: i18n.language },
   });
 
   // Parse 5-year forecast

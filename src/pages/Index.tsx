@@ -123,7 +123,7 @@ export default function Index() {
 
       <main className="px-5 pb-10 space-y-5 max-w-lg mx-auto">
         <SchumannResonance />
-        <DailyBriefing dob={dob} name={profile.fullName} onOpenStars={() => setActiveChamber("stars")} />
+        <DailyBriefing dob={dob} name={profile.fullName} birthPlace={profile.birthPlace} birthTime={profile.birthTime} onOpenStars={() => setActiveChamber("stars")} />
 
         <div className="space-y-3">
           {FEATURED.map((item) => (

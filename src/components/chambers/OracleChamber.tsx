@@ -173,6 +173,8 @@ export function OracleChamber({ onBack }: { onBack: () => void }) {
       universalDay,
       personalDay,
       date: dateStr,
+      birthPlace: profile?.birthPlace || "Unknown",
+      birthTime: profile?.birthTime || "Unknown",
       language: i18n.language,
     },
   });

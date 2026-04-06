@@ -318,11 +318,17 @@ function ResultsScreen({
   onScanAgain,
   onOpenSonicAlchemy,
   userName,
+  birthPlace,
+  birthTime,
+  dateOfBirth,
 }: {
   answers: number[];
   onScanAgain: () => void;
   onOpenSonicAlchemy: () => void;
   userName: string;
+  birthPlace: string | null;
+  birthTime: string | null;
+  dateOfBirth: string | null;
 }) {
   const [showBreakdown, setShowBreakdown] = useState(false);
   const totalScore = answers.reduce((a, b) => a + b, 0);
@@ -343,6 +349,9 @@ function ResultsScreen({
       name: userName,
       nextLevel: result.next?.level || "Beyond",
       pointsToNext: result.pointsToNext,
+      birthPlace: birthPlace || "Unknown",
+      birthTime: birthTime || "Unknown",
+      dateOfBirth: dateOfBirth || "Unknown",
     },
   });
 
@@ -564,6 +573,9 @@ export function FrequencyChamber({ onBack }: { onBack: () => void }) {
           onScanAgain={handleScanAgain}
           onOpenSonicAlchemy={handleOpenSonicAlchemy}
           userName={profile?.fullName || ""}
+          birthPlace={profile?.birthPlace || null}
+          birthTime={profile?.birthTime || null}
+          dateOfBirth={profile?.dateOfBirth || null}
         />
       )}
     </ChamberLayout>
