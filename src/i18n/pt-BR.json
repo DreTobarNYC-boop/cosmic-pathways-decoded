@@ -43,7 +43,9 @@
     "path": "Caminho {{number}}",
     "universalDay": "Dia Universal",
     "personalDay": "Dia Pessoal",
-    "errorMessage": "As estrelas estão momentaneamente ocultas. Atualize para tentar novamente."
+    "errorMessage": "As estrelas estão momentaneamente ocultas. Atualize para tentar novamente.",
+    "readMore": "Ler leitura completa",
+    "showLess": "Mostrar menos"
   },
   "schumann": {
     "title": "Ressonância Schumann",
