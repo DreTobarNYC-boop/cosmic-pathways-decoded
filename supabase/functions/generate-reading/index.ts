@@ -54,6 +54,68 @@ ${langInstruction}`;
 - Personal Day Number: ${context.personalDay}
 
 Weave their planetary energy, numerological vibration, and Chinese zodiac wisdom into a single cohesive daily reading. Make it feel deeply personal to THIS specific day and THIS specific person.`;
+    } else if (reading_type === "stars_today") {
+      systemPrompt = `You are the Sovereign Oracle of DCode — a cosmic guide who channels deep astrological wisdom.
+Your readings are profound, poetic, and transformative. You speak with mystical authority.
+You MUST respond with valid JSON only. No markdown, no code fences, just raw JSON.
+${langInstruction}`;
+
+      userPrompt = `Generate a detailed daily astrological reading for ${context.name}.
+
+Cosmic Profile:
+- Sun Sign: ${context.zodiacSign} (${context.element} element)
+- Life Path Number: ${context.lifePath}
+- Chinese Zodiac: ${context.chineseZodiac}
+- Date: ${context.date}
+- Birth Place: ${context.birthPlace || "Unknown"}
+- Birth Time: ${context.birthTime || "Unknown"}
+- Universal Day Number: ${context.universalDay}
+- Personal Day Number: ${context.personalDay}
+
+Respond with ONLY this JSON structure (no markdown):
+{
+  "title": "A poetic 2-4 word title for today's energy",
+  "subtitle": "${context.zodiacSign} (cusp info if near a cusp) · Moon sign estimation · Dominant element",
+  "reading": "A detailed 3-4 paragraph reading weaving planetary transits, numerological vibrations, and Chinese zodiac energy. Make it deeply personal and transformative. Use poetic, mystical language.",
+  "cosmicAdvice": "A single powerful sentence of cosmic advice in quotes, like channeled wisdom.",
+  "luckyNumber": a single number 1-33,
+  "powerColor": "A specific color name like Seafoam Green or Midnight Indigo",
+  "affirmation": "A powerful first-person affirmation for the day in quotes."
+}`;
+    } else if (reading_type.startsWith("stars_")) {
+      // Handle other stars tabs: stars_monthly, stars_yearly, stars_love, stars_career, stars_birth_chart
+      const tabType = reading_type.replace("stars_", "");
+      const tabLabels: Record<string, string> = {
+        monthly: "monthly astrological forecast",
+        yearly: `${new Date().getFullYear()} yearly overview`,
+        love: "love and relationships reading",
+        career: "career and purpose reading",
+        birth_chart: "birth chart analysis",
+      };
+      const label = tabLabels[tabType] || `${tabType} reading`;
+
+      systemPrompt = `You are the Sovereign Oracle of DCode — a cosmic guide who channels deep astrological wisdom.
+Your readings are profound, poetic, and transformative. You speak with mystical authority.
+You MUST respond with valid JSON only. No markdown, no code fences, just raw JSON.
+${langInstruction}`;
+
+      userPrompt = `Generate a detailed ${label} for ${context.name}.
+
+Cosmic Profile:
+- Sun Sign: ${context.zodiacSign} (${context.element} element)
+- Life Path Number: ${context.lifePath}
+- Chinese Zodiac: ${context.chineseZodiac}
+- Date: ${context.date}
+- Birth Place: ${context.birthPlace || "Unknown"}
+- Birth Time: ${context.birthTime || "Unknown"}
+
+Respond with ONLY this JSON structure (no markdown):
+{
+  "title": "A poetic 2-4 word title",
+  "subtitle": "A brief cosmic context line",
+  "reading": "A detailed 3-4 paragraph ${label}. Make it deeply personal and transformative.",
+  "cosmicAdvice": "A single powerful sentence of wisdom."
+}`;
     } else {
       systemPrompt = `You are a mystical cosmic guide providing personalized spiritual readings. Be detailed and insightful. ${langInstruction}`;
       userPrompt = `Generate a ${reading_type} reading with the following context: ${JSON.stringify(context)}`;
@@ -72,7 +134,7 @@ Weave their planetary energy, numerological vibration, and Chinese zodiac wisdom
           { role: "user", content: userPrompt },
         ],
         temperature: 0.9,
-        max_tokens: 600,
+        max_tokens: reading_type === "daily_horoscope" ? 600 : 1200,
       }),
     });
 
