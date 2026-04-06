@@ -3,38 +3,46 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useAuth } from "@/hooks/use-auth";
+import { toast } from "sonner";
 
-interface OnboardingModalProps {
-  open: boolean;
-  onComplete: (data: { name: string; dob: string }) => void;
-}
-
-export function OnboardingModal({ open, onComplete }: OnboardingModalProps) {
+export function OnboardingModal({ open }: { open: boolean }) {
+  const { saveProfile } = useAuth();
   const [name, setName] = useState("");
   const [dob, setDob] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (name && dob) {
-      onComplete({ name, dob });
+    if (!name || !dob) return;
+
+    setLoading(true);
+    const { error } = await saveProfile({ fullName: name, dateOfBirth: dob });
+    setLoading(false);
+
+    if (error) {
+      toast.error("Failed to save profile: " + error);
     }
   };
 
   return (
     <Dialog open={open}>
-      <DialogContent className="card-cosmic border-copper sm:max-w-md">
+      <DialogContent
+        className="card-cosmic border-copper sm:max-w-md"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="font-display text-xl text-foreground text-center">
-            Enter The Chambers
+            Complete Your Blueprint
           </DialogTitle>
           <p className="text-sm text-muted-foreground text-center mt-2">
-            To unlock your cosmic blueprint, we need your birth details.
+            To decode your cosmic identity, we need your birth details.
           </p>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <div>
             <Label htmlFor="name" className="text-sm text-muted-foreground">
-              Full Name
+              Full Birth Name
             </Label>
             <Input
               id="name"
@@ -44,6 +52,9 @@ export function OnboardingModal({ open, onComplete }: OnboardingModalProps) {
               className="bg-muted/30 border-copper text-foreground placeholder:text-muted-foreground/50 mt-1"
               required
             />
+            <p className="text-[10px] text-muted-foreground/60 mt-1">
+              Used for numerology — expression, soul urge, and personality numbers
+            </p>
           </div>
           <div>
             <Label htmlFor="dob" className="text-sm text-muted-foreground">
@@ -61,9 +72,9 @@ export function OnboardingModal({ open, onComplete }: OnboardingModalProps) {
           <Button
             type="submit"
             className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-display rounded-xl"
-            disabled={!name || !dob}
+            disabled={loading || !name || !dob}
           >
-            Unlock Your Blueprint
+            {loading ? "Decoding..." : "Unlock Your Blueprint"}
           </Button>
         </form>
       </DialogContent>

@@ -8,6 +8,7 @@ import {
   UNIVERSAL_DAY_MEANINGS,
   PERSONAL_DAY_MEANINGS,
 } from "@/lib/daily";
+import { getFallbackHoroscope } from "@/lib/fallbacks";
 import { useCachedReading } from "@/hooks/use-cached-reading";
 
 interface DailyBriefingProps {
@@ -22,10 +23,9 @@ export function DailyBriefing({ dob, name }: DailyBriefingProps) {
   const chineseZodiac = getChineseZodiac(dob.getFullYear());
   const universalDay = getUniversalDay(today);
   const personalDay = getPersonalDay(dob, today);
-
   const dateKey = today.toISOString().split("T")[0];
 
-  const { content: horoscope, isLoading } = useCachedReading({
+  const { content: horoscope, isLoading, error } = useCachedReading({
     readingType: "daily_horoscope",
     cacheKey: dateKey,
     context: {
@@ -38,6 +38,7 @@ export function DailyBriefing({ dob, name }: DailyBriefingProps) {
       personalDay,
       name,
     },
+    fallback: getFallbackHoroscope(zodiac.element, today),
   });
 
   return (
@@ -68,7 +69,13 @@ export function DailyBriefing({ dob, name }: DailyBriefingProps) {
           </div>
         ) : (
           <p className="text-sm text-foreground/80 leading-relaxed font-display italic">
-            "{horoscope || "The cosmos is aligning your reading..."}"
+            "{horoscope}"
+          </p>
+        )}
+
+        {error && !horoscope && (
+          <p className="text-xs text-destructive mt-2">
+            The stars are momentarily obscured. Refresh to try again.
           </p>
         )}
 
