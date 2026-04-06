@@ -62,16 +62,15 @@ export function useCachedReading({
         }
 
         // 3. Cache the result (fire and forget)
-        const { data: userData } = await supabase.auth.getUser();
-        const { data: userData } = await supabase.auth.getUser();
-        if (userData?.user) {
+        const { data: authData } = await supabase.auth.getUser();
+        if (authData?.user) {
           await supabase.from("cached_readings").upsert(
             [{
-              user_id: userData.user.id,
+              user_id: authData.user.id,
               reading_type: readingType,
               cache_key: cacheKey,
               content: generatedContent,
-              metadata: context as Record<string, unknown>,
+              metadata: context as unknown as import("@/integrations/supabase/types").Json,
             }],
             { onConflict: "user_id,reading_type,cache_key" }
           );
