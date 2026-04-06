@@ -48,7 +48,20 @@
   "schumann": {
     "title": "Ressonância Schumann",
     "live": "Ao Vivo",
-    "baseFrequency": "Frequência Base"
+    "baseFrequency": "Frequência Base",
+    "tapToLearn": "Toque para saber mais",
+    "unavailable": "Espectrograma temporariamente indisponível",
+    "infoTitle": "O Batimento Cardíaco da Terra",
+    "info1": "A Ressonância Schumann é um conjunto de frequências eletromagnéticas geradas por descargas de raios na cavidade entre a superfície da Terra e a ionosfera. A frequência fundamental é aproximadamente 7.83 Hz — frequentemente chamada de 'batimento cardíaco da Terra'.",
+    "info2": "Descoberta pelo físico Winfried Otto Schumann em 1952, essas ressonâncias são constantemente excitadas pelas ~2.000 tempestades ativas no planeta a qualquer momento. Elas criam um padrão de onda estacionária que pulsa por toda a cavidade Terra-ionosfera.",
+    "frequenciesTitle": "Frequências Harmônicas",
+    "freq1": "Fundamental",
+    "freq2": "2º Harmônico",
+    "freq3": "3º Harmônico",
+    "freq4": "4º Harmônico",
+    "info3": "Muitos pesquisadores notaram que a frequência base de 7.83 Hz se alinha estreitamente com os padrões de ondas cerebrais alfa (8-12 Hz), associados a relaxamento, criatividade e estados meditativos. Algumas tradições veem isso como evidência de uma ressonância profunda entre a consciência humana e o planeta.",
+    "info4": "Picos na atividade da Ressonância Schumann frequentemente se correlacionam com tempestades solares, distúrbios geomagnéticos e mudanças na energia coletiva humana. Monitorar essas frequências oferece uma janela para a relação eletromagnética entre o campo da Terra e nossos próprios sistemas bioelétricos.",
+    "source": "Dados obtidos do Observatório Espacial de Tomsk, Rússia. Atualizados em tempo real."
   },
   "chambers": {
     "scanYourPalm": "Escaneie Sua Palma",
