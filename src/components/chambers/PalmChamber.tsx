@@ -1,22 +1,69 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { ChamberLayout } from "@/components/ChamberLayout";
-import { Camera, RotateCcw, Scan, Upload, X } from "lucide-react";
+import { Camera, RotateCcw, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-type Phase = "capture" | "preview" | "analyzing" | "result";
+type Phase = "permission" | "camera" | "preview" | "scanning" | "result";
+type ResultTab = "reading" | "lines" | "mounts" | "markings";
+
+interface PalmLine {
+  strength: string;
+  description: string;
+}
+
+interface PalmMount {
+  prominence: string;
+  meaning: string;
+}
+
+interface PalmMarking {
+  type: string;
+  location: string;
+  meaning: string;
+}
+
+interface PalmReading {
+  handType: string;
+  element: string;
+  archetype: {
+    name: string;
+    traits: string[];
+    summary: string;
+    shadow: string;
+  };
+  reading: { overview: string };
+  lines: Record<string, PalmLine>;
+  mounts: Record<string, PalmMount>;
+  markings: PalmMarking[];
+}
+
+const SCAN_PHASES = [
+  { key: "heart", labelKey: "palm.scanningHeart", pct: 20 },
+  { key: "head", labelKey: "palm.scanningHead", pct: 40 },
+  { key: "life", labelKey: "palm.scanningLife", pct: 60 },
+  { key: "fate", labelKey: "palm.scanningFate", pct: 80 },
+  { key: "channel", labelKey: "palm.channeling", pct: 100 },
+];
 
 export function PalmChamber({ onBack }: { onBack: () => void }) {
   const { t, i18n } = useTranslation();
-  const [phase, setPhase] = useState<Phase>("capture");
+  const [phase, setPhase] = useState<Phase>("permission");
   const [imageData, setImageData] = useState<string | null>(null);
-  const [reading, setReading] = useState<string | null>(null);
+  const [reading, setReading] = useState<PalmReading | null>(null);
+  const [activeTab, setActiveTab] = useState<ResultTab>("reading");
+  const [scanStep, setScanStep] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const stopCamera = useCallback(() => {
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+  }, []);
 
   const startCamera = useCallback(async () => {
     try {
@@ -27,15 +74,11 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
       }
+      setPhase("camera");
     } catch {
       toast.error(t("palm.cameraError"));
     }
   }, [t]);
-
-  const stopCamera = useCallback(() => {
-    streamRef.current?.getTracks().forEach((track) => track.stop());
-    streamRef.current = null;
-  }, []);
 
   const capturePhoto = useCallback(() => {
     const video = videoRef.current;
@@ -57,7 +100,6 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
   const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     const reader = new FileReader();
     reader.onloadend = () => {
       setImageData(reader.result as string);
@@ -66,9 +108,21 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
     reader.readAsDataURL(file);
   }, []);
 
-  const analyzepalm = useCallback(async () => {
+  const analyzePalm = useCallback(async () => {
     if (!imageData) return;
-    setPhase("analyzing");
+    setPhase("scanning");
+    setScanStep(0);
+
+    // Animate scan steps
+    const stepInterval = setInterval(() => {
+      setScanStep((prev) => {
+        if (prev >= SCAN_PHASES.length - 1) {
+          clearInterval(stepInterval);
+          return prev;
+        }
+        return prev + 1;
+      });
+    }, 1800);
 
     try {
       const base64 = imageData.split(",")[1];
@@ -76,12 +130,20 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
         body: { image_base64: base64, language: i18n.language },
       });
 
+      clearInterval(stepInterval);
+
       if (error) throw new Error(error.message);
       if (!data?.content) throw new Error("No reading returned");
 
+      // Ensure we're at 100% before showing results
+      setScanStep(SCAN_PHASES.length - 1);
+      await new Promise((r) => setTimeout(r, 800));
+
       setReading(data.content);
+      setActiveTab("reading");
       setPhase("result");
     } catch (err) {
+      clearInterval(stepInterval);
       const msg = err instanceof Error ? err.message : "Analysis failed";
       toast.error(msg);
       setPhase("preview");
@@ -89,200 +151,290 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
   }, [imageData, i18n.language]);
 
   const reset = useCallback(() => {
-    setPhase("capture");
+    setPhase("permission");
     setImageData(null);
     setReading(null);
+    setScanStep(0);
   }, []);
+
+  // Cleanup camera on unmount
+  useEffect(() => () => stopCamera(), [stopCamera]);
+
+  const currentScan = SCAN_PHASES[scanStep] || SCAN_PHASES[0];
 
   return (
     <ChamberLayout title={t("palm.title")} subtitle={t("palm.subtitle")} onBack={onBack}>
       <canvas ref={canvasRef} className="hidden" />
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={handleFileUpload}
-      />
+      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
 
-      {phase === "capture" && (
-        <div className="space-y-4 mt-4 animate-fade-up">
-          {/* Instructions card */}
-          <div className="card-cosmic rounded-2xl p-6 text-center space-y-3">
-            <div className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center"
-              style={{ backgroundColor: "hsl(280, 40%, 55%, 0.15)" }}>
-              <Scan className="w-8 h-8" style={{ color: "hsl(280, 40%, 55%)" }} />
-            </div>
-            <h3 className="font-display text-lg font-bold text-foreground">
-              {t("palm.scanTitle")}
-            </h3>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {t("palm.scanInstructions")}
-            </p>
+      {/* ── PERMISSION SCREEN ── */}
+      {phase === "permission" && (
+        <div className="flex flex-col items-center justify-center min-h-[60vh] animate-fade-up px-4">
+          <div className="w-24 h-24 rounded-full flex items-center justify-center mb-6"
+            style={{ backgroundColor: "hsl(160, 30%, 25%)" }}>
+            <Camera className="w-10 h-10" style={{ color: "hsl(160, 50%, 55%)" }} />
           </div>
+          <h2 className="font-display text-xl font-bold text-foreground text-center mb-3">
+            {t("palm.needsAccess")}
+          </h2>
+          <p className="text-sm text-muted-foreground text-center mb-8 max-w-xs leading-relaxed">
+            {t("palm.privacyNote")}
+          </p>
+          <Button
+            onClick={startCamera}
+            className="w-full max-w-xs h-14 rounded-2xl bg-primary text-primary-foreground font-display text-lg font-bold hover:bg-primary/90"
+          >
+            {t("palm.openCamera")}
+          </Button>
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            className="mt-4 text-sm text-muted-foreground flex items-center gap-2 hover:text-foreground transition-colors"
+          >
+            <Upload className="w-4 h-4" /> {t("palm.uploadInstead")}
+          </button>
+        </div>
+      )}
 
-          {/* Camera + Upload buttons */}
-          <div className="grid grid-cols-2 gap-3">
-            <Button
-              onClick={async () => {
-                await startCamera();
-                setPhase("capture");
-                // Small delay to let camera initialize, then show video
-                setTimeout(() => {
-                  if (videoRef.current && streamRef.current) {
-                    videoRef.current.srcObject = streamRef.current;
-                  }
-                }, 100);
-              }}
-              className="card-cosmic border-copper rounded-2xl h-auto py-6 flex flex-col items-center gap-2 hover:glow-gold"
-              variant="ghost"
-            >
-              <Camera className="w-6 h-6 text-primary" />
-              <span className="text-sm font-display text-foreground">{t("palm.takePhoto")}</span>
-            </Button>
-            <Button
-              onClick={() => fileInputRef.current?.click()}
-              className="card-cosmic border-copper rounded-2xl h-auto py-6 flex flex-col items-center gap-2 hover:glow-gold"
-              variant="ghost"
-            >
-              <Upload className="w-6 h-6 text-primary" />
-              <span className="text-sm font-display text-foreground">{t("palm.uploadPhoto")}</span>
-            </Button>
-          </div>
-
-          {/* Live camera feed (shows when camera is active) */}
-          <div className="relative rounded-2xl overflow-hidden bg-black/50">
+      {/* ── LIVE CAMERA ── */}
+      {phase === "camera" && (
+        <div className="mt-4 animate-fade-up">
+          <div className="relative rounded-2xl overflow-hidden bg-black">
             <video
               ref={videoRef}
               autoPlay
               playsInline
               muted
-              className="w-full aspect-[3/4] object-cover rounded-2xl"
+              className="w-full aspect-[3/4] object-cover"
             />
-            {streamRef.current && (
-              <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-3">
-                <Button
-                  onClick={capturePhoto}
-                  className="w-16 h-16 rounded-full bg-primary text-primary-foreground shadow-lg"
-                >
-                  <Camera className="w-6 h-6" />
-                </Button>
-                <Button
-                  onClick={() => { stopCamera(); setPhase("capture"); }}
-                  variant="ghost"
-                  className="w-12 h-12 rounded-full bg-muted/50 text-foreground"
-                >
-                  <X className="w-5 h-5" />
-                </Button>
-              </div>
-            )}
-          </div>
-
-          {/* Tips */}
-          <div className="card-cosmic rounded-2xl p-4">
-            <p className="text-[11px] uppercase tracking-[0.2em] text-primary/70 mb-2">
-              {t("palm.tipsTitle")}
+            {/* Scan guide overlay */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="w-[70%] h-[60%] border-2 border-primary/40 rounded-3xl" />
+            </div>
+            <p className="absolute top-4 left-0 right-0 text-center text-xs text-foreground/70 font-display">
+              {t("palm.positionHand")}
             </p>
-            <ul className="text-xs text-muted-foreground space-y-1.5">
-              <li>• {t("palm.tip1")}</li>
-              <li>• {t("palm.tip2")}</li>
-              <li>• {t("palm.tip3")}</li>
-              <li>• {t("palm.tip4")}</li>
-            </ul>
+          </div>
+          <div className="flex gap-3 mt-4">
+            <Button
+              onClick={() => { stopCamera(); setPhase("permission"); }}
+              variant="ghost"
+              className="flex-1 card-cosmic border-copper rounded-xl h-12 font-display"
+            >
+              {t("palm.cancel")}
+            </Button>
+            <Button
+              onClick={capturePhoto}
+              className="flex-1 bg-primary text-primary-foreground rounded-xl h-12 font-display hover:bg-primary/90"
+            >
+              <Camera className="w-4 h-4 mr-2" /> {t("palm.capture")}
+            </Button>
           </div>
         </div>
       )}
 
+      {/* ── PREVIEW ── */}
       {phase === "preview" && imageData && (
         <div className="space-y-4 mt-4 animate-fade-up">
           <div className="relative rounded-2xl overflow-hidden">
             <img src={imageData} alt="Palm" className="w-full rounded-2xl" />
-            <div className="absolute inset-0 border-2 border-primary/30 rounded-2xl pointer-events-none" />
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <Button
-              onClick={reset}
-              variant="ghost"
-              className="card-cosmic border-copper rounded-xl h-12 font-display"
-            >
+            <Button onClick={reset} variant="ghost" className="card-cosmic border-copper rounded-xl h-12 font-display">
               <RotateCcw className="w-4 h-4 mr-2" /> {t("palm.retake")}
             </Button>
-            <Button
-              onClick={analyzepalm}
-              className="bg-primary text-primary-foreground rounded-xl h-12 font-display hover:bg-primary/90"
-            >
-              <Scan className="w-4 h-4 mr-2" /> {t("palm.analyze")}
+            <Button onClick={analyzePalm} className="bg-primary text-primary-foreground rounded-xl h-12 font-display hover:bg-primary/90">
+              {t("palm.analyze")}
             </Button>
           </div>
         </div>
       )}
 
-      {phase === "analyzing" && (
-        <div className="space-y-6 mt-8 animate-fade-up">
-          <div className="card-cosmic rounded-2xl p-8 text-center space-y-4">
-            <div className="w-20 h-20 rounded-full mx-auto flex items-center justify-center animate-pulse"
-              style={{ backgroundColor: "hsl(280, 40%, 55%, 0.2)" }}>
-              <Scan className="w-10 h-10 animate-spin" style={{ color: "hsl(280, 40%, 55%)" }} />
+      {/* ── SCANNING ANIMATION ── */}
+      {phase === "scanning" && imageData && (
+        <div className="mt-4 animate-fade-up">
+          <div className="relative rounded-2xl overflow-hidden">
+            {/* Palm image with B&W filter */}
+            <img
+              src={imageData}
+              alt="Palm"
+              className="w-full rounded-2xl"
+              style={{ filter: "grayscale(0.7) brightness(0.8)" }}
+            />
+            {/* Scanning line */}
+            <div
+              className="absolute left-0 right-0 h-0.5 transition-all duration-[1500ms] ease-linear"
+              style={{
+                top: `${currentScan.pct}%`,
+                background: "linear-gradient(90deg, transparent 0%, hsl(160, 50%, 55%) 30%, hsl(160, 50%, 55%) 70%, transparent 100%)",
+                boxShadow: "0 0 12px 4px hsl(160, 50%, 55%, 0.4)",
+              }}
+            />
+            {/* Progress badge */}
+            <div className="absolute bottom-3 right-3 bg-background/80 backdrop-blur-sm rounded-lg px-3 py-1.5">
+              <span className="text-sm font-display font-bold text-foreground">{currentScan.pct}%</span>
             </div>
-            <p className="font-display text-lg font-bold text-foreground">
-              {t("palm.analyzing")}
+          </div>
+          {/* Status text */}
+          <div className="text-center mt-4 space-y-1">
+            <p className="font-display text-base font-bold text-foreground animate-pulse">
+              {t(currentScan.labelKey)}
             </p>
-            <p className="text-sm text-muted-foreground">
-              {t("palm.analyzingSubtext")}
+            <p className="text-[11px] uppercase tracking-[0.2em] text-primary/60">
+              {t("palm.speculative")}
             </p>
-            <div className="space-y-2">
-              <div className="h-2 bg-muted/30 rounded-full animate-pulse w-full" />
-              <div className="h-2 bg-muted/30 rounded-full animate-pulse w-4/5 mx-auto" />
-              <div className="h-2 bg-muted/30 rounded-full animate-pulse w-3/5 mx-auto" />
-            </div>
           </div>
         </div>
       )}
 
+      {/* ── RESULTS ── */}
       {phase === "result" && reading && (
-        <div className="space-y-4 mt-4 animate-fade-up">
-          {/* Thumbnail of the palm */}
-          {imageData && (
-            <div className="flex items-center gap-3 card-cosmic rounded-2xl p-3">
-              <img src={imageData} alt="Palm" className="w-16 h-16 rounded-xl object-cover" />
-              <div>
-                <p className="text-xs font-display font-bold text-foreground">{t("palm.yourReading")}</p>
-                <p className="text-[10px] text-muted-foreground">{t("palm.poweredByAI")}</p>
+        <div className="mt-4 space-y-4 animate-fade-up">
+          {/* Header: Hand type + thumbnail */}
+          <div className="text-center space-y-3">
+            <p className="text-[11px] uppercase tracking-[0.2em] text-primary/70">
+              {t("palm.palmReading")}
+            </p>
+            {imageData && (
+              <div className="w-24 h-24 rounded-full mx-auto overflow-hidden border-2 border-primary/30">
+                <img src={imageData} alt="Palm" className="w-full h-full object-cover" />
               </div>
-            </div>
-          )}
-
-          {/* Reading content */}
-          <div className="card-cosmic rounded-2xl p-6 glow-gold relative overflow-hidden">
-            <div className="animate-shimmer absolute inset-0 pointer-events-none rounded-2xl" />
-            <div className="prose prose-sm prose-invert max-w-none">
-              {reading.split("\n").map((line, i) => {
-                if (!line.trim()) return <br key={i} />;
-                // Section headers
-                if (line.match(/^[🖐❤🧠🌿⭐✨🔮]/)) {
-                  return (
-                    <h3 key={i} className="font-display text-base font-bold text-primary mt-4 mb-2">
-                      {line}
-                    </h3>
-                  );
-                }
-                return (
-                  <p key={i} className="text-sm text-foreground/90 leading-relaxed mb-2">
-                    {line}
-                  </p>
-                );
-              })}
-            </div>
+            )}
+            <h2 className="font-display text-2xl font-bold text-foreground">{reading.handType}</h2>
+            <p className="text-sm text-primary">{reading.element}</p>
           </div>
 
-          {/* New scan button */}
+          {/* Scan Another */}
           <Button
             onClick={reset}
             variant="ghost"
             className="w-full card-cosmic border-copper rounded-xl h-12 font-display"
           >
-            <RotateCcw className="w-4 h-4 mr-2" /> {t("palm.newScan")}
+            <Camera className="w-4 h-4 mr-2" /> {t("palm.newScan")}
           </Button>
+
+          {/* Tabs */}
+          <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-hide">
+            {(["reading", "lines", "mounts", "markings"] as ResultTab[]).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-4 py-2 rounded-full text-sm font-display whitespace-nowrap transition-colors ${
+                  activeTab === tab
+                    ? "bg-primary/20 text-primary font-bold"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {tab === "reading" && "◉ "}
+                {tab === "lines" && "≈ "}
+                {tab === "mounts" && "△ "}
+                {tab === "markings" && "✦ "}
+                {t(`palm.tab${tab.charAt(0).toUpperCase() + tab.slice(1)}`)}
+              </button>
+            ))}
+          </div>
+
+          {/* Tab Content */}
+          <div className="card-cosmic rounded-2xl p-5 glow-gold relative overflow-hidden">
+            <div className="animate-shimmer absolute inset-0 pointer-events-none rounded-2xl" />
+
+            {activeTab === "reading" && (
+              <div className="space-y-4">
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground mb-1">
+                    {t("palm.palmArchetype")}
+                  </p>
+                  <h3 className="font-display text-xl font-bold text-primary">
+                    {reading.archetype.name}
+                  </h3>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {reading.archetype.traits.map((trait) => (
+                    <span key={trait} className="px-3 py-1 rounded-full text-xs font-display border border-primary/30 text-primary/90 bg-primary/5">
+                      {trait}
+                    </span>
+                  ))}
+                </div>
+                <p className="text-sm text-foreground/90 leading-relaxed">
+                  {reading.archetype.summary}
+                </p>
+                <p className="text-sm text-primary/60 italic leading-relaxed">
+                  {reading.archetype.shadow}
+                </p>
+                {reading.reading?.overview && (
+                  <div className="pt-3 border-t border-copper">
+                    <p className="text-sm text-foreground/85 leading-relaxed">
+                      {reading.reading.overview}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === "lines" && reading.lines && (
+              <div className="space-y-5">
+                {Object.entries(reading.lines).map(([key, line]) => (
+                  <div key={key}>
+                    <div className="flex items-center justify-between mb-1">
+                      <h4 className="font-display text-sm font-bold text-foreground capitalize">
+                        {t(`palm.line_${key}`)}
+                      </h4>
+                      <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                        line.strength === "strong" ? "bg-emerald-500/20 text-emerald-400" :
+                        line.strength === "moderate" ? "bg-amber-500/20 text-amber-400" :
+                        line.strength === "absent" ? "bg-muted/30 text-muted-foreground" :
+                        "bg-blue-500/20 text-blue-400"
+                      }`}>
+                        {line.strength}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{line.description}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {activeTab === "mounts" && reading.mounts && (
+              <div className="space-y-5">
+                {Object.entries(reading.mounts).map(([key, mount]) => (
+                  <div key={key}>
+                    <div className="flex items-center justify-between mb-1">
+                      <h4 className="font-display text-sm font-bold text-foreground capitalize">
+                        {t(`palm.mount_${key}`)}
+                      </h4>
+                      <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                        mount.prominence === "high" ? "bg-emerald-500/20 text-emerald-400" :
+                        mount.prominence === "moderate" ? "bg-amber-500/20 text-amber-400" :
+                        "bg-muted/30 text-muted-foreground"
+                      }`}>
+                        {mount.prominence}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{mount.meaning}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {activeTab === "markings" && (
+              <div className="space-y-5">
+                {reading.markings && reading.markings.length > 0 ? (
+                  reading.markings.map((mark, i) => (
+                    <div key={i}>
+                      <div className="flex items-center gap-2 mb-1">
+                        <h4 className="font-display text-sm font-bold text-foreground">{mark.type}</h4>
+                        <span className="text-[10px] text-primary/60">— {mark.location}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed">{mark.meaning}</p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    {t("palm.noMarkings")}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </ChamberLayout>
