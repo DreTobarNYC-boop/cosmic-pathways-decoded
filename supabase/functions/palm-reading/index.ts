@@ -28,37 +28,48 @@ serve(async (req) => {
 
     const lang = language || "en";
     const langInstruction = lang.startsWith("es")
-      ? "IMPORTANT: Write your ENTIRE response in Spanish (Español)."
+      ? "IMPORTANT: Write ALL text values in Spanish (Español)."
       : lang.startsWith("pt")
-      ? "IMPORTANT: Write your ENTIRE response in Brazilian Portuguese (Português Brasileiro)."
-      : "Write your response in English.";
+      ? "IMPORTANT: Write ALL text values in Brazilian Portuguese (Português Brasileiro)."
+      : "Write all text values in English.";
 
-    const systemPrompt = `You are the Sovereign Oracle of DCode — an expert palmist and mystic who reads palms with deep spiritual insight.
-Analyze the palm image provided. Identify and interpret the major lines:
-- Heart Line (emotional life, relationships, love)
-- Head Line (intellect, thinking style, mental approach)
-- Life Line (vitality, life changes, physical energy — NOT lifespan)
-- Fate Line (career, destiny, life direction — if visible)
-- Sun Line (fame, success, creativity — if visible)
+    const systemPrompt = `You are the Sovereign Oracle of DCode — an expert palmist and mystic. Analyze the palm image and return a JSON object with this EXACT structure. ${langInstruction}
 
-Also note:
-- Mount prominences (Jupiter, Saturn, Apollo, Mercury, Venus, Mars, Moon)
-- Finger proportions and hand shape (Earth, Air, Water, Fire hand type)
-- Any special markings (stars, crosses, islands, chains, branches)
+Return ONLY valid JSON, no markdown, no code fences. The structure must be:
 
-Structure your reading with clear sections using these exact headers:
-🖐️ HAND TYPE
-❤️ HEART LINE
-🧠 HEAD LINE
-🌿 LIFE LINE
-⭐ FATE & DESTINY
-✨ SPECIAL MARKINGS
-🔮 OVERALL READING
+{
+  "handType": "Earth Hand" | "Air Hand" | "Water Hand" | "Fire Hand",
+  "element": "Earth Element" | "Air Element" | "Water Element" | "Fire Element",
+  "archetype": {
+    "name": "THE BUILDER" (or similar archetype title in caps),
+    "traits": ["Grounded", "Practical", "Resilient"] (3 key traits),
+    "summary": "2-3 sentence overview of what the palm reveals about this person's core nature",
+    "shadow": "1-2 sentence caution about their potential blind spot or risk"
+  },
+  "reading": {
+    "overview": "4-6 sentence holistic palm reading weaving all elements together"
+  },
+  "lines": {
+    "heart": { "strength": "strong" | "moderate" | "faint", "description": "2-3 sentences about the heart line" },
+    "head": { "strength": "strong" | "moderate" | "faint", "description": "2-3 sentences about the head line" },
+    "life": { "strength": "strong" | "moderate" | "faint", "description": "2-3 sentences about the life line" },
+    "fate": { "strength": "strong" | "moderate" | "faint" | "absent", "description": "2-3 sentences about the fate line" },
+    "sun": { "strength": "strong" | "moderate" | "faint" | "absent", "description": "2-3 sentences about the sun line" }
+  },
+  "mounts": {
+    "jupiter": { "prominence": "high" | "moderate" | "flat", "meaning": "1-2 sentences" },
+    "saturn": { "prominence": "high" | "moderate" | "flat", "meaning": "1-2 sentences" },
+    "apollo": { "prominence": "high" | "moderate" | "flat", "meaning": "1-2 sentences" },
+    "mercury": { "prominence": "high" | "moderate" | "flat", "meaning": "1-2 sentences" },
+    "venus": { "prominence": "high" | "moderate" | "flat", "meaning": "1-2 sentences" },
+    "moon": { "prominence": "high" | "moderate" | "flat", "meaning": "1-2 sentences" }
+  },
+  "markings": [
+    { "type": "Star" | "Cross" | "Island" | "Chain" | "Branch" | "Triangle" | "Square" | "Trident", "location": "where on the palm", "meaning": "1-2 sentences" }
+  ]
+}
 
-Be specific about what you observe. Give a detailed, mystical but grounded reading.
-Speak in second person ("you"). Be warm, insightful, and empowering. 
-Never predict death or serious illness.
-${langInstruction}`;
+Be specific about what you observe. Be warm, insightful, and empowering. Never predict death or serious illness.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -73,7 +84,7 @@ ${langInstruction}`;
           {
             role: "user",
             content: [
-              { type: "text", text: "Read this palm. Provide a detailed palmistry analysis." },
+              { type: "text", text: "Analyze this palm image and return the structured JSON reading." },
               {
                 type: "image_url",
                 image_url: {
@@ -83,8 +94,8 @@ ${langInstruction}`;
             ],
           },
         ],
-        temperature: 0.8,
-        max_tokens: 1500,
+        temperature: 0.7,
+        max_tokens: 2500,
       }),
     });
 
@@ -110,13 +121,24 @@ ${langInstruction}`;
     }
 
     const data = await response.json();
-    const content =
-      data.choices?.[0]?.message?.content || "The lines are unclear at this moment. Please try again with better lighting.";
+    let content = data.choices?.[0]?.message?.content || "";
 
-    return new Response(
-      JSON.stringify({ content }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
+    // Strip markdown code fences if present
+    content = content.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
+
+    try {
+      const parsed = JSON.parse(content);
+      return new Response(
+        JSON.stringify({ content: parsed }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    } catch {
+      console.error("Failed to parse AI response as JSON:", content);
+      return new Response(
+        JSON.stringify({ error: "Failed to parse reading", raw: content }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
   } catch (e) {
     console.error("palm-reading error:", e);
     return new Response(
