@@ -48,7 +48,20 @@
   "schumann": {
     "title": "Resonancia Schumann",
     "live": "En Vivo",
-    "baseFrequency": "Frecuencia Base"
+    "baseFrequency": "Frecuencia Base",
+    "tapToLearn": "Toca para saber más",
+    "unavailable": "Espectrograma temporalmente no disponible",
+    "infoTitle": "El Latido de la Tierra",
+    "info1": "La Resonancia Schumann es un conjunto de frecuencias electromagnéticas generadas por descargas de rayos en la cavidad entre la superficie terrestre y la ionosfera. La frecuencia fundamental es aproximadamente 7.83 Hz — a menudo llamada 'el latido de la Tierra'.",
+    "info2": "Descubierta por el físico Winfried Otto Schumann en 1952, estas resonancias son excitadas constantemente por las ~2,000 tormentas activas en el planeta en cualquier momento. Crean un patrón de onda estacionaria que pulsa a través de toda la cavidad Tierra-ionosfera.",
+    "frequenciesTitle": "Frecuencias Armónicas",
+    "freq1": "Fundamental",
+    "freq2": "2do Armónico",
+    "freq3": "3er Armónico",
+    "freq4": "4to Armónico",
+    "info3": "Muchos investigadores han notado que la frecuencia base de 7.83 Hz se alinea estrechamente con los patrones de ondas cerebrales alfa (8-12 Hz), asociados con relajación, creatividad y estados meditativos. Algunas tradiciones ven esto como evidencia de una resonancia profunda entre la consciencia humana y el planeta.",
+    "info4": "Los picos en la actividad de la Resonancia Schumann frecuentemente se correlacionan con tormentas solares, perturbaciones geomagnéticas y cambios en la energía colectiva humana. Monitorear estas frecuencias ofrece una ventana a la relación electromagnética entre el campo terrestre y nuestros propios sistemas bioeléctricos.",
+    "source": "Datos obtenidos del Observatorio Espacial de Tomsk, Rusia. Actualizados en tiempo real."
   },
   "chambers": {
     "scanYourPalm": "Escanea Tu Palma",
