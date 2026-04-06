@@ -1,0 +1,154 @@
+// Zodiac sign calculation from DOB
+const ZODIAC_SIGNS = [
+  { sign: "Capricorn", symbol: "♑", element: "Earth", start: [12, 22], end: [1, 19] },
+  { sign: "Aquarius", symbol: "♒", element: "Air", start: [1, 20], end: [2, 18] },
+  { sign: "Pisces", symbol: "♓", element: "Water", start: [2, 19], end: [3, 20] },
+  { sign: "Aries", symbol: "♈", element: "Fire", start: [3, 21], end: [4, 19] },
+  { sign: "Taurus", symbol: "♉", element: "Earth", start: [4, 20], end: [5, 20] },
+  { sign: "Gemini", symbol: "♊", element: "Air", start: [5, 21], end: [6, 20] },
+  { sign: "Cancer", symbol: "♋", element: "Water", start: [6, 21], end: [7, 22] },
+  { sign: "Leo", symbol: "♌", element: "Fire", start: [7, 23], end: [8, 22] },
+  { sign: "Virgo", symbol: "♍", element: "Earth", start: [8, 23], end: [9, 22] },
+  { sign: "Libra", symbol: "♎", element: "Air", start: [9, 23], end: [10, 22] },
+  { sign: "Scorpio", symbol: "♏", element: "Water", start: [10, 23], end: [11, 21] },
+  { sign: "Sagittarius", symbol: "♐", element: "Fire", start: [11, 22], end: [12, 21] },
+] as const;
+
+export function getZodiacSign(month: number, day: number) {
+  for (const z of ZODIAC_SIGNS) {
+    const [sm, sd] = z.start;
+    const [em, ed] = z.end;
+    if (sm === em) {
+      if (month === sm && day >= sd && day <= ed) return z;
+    } else if (sm > em) {
+      // Capricorn wraps year
+      if ((month === sm && day >= sd) || (month === em && day <= ed)) return z;
+    } else {
+      if ((month === sm && day >= sd) || (month === em && day <= ed)) return z;
+    }
+  }
+  return ZODIAC_SIGNS[0]; // fallback
+}
+
+export function getZodiacFromDOB(dob: Date) {
+  return getZodiacSign(dob.getMonth() + 1, dob.getDate());
+}
+
+// Reduce a number to a single digit (or master number 11, 22, 33)
+export function reduceToSingle(n: number): number {
+  while (n > 9 && n !== 11 && n !== 22 && n !== 33) {
+    n = String(n).split('').reduce((s, d) => s + parseInt(d), 0);
+  }
+  return n;
+}
+
+// Life Path number from DOB
+export function getLifePath(dob: Date): number {
+  const d = dob.getDate();
+  const m = dob.getMonth() + 1;
+  const y = dob.getFullYear();
+  const sum = reduceToSingle(d) + reduceToSingle(m) + reduceToSingle(
+    String(y).split('').reduce((s, digit) => s + parseInt(digit), 0)
+  );
+  return reduceToSingle(sum);
+}
+
+// Universal Day Number
+export function getUniversalDay(date: Date = new Date()): number {
+  const d = date.getDate();
+  const m = date.getMonth() + 1;
+  const y = date.getFullYear();
+  return reduceToSingle(d + m + y);
+}
+
+// Personal Day Number
+export function getPersonalDay(dob: Date, date: Date = new Date()): number {
+  const personalYear = reduceToSingle(
+    (dob.getMonth() + 1) + dob.getDate() + date.getFullYear()
+  );
+  const personalMonth = reduceToSingle(personalYear + (date.getMonth() + 1));
+  return reduceToSingle(personalMonth + date.getDate());
+}
+
+// Chinese zodiac
+const CHINESE_ANIMALS = [
+  "Rat", "Ox", "Tiger", "Rabbit", "Dragon", "Snake",
+  "Horse", "Goat", "Monkey", "Rooster", "Dog", "Pig"
+] as const;
+
+export function getChineseZodiac(year: number) {
+  const index = (year - 4) % 12;
+  return CHINESE_ANIMALS[index >= 0 ? index : index + 12];
+}
+
+// Daily horoscope templates by element
+const ELEMENT_HOROSCOPES: Record<string, string[]> = {
+  Fire: [
+    "Your inner flame burns with renewed purpose today. Channel that bold energy into creative ventures — the universe rewards courage.",
+    "A spark of inspiration ignites your path. Trust your instincts and move decisively. Your passion is your compass.",
+    "The cosmos fuels your ambition. Today's fire burns away doubt — step forward with the confidence of someone who knows their destiny.",
+  ],
+  Earth: [
+    "Ground yourself in the present moment. Practical steps taken today build the foundation for lasting abundance.",
+    "The earth beneath you holds ancient wisdom. Trust the slow, steady growth unfolding in your life — roots run deep.",
+    "Material and spiritual realms align today. Your natural stability becomes a magnet for the opportunities you've been cultivating.",
+  ],
+  Air: [
+    "Your mind is a crystal prism today — ideas refract in brilliant new directions. Communicate freely; your words carry power.",
+    "Intellectual currents carry you toward meaningful connections. Share your vision with those who resonate with your frequency.",
+    "The winds of change whisper secrets to those who listen. Stay curious, stay open — breakthrough insights arrive unexpectedly.",
+  ],
+  Water: [
+    "Emotional depths reveal hidden treasures today. Trust the currents of your intuition — they flow toward healing and renewal.",
+    "Your sensitivity is not weakness but a sacred antenna. Today's undercurrents carry messages from your higher self.",
+    "The cosmic tide pulls you toward profound understanding. Embrace the mystery — not everything needs to be solved, some things need to be felt.",
+  ],
+};
+
+export function getDailyHoroscope(element: string, date: Date = new Date()): string {
+  const dayOfYear = Math.floor(
+    (date.getTime() - new Date(date.getFullYear(), 0, 0).getTime()) / 86400000
+  );
+  const templates = ELEMENT_HOROSCOPES[element] || ELEMENT_HOROSCOPES.Fire;
+  return templates[dayOfYear % templates.length];
+}
+
+// Number meanings
+export const UNIVERSAL_DAY_MEANINGS: Record<number, string> = {
+  1: "New beginnings & initiative",
+  2: "Cooperation & balance",
+  3: "Creativity & self-expression",
+  4: "Foundation & discipline",
+  5: "Change & freedom",
+  6: "Harmony & responsibility",
+  7: "Reflection & inner wisdom",
+  8: "Power & abundance",
+  9: "Completion & humanitarianism",
+  11: "Spiritual insight & intuition",
+  22: "Master builder energy",
+  33: "Master teacher vibration",
+};
+
+export const PERSONAL_DAY_MEANINGS: Record<number, string> = {
+  1: "Your personal power peaks — initiate boldly",
+  2: "Seek partnerships and listen deeply",
+  3: "Express yourself — creativity flows freely",
+  4: "Build structures that support your vision",
+  5: "Embrace the unexpected — adventure calls",
+  6: "Nurture your closest relationships",
+  7: "Retreat inward — meditation reveals answers",
+  8: "Financial and career energy is amplified",
+  9: "Release what no longer serves your evolution",
+  11: "Heightened intuition — trust your visions",
+  22: "Manifest your grandest ambitions today",
+  33: "Your compassion transforms those around you",
+};
+
+export function formatDate(date: Date = new Date()): string {
+  return date.toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+}
