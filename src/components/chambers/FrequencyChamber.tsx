@@ -343,6 +343,9 @@ function ResultsScreen({
       name: userName,
       nextLevel: result.next?.level || "Beyond",
       pointsToNext: result.pointsToNext,
+      birthPlace: birthPlace || "Unknown",
+      birthTime: birthTime || "Unknown",
+      dateOfBirth: dateOfBirth || "Unknown",
     },
   });
 
