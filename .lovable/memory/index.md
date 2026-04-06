@@ -1,7 +1,7 @@
 # Project Memory
 
 ## Core
-RULE #1: EVERYTHING is personalized to the individual. All readings, content, and features use the person's DOB, birth time, and birth place. Nothing generic.
+RULE #1: EVERYTHING is personalized. ALL readings/content use the person's full name, date of birth, birth place, and birth time. Nothing generic. All four data points must be passed to every AI call.
 DCode — mystical/spiritual app "The Chambers". Dark cosmic theme (#0B1A1A bg, gold #F5D060 accent, copper #B87333).
 Libre Baskerville display font, system sans body. 9 chambers (Sacred Codes merged into Vault per spec).
 Lovable Cloud enabled. BETA_MODE=true (all access, no paywall yet). Config in src/lib/config.ts.
