@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { ChamberLayout } from "@/components/ChamberLayout";
-import { Play, Pause, Volume2, Sparkles } from "lucide-react";
+import { Play, Pause, Volume2 } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import {
   SOLFEGGIO_FREQUENCIES,
@@ -67,15 +67,6 @@ function Visualizer({ isPlaying, activeColor }: { isPlaying: boolean; activeColo
   );
 }
 
-/* ── Grabovoi Sacred Codes ─────────────────────────────── */
-const SACRED_CODES = [
-  { code: "520 741 8", purpose: "Unexpected Money" },
-  { code: "888 412 1289018", purpose: "Abundance" },
-  { code: "5207418", purpose: "Financial Flow" },
-  { code: "419 488 71", purpose: "Self-Healing" },
-  { code: "888 891 563", purpose: "Inner Peace" },
-  { code: "491 312 818", purpose: "Love & Soulmate" },
-];
 
 /* ── Main Component ────────────────────────────────────── */
 export function VaultChamber({ onBack }: { onBack: () => void }) {
@@ -193,28 +184,6 @@ export function VaultChamber({ onBack }: { onBack: () => void }) {
           </div>
         </div>
 
-        {/* Sacred Codes (Grabovoi) */}
-        <div>
-          <h3 className="font-display text-xs uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2">
-            <Sparkles className="w-3.5 h-3.5 text-primary" />
-            Sacred Codes
-          </h3>
-          <div className="space-y-2">
-            {SACRED_CODES.map((sc) => (
-              <div
-                key={sc.code}
-                className="card-cosmic rounded-xl p-4 flex items-center justify-between"
-              >
-                <div>
-                  <p className="font-display text-lg font-bold tracking-wider text-primary">
-                    {sc.code}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{sc.purpose}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
     </ChamberLayout>
   );
