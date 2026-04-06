@@ -152,4 +152,13 @@
     background-size: 200% 100%;
     animation: shimmer 3s ease-in-out infinite;
   }
+
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
 }
