@@ -11,6 +11,8 @@ import type { User, Session } from "@supabase/supabase-js";
 interface UserProfile {
   fullName: string;
   dateOfBirth: string; // YYYY-MM-DD
+  birthPlace: string | null;
+  birthTime: string | null; // HH:MM
 }
 
 interface AuthContextValue {
@@ -69,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function fetchProfile(userId: string) {
     const { data } = await supabase
       .from("user_profiles")
-      .select("full_name, date_of_birth")
+      .select("full_name, date_of_birth, birth_place, birth_time")
       .eq("user_id", userId)
       .maybeSingle();
 
@@ -77,6 +79,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setProfile({
         fullName: data.full_name,
         dateOfBirth: data.date_of_birth,
+        birthPlace: (data as any).birth_place ?? null,
+        birthTime: (data as any).birth_time ?? null,
       });
     } else {
       setProfile(null);
@@ -106,7 +110,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         user_id: user.id,
         full_name: data.fullName,
         date_of_birth: data.dateOfBirth,
-      }],
+        birth_place: data.birthPlace,
+        birth_time: data.birthTime,
+      } as any],
       { onConflict: "user_id" }
     );
 
