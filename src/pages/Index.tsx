@@ -68,7 +68,7 @@ export default function Index() {
 
       <main className="px-5 pb-10 space-y-6">
         {/* Daily Briefing */}
-        {dob && <DailyBriefing dob={dob} />}
+        {dob && profile && <DailyBriefing dob={dob} name={profile.name} />}
 
         {/* Chamber Grid */}
         <div>
