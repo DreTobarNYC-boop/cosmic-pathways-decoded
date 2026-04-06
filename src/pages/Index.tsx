@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import dcodeLogo from "@/assets/dcode-logo.jpeg";
 import {
   MessageCircle,
   Star,
@@ -67,8 +68,8 @@ export default function Index() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center space-y-3">
-          <h1 className="font-display text-2xl font-bold text-foreground">DCode</h1>
+        <div className="text-center space-y-4">
+          <img src={dcodeLogo} alt="DCode" className="w-20 h-20 rounded-2xl mx-auto" />
           <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
         </div>
       </div>
@@ -96,8 +97,9 @@ export default function Index() {
   return (
     <div className="min-h-screen bg-background">
       <header className="px-5 pt-6 pb-2 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <h1 className="font-display text-2xl font-bold text-foreground tracking-tight">
+        <div className="flex items-center gap-2.5">
+          <img src={dcodeLogo} alt="DCode" className="w-9 h-9 rounded-lg" />
+          <h1 className="font-display text-xl font-bold text-foreground tracking-tight">
             DCode
           </h1>
         </div>
