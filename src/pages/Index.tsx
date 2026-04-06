@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   MessageCircle,
   Star,
@@ -28,25 +29,6 @@ import { DynastyChamber } from "@/components/chambers/DynastyChamber";
 import { SanctumChamber } from "@/components/chambers/SanctumChamber";
 import { FrequencyChamber } from "@/components/chambers/FrequencyChamber";
 
-/* ── Featured chambers (full-width with arrow) ─────────── */
-const FEATURED = [
-  { id: "palm-cta", chamberId: "palm", title: "Scan Your Palm", subtitle: "Palm Reading", icon: Fingerprint, accent: "hsl(280, 40%, 55%)" },
-  { id: "oracle", title: "The Oracle", subtitle: "AI Guide", icon: MessageCircle, accent: "hsl(220, 30%, 62%)" },
-  { id: "frequency", title: "Frequency Scanner", subtitle: "Consciousness", icon: Zap, accent: "hsl(170, 50%, 45%)" },
-];
-
-/* ── Grid chambers (2-column) ──────────────────────────── */
-const GRID_CHAMBERS = [
-  { id: "stars", title: "The Stars", subtitle: "Astrology", icon: Star, accent: "hsl(43, 90%, 67%)" },
-  { id: "numbers", title: "The Numbers", subtitle: "Numerology", icon: Hash, accent: "hsl(43, 90%, 67%)" },
-  { id: "palm", title: "The Palm", subtitle: "Palm Reading", icon: Hand, accent: "hsl(280, 40%, 55%)" },
-  { id: "dynasty", title: "The Dynasty", subtitle: "Chinese Zodiac", icon: ScrollText, accent: "hsl(0, 60%, 50%)" },
-  { id: "vault", title: "Sonic Alchemy", subtitle: "Sound", icon: Music, accent: "hsl(25, 50%, 45%)" },
-  { id: "sacred-codes", title: "The Vault", subtitle: "Sacred Codes", icon: KeyRound, accent: "hsl(43, 70%, 55%)" },
-  { id: "maps", title: "The Maps", subtitle: "Location", icon: MapPin, accent: "hsl(160, 40%, 45%)" },
-  { id: "sanctum", title: "The Sanctum", subtitle: "Journal", icon: Lock, accent: "hsl(200, 30%, 50%)" },
-];
-
 const CHAMBER_COMPONENTS: Record<string, React.ComponentType<{ onBack: () => void }>> = {
   oracle: OracleChamber,
   stars: StarsChamber,
@@ -60,10 +42,27 @@ const CHAMBER_COMPONENTS: Record<string, React.ComponentType<{ onBack: () => voi
 };
 
 export default function Index() {
+  const { t } = useTranslation();
   const { profile, isLoading, signOut, user } = useAuth();
   const [activeChamber, setActiveChamber] = useState<string | null>(null);
 
-  // Loading state
+  const FEATURED = [
+    { id: "palm-cta", chamberId: "palm", title: t("chambers.scanYourPalm"), subtitle: t("chambers.palmReading"), icon: Fingerprint, accent: "hsl(280, 40%, 55%)" },
+    { id: "oracle", title: t("chambers.theOracle"), subtitle: t("chambers.aiGuide"), icon: MessageCircle, accent: "hsl(220, 30%, 62%)" },
+    { id: "frequency", title: t("chambers.frequencyScanner"), subtitle: t("chambers.consciousness"), icon: Zap, accent: "hsl(170, 50%, 45%)" },
+  ];
+
+  const GRID_CHAMBERS = [
+    { id: "stars", title: t("chambers.theStars"), subtitle: t("chambers.astrology"), icon: Star, accent: "hsl(43, 90%, 67%)" },
+    { id: "numbers", title: t("chambers.theNumbers"), subtitle: t("chambers.numerology"), icon: Hash, accent: "hsl(43, 90%, 67%)" },
+    { id: "palm", title: t("chambers.thePalm"), subtitle: t("chambers.palmReading"), icon: Hand, accent: "hsl(280, 40%, 55%)" },
+    { id: "dynasty", title: t("chambers.theDynasty"), subtitle: t("chambers.chineseZodiac"), icon: ScrollText, accent: "hsl(0, 60%, 50%)" },
+    { id: "vault", title: t("chambers.sonicAlchemy"), subtitle: t("chambers.sound"), icon: Music, accent: "hsl(25, 50%, 45%)" },
+    { id: "sacred-codes", title: t("chambers.theVault"), subtitle: t("chambers.sacredCodes"), icon: KeyRound, accent: "hsl(43, 70%, 55%)" },
+    { id: "maps", title: t("chambers.theMaps"), subtitle: t("chambers.location"), icon: MapPin, accent: "hsl(160, 40%, 45%)" },
+    { id: "sanctum", title: t("chambers.theSanctum"), subtitle: t("chambers.journal"), icon: Lock, accent: "hsl(200, 30%, 50%)" },
+  ];
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -75,7 +74,6 @@ export default function Index() {
     );
   }
 
-  // No profile yet — show onboarding
   if (!profile) {
     return (
       <div className="min-h-screen bg-background">
@@ -84,7 +82,6 @@ export default function Index() {
     );
   }
 
-  // Active chamber view
   if (activeChamber) {
     const ChamberComponent = CHAMBER_COMPONENTS[activeChamber];
     if (ChamberComponent) {
@@ -97,7 +94,6 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="px-5 pt-6 pb-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h1 className="font-display text-2xl font-bold text-foreground tracking-tight">
@@ -113,7 +109,7 @@ export default function Index() {
             <button
               onClick={signOut}
               className="w-8 h-8 rounded-lg bg-muted/30 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-              title="Sign out"
+              title={t("header.signOut")}
             >
               <LogOut className="w-4 h-4" />
             </button>
@@ -122,13 +118,9 @@ export default function Index() {
       </header>
 
       <main className="px-5 pb-10 space-y-5 max-w-lg mx-auto">
-        {/* Schumann Resonance */}
         <SchumannResonance />
-
-        {/* Daily Horoscope + Day Numbers */}
         <DailyBriefing dob={dob} name={profile.fullName} />
 
-        {/* Featured Chambers — Palm CTA, Oracle, Frequency Scanner */}
         <div className="space-y-3">
           {FEATURED.map((item) => (
             <BentoCard
@@ -143,7 +135,6 @@ export default function Index() {
           ))}
         </div>
 
-        {/* Chamber Grid */}
         <div className="grid grid-cols-2 gap-3">
           {GRID_CHAMBERS.map((chamber) => (
             <BentoCard
