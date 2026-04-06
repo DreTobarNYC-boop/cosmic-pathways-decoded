@@ -28,7 +28,7 @@ const TABS = [
   { id: "birth_chart", icon: "◎", labelKey: "stars.tabs.birthChart" },
   { id: "today", icon: "◇", labelKey: "stars.tabs.today" },
   { id: "monthly", icon: "▣", labelKey: "stars.tabs.monthly" },
-  { id: "yearly", icon: "✦", labelKey: "stars.tabs.yearly" },
+  { id: "yearly", icon: "✦", label: String(new Date().getFullYear()) },
   { id: "love", icon: "◈", labelKey: "stars.tabs.love" },
   { id: "career", icon: "▧", labelKey: "stars.tabs.career" },
 ];
@@ -221,7 +221,7 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
             }`}
           >
             <span className="text-xs">{tab.icon}</span>
-            {t(tab.labelKey)}
+            {"labelKey" in tab && tab.labelKey ? t(tab.labelKey) : tab.label}
           </button>
         ))}
       </div>
