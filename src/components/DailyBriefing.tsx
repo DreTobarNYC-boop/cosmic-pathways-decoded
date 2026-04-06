@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   formatDate,
@@ -9,15 +10,23 @@ import {
 } from "@/lib/daily";
 import { getFallbackHoroscope } from "@/lib/fallbacks";
 import { useCachedReading } from "@/hooks/use-cached-reading";
-import { ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 
 interface DailyBriefingProps {
   dob: Date;
   name: string;
 }
 
+/** Truncate to roughly the first 2-3 sentences */
+function getPreview(text: string): string {
+  const sentences = text.match(/[^.!?]+[.!?]+/g);
+  if (!sentences || sentences.length <= 2) return text;
+  return sentences.slice(0, 2).join("").trim();
+}
+
 export function DailyBriefing({ dob, name }: DailyBriefingProps) {
   const { t, i18n } = useTranslation();
+  const [expanded, setExpanded] = useState(false);
   const today = new Date();
   const zodiac = getZodiacFromDOB(dob);
   const lifePath = getLifePath(dob);
@@ -46,10 +55,15 @@ export function DailyBriefing({ dob, name }: DailyBriefingProps) {
   });
 
   const formattedDate = formatDate(today, lang);
+  const preview = horoscope ? getPreview(horoscope) : "";
+  const hasMore = horoscope ? horoscope.length > preview.length : false;
 
   return (
     <div className="space-y-4 animate-fade-up">
-      <div className="card-cosmic rounded-2xl p-6 glow-gold relative overflow-hidden">
+      <button
+        onClick={() => hasMore && setExpanded(!expanded)}
+        className="card-cosmic rounded-2xl p-6 glow-gold relative overflow-hidden w-full text-left transition-all"
+      >
         <div className="animate-shimmer absolute inset-0 pointer-events-none rounded-2xl" />
 
         <div className="flex items-start justify-between mb-4">
@@ -72,13 +86,23 @@ export function DailyBriefing({ dob, name }: DailyBriefingProps) {
           <div className="space-y-3">
             <div className="h-4 bg-muted/30 rounded animate-pulse w-full" />
             <div className="h-4 bg-muted/30 rounded animate-pulse w-full" />
-            <div className="h-4 bg-muted/30 rounded animate-pulse w-11/12" />
             <div className="h-4 bg-muted/30 rounded animate-pulse w-4/5" />
           </div>
         ) : (
-          <p className="text-base text-foreground/90 leading-relaxed font-display">
-            {horoscope}
-          </p>
+          <div>
+            <p className="text-base text-foreground/90 leading-relaxed font-display">
+              {expanded ? horoscope : preview}
+              {!expanded && hasMore && (
+                <span className="text-primary/60">…</span>
+              )}
+            </p>
+            {hasMore && (
+              <div className="flex items-center justify-center gap-1 mt-3 text-xs text-primary/70">
+                <span>{expanded ? t("briefing.showLess") : t("briefing.readMore")}</span>
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} />
+              </div>
+            )}
+          </div>
         )}
 
         {error && !horoscope && (
@@ -87,7 +111,7 @@ export function DailyBriefing({ dob, name }: DailyBriefingProps) {
           </p>
         )}
 
-        <div className="flex items-center gap-2 mt-5 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2 mt-4 text-xs text-muted-foreground">
           <span>{t("briefing.elementSign", { element: zodiac.element })}</span>
           <span className="text-muted-foreground/30">·</span>
           <span className="text-primary/80">{t("briefing.path", { number: lifePath })}</span>
@@ -95,7 +119,7 @@ export function DailyBriefing({ dob, name }: DailyBriefingProps) {
           <span>戌 {chineseZodiac}</span>
           <ChevronRight className="w-3 h-3 ml-auto text-muted-foreground/40" />
         </div>
-      </div>
+      </button>
 
       <div className="grid grid-cols-2 gap-3">
         <div className="card-cosmic rounded-2xl p-4">
