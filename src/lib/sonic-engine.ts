@@ -172,13 +172,12 @@ export function initEngine() {
 
   // ── RIM / CLAP — organic perc on beats 2 and 4 ──
   rimSynth = new Tone.MetalSynth({
-    frequency: 300,
     envelope: { attack: 0.001, decay: 0.12, release: 0.05 },
     harmonicity: 0.1,
     modulationIndex: 8,
     resonance: 2000,
     octaves: 0.5,
-  }).connect(new Tone.Gain(0.08).connect(masterGain));
+  } as any).connect(new Tone.Gain(0.08).connect(masterGain));
 
   rimSeq = new Tone.Sequence(
     (time, vel) => {
