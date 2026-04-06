@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +8,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 
 export function OnboardingModal({ open }: { open: boolean }) {
+  const { t } = useTranslation();
   const { saveProfile } = useAuth();
   const [name, setName] = useState("");
   const [dob, setDob] = useState("");
@@ -40,32 +42,32 @@ export function OnboardingModal({ open }: { open: boolean }) {
       >
         <DialogHeader>
           <DialogTitle className="font-display text-xl text-foreground text-center">
-            Complete Your Blueprint
+            {t("onboarding.title")}
           </DialogTitle>
           <p className="text-sm text-muted-foreground text-center mt-2">
-            To decode your cosmic identity, we need your birth details.
+            {t("onboarding.subtitle")}
           </p>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <div>
             <Label htmlFor="name" className="text-sm text-muted-foreground">
-              Full Birth Name
+              {t("onboarding.fullName")}
             </Label>
             <Input
               id="name"
-              placeholder="Your full birth name"
+              placeholder={t("onboarding.fullNamePlaceholder")}
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="bg-muted/30 border-copper text-foreground placeholder:text-muted-foreground/50 mt-1"
               required
             />
             <p className="text-[10px] text-muted-foreground/60 mt-1">
-              Used for numerology — expression, soul urge, and personality numbers
+              {t("onboarding.fullNameHint")}
             </p>
           </div>
           <div>
             <Label htmlFor="dob" className="text-sm text-muted-foreground">
-              Date of Birth
+              {t("onboarding.dob")}
             </Label>
             <Input
               id="dob"
@@ -78,22 +80,22 @@ export function OnboardingModal({ open }: { open: boolean }) {
           </div>
           <div>
             <Label htmlFor="birthPlace" className="text-sm text-muted-foreground">
-              Place of Birth
+              {t("onboarding.birthPlace")}
             </Label>
             <Input
               id="birthPlace"
-              placeholder="City, Country"
+              placeholder={t("onboarding.birthPlacePlaceholder")}
               value={birthPlace}
               onChange={(e) => setBirthPlace(e.target.value)}
               className="bg-muted/30 border-copper text-foreground placeholder:text-muted-foreground/50 mt-1"
             />
             <p className="text-[10px] text-muted-foreground/60 mt-1">
-              Needed for accurate house placements in your birth chart
+              {t("onboarding.birthPlaceHint")}
             </p>
           </div>
           <div>
             <Label htmlFor="birthTime" className="text-sm text-muted-foreground">
-              Time of Birth
+              {t("onboarding.birthTime")}
             </Label>
             <Input
               id="birthTime"
@@ -103,7 +105,7 @@ export function OnboardingModal({ open }: { open: boolean }) {
               className="bg-muted/30 border-copper text-foreground mt-1"
             />
             <p className="text-[10px] text-muted-foreground/60 mt-1">
-              For rising sign & house calculations — check your birth certificate
+              {t("onboarding.birthTimeHint")}
             </p>
           </div>
           <Button
@@ -111,7 +113,7 @@ export function OnboardingModal({ open }: { open: boolean }) {
             className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-display rounded-xl"
             disabled={loading || !name || !dob}
           >
-            {loading ? "Decoding..." : "Unlock Your Blueprint"}
+            {loading ? t("onboarding.submitting") : t("onboarding.submit")}
           </Button>
         </form>
       </DialogContent>

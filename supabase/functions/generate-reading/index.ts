@@ -26,6 +26,13 @@ serve(async (req) => {
       );
     }
 
+    const lang = context.language || "en";
+    const langInstruction = lang.startsWith("es")
+      ? "IMPORTANT: Write your ENTIRE response in Spanish (Español)."
+      : lang.startsWith("pt")
+      ? "IMPORTANT: Write your ENTIRE response in Brazilian Portuguese (Português Brasileiro)."
+      : "Write your response in English.";
+
     let systemPrompt = "";
     let userPrompt = "";
 
@@ -35,7 +42,8 @@ poetic depth, and genuine spiritual insight. Your voice is warm yet powerful, li
 Your readings are deeply personalized and transformative. Never give generic advice. 
 Weave the querent's specific cosmic data into every sentence.
 Write in second person ("you"). No greeting, no sign-off — just the reading.
-Aim for 4-6 sentences that feel like a personal channeled message.`;
+Aim for 4-6 sentences that feel like a personal channeled message.
+${langInstruction}`;
 
       userPrompt = `Generate today's cosmic horoscope for ${context.name}:
 - Sun Sign: ${context.zodiacSign} (${context.element} element)
@@ -47,7 +55,7 @@ Aim for 4-6 sentences that feel like a personal channeled message.`;
 
 Weave their planetary energy, numerological vibration, and Chinese zodiac wisdom into a single cohesive daily reading. Make it feel deeply personal to THIS specific day and THIS specific person.`;
     } else {
-      systemPrompt = "You are a mystical cosmic guide providing personalized spiritual readings. Be detailed and insightful.";
+      systemPrompt = `You are a mystical cosmic guide providing personalized spiritual readings. Be detailed and insightful. ${langInstruction}`;
       userPrompt = `Generate a ${reading_type} reading with the following context: ${JSON.stringify(context)}`;
     }
 

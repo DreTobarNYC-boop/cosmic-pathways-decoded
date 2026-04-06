@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import {
   MessageCircle,
   Star,
@@ -105,6 +106,7 @@ export default function Index() {
             <span className="text-sm">🌊</span>
             <span className="text-sm font-display font-bold text-foreground">{firstName}</span>
           </div>
+          <LanguageSwitcher />
           {user && (
             <button
               onClick={signOut}
