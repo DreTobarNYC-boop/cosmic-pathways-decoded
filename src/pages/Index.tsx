@@ -29,7 +29,7 @@ const CHAMBERS = [
   { id: "oracle", title: "Oracle", subtitle: "Ask Anything", icon: MessageCircle, accent: "hsl(220, 30%, 62%)", span: "full" as const },
   { id: "stars", title: "Stars", subtitle: "Birth Chart & Horoscopes", icon: Star, accent: "hsl(43, 90%, 67%)" },
   { id: "numbers", title: "Numbers", subtitle: "Numerology Profile", icon: Hash, accent: "hsl(43, 90%, 67%)" },
-  { id: "vault", title: "Sonic Alchemy", subtitle: "Frequencies & Sacred Codes", icon: Music, accent: "hsl(25, 50%, 45%)" },
+  { id: "vault", title: "Sonic Alchemy", subtitle: "Frequencies & Binaural Beats", icon: Music, accent: "hsl(25, 50%, 45%)" },
   { id: "palm", title: "Palm", subtitle: "AI Hand Analysis", icon: Hand, accent: "hsl(280, 40%, 55%)" },
   { id: "maps", title: "Maps", subtitle: "Location Numerology", icon: Map, accent: "hsl(160, 40%, 45%)" },
   { id: "dynasty", title: "Dynasty", subtitle: "Chinese Zodiac", icon: ScrollText, accent: "hsl(0, 60%, 50%)" },

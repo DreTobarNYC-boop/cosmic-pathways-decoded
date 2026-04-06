@@ -13,7 +13,11 @@ import {
   type FrequencyPreset,
 } from "@/lib/sonic-engine";
 
-/* ── Visualizer Canvas ─────────────────────────────────── */
+/* Helper to convert "hsl(h, s%, l%)" to "hsla(h, s%, l%, alpha)" for canvas */
+function hslToHsla(hsl: string, alpha: number): string {
+  return hsl.replace("hsl(", "hsla(").replace(")", `, ${alpha})`);
+}
+
 function Visualizer({ isPlaying, activeColor }: { isPlaying: boolean; activeColor: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<number>(0);
@@ -40,14 +44,14 @@ function Visualizer({ isPlaying, activeColor }: { isPlaying: boolean; activeColo
         const alpha = 0.15 + Math.sin(t + i) * 0.1;
         ctx.beginPath();
         ctx.arc(w / 2, h / 2, radius, 0, Math.PI * 2);
-        ctx.strokeStyle = activeColor.replace(")", ` / ${alpha})`).replace("hsl", "hsla");
+        ctx.strokeStyle = hslToHsla(activeColor, alpha);
         ctx.lineWidth = 2;
         ctx.stroke();
       }
 
       // Central glow
       const grad = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, 60 + Math.sin(t) * 20);
-      grad.addColorStop(0, activeColor.replace(")", " / 0.4)").replace("hsl", "hsla"));
+      grad.addColorStop(0, hslToHsla(activeColor, 0.4));
       grad.addColorStop(1, "transparent");
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, w, h);
@@ -112,7 +116,7 @@ export function VaultChamber({ onBack }: { onBack: () => void }) {
   }, []);
 
   return (
-    <ChamberLayout title="Sonic Alchemy" subtitle="Frequencies & Sacred Codes" onBack={onBack}>
+    <ChamberLayout title="Sonic Alchemy" subtitle="Solfeggio Frequencies & Binaural Beats" onBack={onBack}>
       <div className="space-y-6 mt-2 max-w-lg mx-auto">
         {/* Visualizer */}
         <div className="card-cosmic rounded-2xl p-4 overflow-hidden">
