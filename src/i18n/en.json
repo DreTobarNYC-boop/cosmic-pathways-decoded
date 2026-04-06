@@ -43,7 +43,9 @@
     "path": "Path {{number}}",
     "universalDay": "Universal Day",
     "personalDay": "Personal Day",
-    "errorMessage": "The stars are momentarily obscured. Refresh to try again."
+    "errorMessage": "The stars are momentarily obscured. Refresh to try again.",
+    "readMore": "Read full reading",
+    "showLess": "Show less"
   },
   "schumann": {
     "title": "Schumann Resonance",
