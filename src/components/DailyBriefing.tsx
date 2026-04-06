@@ -10,6 +10,7 @@ import {
 } from "@/lib/daily";
 import { getFallbackHoroscope } from "@/lib/fallbacks";
 import { useCachedReading } from "@/hooks/use-cached-reading";
+import { ChevronRight } from "lucide-react";
 
 interface DailyBriefingProps {
   dob: Date;
@@ -42,34 +43,40 @@ export function DailyBriefing({ dob, name }: DailyBriefingProps) {
   });
 
   return (
-    <div className="space-y-6 animate-fade-up">
-      {/* Hero */}
+    <div className="space-y-4 animate-fade-up">
+      {/* Horoscope Card */}
       <div className="card-cosmic rounded-2xl p-6 glow-gold relative overflow-hidden">
         <div className="animate-shimmer absolute inset-0 pointer-events-none rounded-2xl" />
-        <p className="text-xs text-muted-foreground uppercase tracking-widest mb-1">
-          Daily Cosmic Briefing
-        </p>
-        <p className="text-sm text-muted-foreground mb-4">{formatDate(today)}</p>
 
-        <div className="flex items-center gap-3 mb-4">
-          <span className="text-3xl">{zodiac.symbol}</span>
-          <div>
-            <h2 className="font-display text-lg font-bold text-foreground">
+        {/* Top row: date + zodiac badge */}
+        <div className="flex items-start justify-between mb-4">
+          <p className="text-xs text-muted-foreground uppercase tracking-widest">
+            {formatDate(today)}
+          </p>
+          <div className="flex items-center gap-1.5 bg-muted/40 rounded-full px-3 py-1">
+            <span className="text-sm">{zodiac.symbol}</span>
+            <span className="text-xs font-display font-bold text-primary uppercase tracking-wider">
               {zodiac.sign}
-            </h2>
-            <p className="text-xs text-muted-foreground">{zodiac.element} Sign</p>
+            </span>
           </div>
         </div>
 
+        {/* Section label */}
+        <p className="text-[11px] uppercase tracking-[0.2em] text-primary/80 mb-3">
+          Your Daily Horoscope
+        </p>
+
+        {/* Horoscope body */}
         {isLoading ? (
-          <div className="space-y-2">
-            <div className="h-3 bg-muted/30 rounded animate-pulse w-full" />
-            <div className="h-3 bg-muted/30 rounded animate-pulse w-4/5" />
-            <div className="h-3 bg-muted/30 rounded animate-pulse w-3/5" />
+          <div className="space-y-3">
+            <div className="h-4 bg-muted/30 rounded animate-pulse w-full" />
+            <div className="h-4 bg-muted/30 rounded animate-pulse w-full" />
+            <div className="h-4 bg-muted/30 rounded animate-pulse w-11/12" />
+            <div className="h-4 bg-muted/30 rounded animate-pulse w-4/5" />
           </div>
         ) : (
-          <p className="text-sm text-foreground/80 leading-relaxed font-display italic">
-            "{horoscope}"
+          <p className="text-base text-foreground/90 leading-relaxed font-display">
+            {horoscope}
           </p>
         )}
 
@@ -79,37 +86,34 @@ export function DailyBriefing({ dob, name }: DailyBriefingProps) {
           </p>
         )}
 
-        {/* Cosmic identity strip */}
-        <div className="flex gap-3 mt-5 flex-wrap">
-          <span className="text-xs bg-muted/50 text-muted-foreground px-3 py-1 rounded-full">
-            {zodiac.element} Element
-          </span>
-          <span className="text-xs bg-muted/50 text-muted-foreground px-3 py-1 rounded-full">
-            Life Path {lifePath}
-          </span>
-          <span className="text-xs bg-muted/50 text-muted-foreground px-3 py-1 rounded-full">
-            {chineseZodiac} 🐉
-          </span>
+        {/* Identity strip */}
+        <div className="flex items-center gap-2 mt-5 text-xs text-muted-foreground">
+          <span>{zodiac.element} Sign</span>
+          <span className="text-muted-foreground/30">·</span>
+          <span className="text-primary/80">Path {lifePath}</span>
+          <span className="text-muted-foreground/30">·</span>
+          <span>戌 {chineseZodiac}</span>
+          <ChevronRight className="w-3 h-3 ml-auto text-muted-foreground/40" />
         </div>
       </div>
 
       {/* Daily Numbers */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="card-cosmic rounded-2xl p-4 text-center">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
+        <div className="card-cosmic rounded-2xl p-4">
+          <p className="text-[11px] uppercase tracking-[0.2em] text-primary/70 mb-1">
             Universal Day
           </p>
-          <p className="text-2xl font-display font-bold text-gold">{universalDay}</p>
-          <p className="text-xs text-muted-foreground mt-1">
+          <p className="text-3xl font-display font-bold text-primary">{universalDay}</p>
+          <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
             {UNIVERSAL_DAY_MEANINGS[universalDay]}
           </p>
         </div>
-        <div className="card-cosmic rounded-2xl p-4 text-center">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
+        <div className="card-cosmic rounded-2xl p-4">
+          <p className="text-[11px] uppercase tracking-[0.2em] text-primary/70 mb-1">
             Personal Day
           </p>
-          <p className="text-2xl font-display font-bold text-gold">{personalDay}</p>
-          <p className="text-xs text-muted-foreground mt-1">
+          <p className="text-3xl font-display font-bold text-primary">{personalDay}</p>
+          <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
             {PERSONAL_DAY_MEANINGS[personalDay]}
           </p>
         </div>
