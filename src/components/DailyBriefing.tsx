@@ -3,25 +3,42 @@ import {
   getZodiacFromDOB,
   getLifePath,
   getChineseZodiac,
-  getDailyHoroscope,
   getUniversalDay,
   getPersonalDay,
   UNIVERSAL_DAY_MEANINGS,
   PERSONAL_DAY_MEANINGS,
 } from "@/lib/daily";
+import { useCachedReading } from "@/hooks/use-cached-reading";
 
 interface DailyBriefingProps {
   dob: Date;
+  name: string;
 }
 
-export function DailyBriefing({ dob }: DailyBriefingProps) {
+export function DailyBriefing({ dob, name }: DailyBriefingProps) {
   const today = new Date();
   const zodiac = getZodiacFromDOB(dob);
   const lifePath = getLifePath(dob);
   const chineseZodiac = getChineseZodiac(dob.getFullYear());
-  const horoscope = getDailyHoroscope(zodiac.element, today);
   const universalDay = getUniversalDay(today);
   const personalDay = getPersonalDay(dob, today);
+
+  const dateKey = today.toISOString().split("T")[0];
+
+  const { content: horoscope, isLoading } = useCachedReading({
+    readingType: "daily_horoscope",
+    cacheKey: dateKey,
+    context: {
+      zodiacSign: zodiac.sign,
+      element: zodiac.element,
+      lifePath,
+      chineseZodiac,
+      date: formatDate(today),
+      universalDay,
+      personalDay,
+      name,
+    },
+  });
 
   return (
     <div className="space-y-6 animate-fade-up">
@@ -43,9 +60,17 @@ export function DailyBriefing({ dob }: DailyBriefingProps) {
           </div>
         </div>
 
-        <p className="text-sm text-foreground/80 leading-relaxed font-display italic">
-          "{horoscope}"
-        </p>
+        {isLoading ? (
+          <div className="space-y-2">
+            <div className="h-3 bg-muted/30 rounded animate-pulse w-full" />
+            <div className="h-3 bg-muted/30 rounded animate-pulse w-4/5" />
+            <div className="h-3 bg-muted/30 rounded animate-pulse w-3/5" />
+          </div>
+        ) : (
+          <p className="text-sm text-foreground/80 leading-relaxed font-display italic">
+            "{horoscope || "The cosmos is aligning your reading..."}"
+          </p>
+        )}
 
         {/* Cosmic identity strip */}
         <div className="flex gap-3 mt-5 flex-wrap">

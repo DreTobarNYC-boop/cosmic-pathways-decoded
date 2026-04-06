@@ -14,7 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      cached_readings: {
+        Row: {
+          cache_key: string
+          content: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          reading_type: string
+          user_id: string
+        }
+        Insert: {
+          cache_key: string
+          content: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          reading_type: string
+          user_id: string
+        }
+        Update: {
+          cache_key?: string
+          content?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          reading_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_profiles: {
+        Row: {
+          created_at: string
+          date_of_birth: string
+          full_name: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date_of_birth: string
+          full_name: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date_of_birth?: string
+          full_name?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
