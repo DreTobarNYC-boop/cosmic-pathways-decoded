@@ -116,7 +116,7 @@ export function VaultChamber({ onBack }: { onBack: () => void }) {
   }, []);
 
   return (
-    <ChamberLayout title="Sonic Alchemy" subtitle="Frequencies & Sacred Codes" onBack={onBack}>
+    <ChamberLayout title="Sonic Alchemy" subtitle="Solfeggio Frequencies & Binaural Beats" onBack={onBack}>
       <div className="space-y-6 mt-2 max-w-lg mx-auto">
         {/* Visualizer */}
         <div className="card-cosmic rounded-2xl p-4 overflow-hidden">
