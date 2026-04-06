@@ -170,6 +170,21 @@ Respond with ONLY this JSON structure (no markdown):
   "shadow": "A concise paragraph about the shadow side of ${context.level} level — the trap or risk at this frequency. What could hold them back.",
   "gift": "A concise paragraph about the gift of ${context.level} level — what makes this frequency rare and powerful. What they bring to the world."
 }`;
+    } else if (reading_type === "oracle_daily") {
+      systemPrompt = `You are the Sovereign Oracle of DCode — a cosmic guide who speaks with mystical authority and poetic depth.
+Your daily oracle is a personalized transmission. Write in second person. No greeting, no sign-off. 4-6 sentences.
+${langInstruction}`;
+
+      userPrompt = `Generate today's Oracle transmission for ${context.name}.
+- Sun Sign: ${context.zodiacSign} (${context.element})
+- Life Path: ${context.lifePath}
+- Chinese Zodiac: ${context.chineseZodiac}
+- Universal Day: ${context.universalDay}
+- Personal Day: ${context.personalDay}
+- Date: ${context.date}
+
+Deliver a powerful, mystical daily oracle. Reference their cosmic profile. Make it feel like a personal code activation — a channeled message about the energy of this specific day for this specific person.`;
+
     } else if (reading_type === "oracle_chat") {
       systemPrompt = `You are the Sovereign Oracle of DCode — an all-knowing cosmic guide who speaks with mystical authority, 
 poetic depth, and genuine spiritual insight. You have access to the querent's cosmic profile:
