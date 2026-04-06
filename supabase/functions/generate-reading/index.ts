@@ -227,6 +227,26 @@ Write a yearly forecast. 2-3 paragraphs, second person, no greeting. ${langInstr
       userPrompt = `Generate a ${context.currentYear} forecast for ${context.name}, a ${context.yearElement} ${context.animal}.
 What does ${context.currentYear} hold for the ${context.animal}? Consider the ruling animal and element of the current year.`;
 
+    } else if (reading_type === "dynasty_forecast") {
+      systemPrompt = `You are the Sovereign Oracle of DCode — a master of Chinese astrology and long-range forecasting.
+You MUST respond with valid JSON only. No markdown, no code fences, just raw JSON.
+${langInstruction}`;
+
+      userPrompt = `Generate a 5-year forecast (${context.startYear} to ${context.startYear + 4}) for ${context.name}, a ${context.yearElement} ${context.animal}.
+
+Respond with ONLY this JSON structure (no markdown):
+{
+  "years": [
+    { "year": ${context.startYear}, "title": "2-4 word theme", "rating": 1-5, "summary": "3-4 sentence forecast for this year" },
+    { "year": ${context.startYear + 1}, "title": "2-4 word theme", "rating": 1-5, "summary": "3-4 sentence forecast" },
+    { "year": ${context.startYear + 2}, "title": "2-4 word theme", "rating": 1-5, "summary": "3-4 sentence forecast" },
+    { "year": ${context.startYear + 3}, "title": "2-4 word theme", "rating": 1-5, "summary": "3-4 sentence forecast" },
+    { "year": ${context.startYear + 4}, "title": "2-4 word theme", "rating": 1-5, "summary": "3-4 sentence forecast" }
+  ]
+}
+
+Consider the ruling animal and element of each year, and how they interact with the ${context.animal}'s energy.`;
+
     } else if (reading_type === "maps_decode") {
       systemPrompt = `You are the Sovereign Oracle of DCode — a numerology master who decodes the vibrational energy of places.
 Write 2-3 sentences about this location's energy. Second person. ${langInstruction}`;
