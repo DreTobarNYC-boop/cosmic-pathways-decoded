@@ -67,15 +67,6 @@ function Visualizer({ isPlaying, activeColor }: { isPlaying: boolean; activeColo
   );
 }
 
-/* ── Grabovoi Sacred Codes ─────────────────────────────── */
-const SACRED_CODES = [
-  { code: "520 741 8", purpose: "Unexpected Money" },
-  { code: "888 412 1289018", purpose: "Abundance" },
-  { code: "5207418", purpose: "Financial Flow" },
-  { code: "419 488 71", purpose: "Self-Healing" },
-  { code: "888 891 563", purpose: "Inner Peace" },
-  { code: "491 312 818", purpose: "Love & Soulmate" },
-];
 
 /* ── Main Component ────────────────────────────────────── */
 export function VaultChamber({ onBack }: { onBack: () => void }) {
