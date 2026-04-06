@@ -14,7 +14,6 @@ import {
 import { BentoCard } from "@/components/BentoCard";
 import { DailyBriefing } from "@/components/DailyBriefing";
 import { OnboardingModal } from "@/components/OnboardingModal";
-import { AuthModal } from "@/components/AuthModal";
 import { useAuth } from "@/hooks/use-auth";
 import { OracleChamber } from "@/components/chambers/OracleChamber";
 import { StarsChamber } from "@/components/chambers/StarsChamber";
@@ -51,9 +50,8 @@ const CHAMBER_COMPONENTS: Record<string, React.ComponentType<{ onBack: () => voi
 };
 
 export default function Index() {
-  const { user, profile, isLoading, signOut } = useAuth();
+  const { profile, isLoading, signOut, user } = useAuth();
   const [activeChamber, setActiveChamber] = useState<string | null>(null);
-  const [showAuth, setShowAuth] = useState(false);
 
   // Loading state
   if (isLoading) {
@@ -67,28 +65,7 @@ export default function Index() {
     );
   }
 
-  // Not authenticated
-  if (!user) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-5">
-        <div className="text-center space-y-6 max-w-sm animate-fade-up">
-          <h1 className="font-display text-4xl font-bold text-foreground">DCode</h1>
-          <p className="text-muted-foreground text-sm leading-relaxed">
-            Decode your cosmic blueprint. Astrology, numerology, frequencies, and AI-powered guidance — all in one place.
-          </p>
-          <button
-            onClick={() => setShowAuth(true)}
-            className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-display rounded-xl py-3 text-sm font-bold transition-colors"
-          >
-            Enter The Chambers
-          </button>
-          <AuthModal open={showAuth} onClose={() => setShowAuth(false)} />
-        </div>
-      </div>
-    );
-  }
-
-  // Authenticated but no profile — onboarding
+  // No profile yet — show onboarding (no auth required)
   if (!profile) {
     return (
       <div className="min-h-screen bg-background">
@@ -119,13 +96,15 @@ export default function Index() {
             Welcome back, {profile.fullName.split(" ")[0]}
           </p>
         </div>
-        <button
-          onClick={signOut}
-          className="w-8 h-8 rounded-lg bg-muted/30 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-          title="Sign out"
-        >
-          <LogOut className="w-4 h-4" />
-        </button>
+        {user && (
+          <button
+            onClick={signOut}
+            className="w-8 h-8 rounded-lg bg-muted/30 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+            title="Sign out"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
+        )}
       </header>
 
       <main className="px-5 pb-10 space-y-6 max-w-lg mx-auto">

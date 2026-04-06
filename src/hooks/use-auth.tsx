@@ -8,7 +8,9 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 
-interface UserProfile {
+const GUEST_PROFILE_KEY = "dcode_guest_profile";
+
+export interface UserProfile {
   fullName: string;
   dateOfBirth: string; // YYYY-MM-DD
   birthPlace: string | null;
@@ -20,10 +22,12 @@ interface AuthContextValue {
   session: Session | null;
   profile: UserProfile | null;
   isLoading: boolean;
+  isGuest: boolean;
   signUp: (email: string, password: string) => Promise<{ error: string | null }>;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   saveProfile: (data: UserProfile) => Promise<{ error: string | null }>;
+  saveGuestProfile: (data: UserProfile) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -34,13 +38,23 @@ export function useAuth() {
   return ctx;
 }
 
+function loadGuestProfile(): UserProfile | null {
+  try {
+    const raw = localStorage.getItem(GUEST_PROFILE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as UserProfile;
+  } catch {
+    return null;
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Listen for auth changes — set up BEFORE getSession
+  // Listen for auth changes
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, newSession) => {
@@ -48,11 +62,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(newSession?.user ?? null);
 
         if (newSession?.user) {
-          // Defer profile fetch to avoid Supabase deadlock
           setTimeout(() => fetchProfile(newSession.user.id), 0);
-        } else {
-          setProfile(null);
         }
+        // Don't clear profile on logout — guest profile persists
       }
     );
 
@@ -61,6 +73,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(s?.user ?? null);
       if (s?.user) {
         fetchProfile(s.user.id);
+      } else {
+        // Load guest profile from localStorage
+        const guest = loadGuestProfile();
+        if (guest) setProfile(guest);
       }
       setIsLoading(false);
     });
@@ -83,8 +99,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         birthTime: (data as any).birth_time ?? null,
       });
     } else {
-      setProfile(null);
+      // Authenticated but no DB profile — check for guest profile to migrate
+      const guest = loadGuestProfile();
+      if (guest) {
+        await saveProfile(guest);
+      } else {
+        setProfile(null);
+      }
     }
+  }
+
+  function saveGuestProfile(data: UserProfile) {
+    localStorage.setItem(GUEST_PROFILE_KEY, JSON.stringify(data));
+    setProfile(data);
   }
 
   async function signUp(email: string, password: string) {
@@ -99,11 +126,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function signOut() {
     await supabase.auth.signOut();
-    setProfile(null);
+    setProfile(loadGuestProfile());
   }
 
   async function saveProfile(data: UserProfile) {
-    if (!user) return { error: "Not authenticated" };
+    if (!user) {
+      // Guest mode — save locally
+      saveGuestProfile(data);
+      return { error: null };
+    }
 
     const { error } = await supabase.from("user_profiles").upsert(
       [{
@@ -118,13 +149,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (!error) {
       setProfile(data);
+      // Clear guest profile since it's now in the DB
+      localStorage.removeItem(GUEST_PROFILE_KEY);
     }
     return { error: error?.message ?? null };
   }
 
   return (
     <AuthContext.Provider
-      value={{ user, session, profile, isLoading, signUp, signIn, signOut, saveProfile }}
+      value={{
+        user,
+        session,
+        profile,
+        isLoading,
+        isGuest: !user,
+        signUp,
+        signIn,
+        signOut,
+        saveProfile,
+        saveGuestProfile,
+      }}
     >
       {children}
     </AuthContext.Provider>
