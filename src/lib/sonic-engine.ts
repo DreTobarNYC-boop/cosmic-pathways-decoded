@@ -55,8 +55,6 @@ export function initEngine() {
   lfo = new Tone.LFO({ frequency: 0.08, min: 800, max: 3000 }).connect(filter.frequency);
 }
 
-// Polysyth import helper
-const { PolySynth } = Tone;
 
 export function play(hz: number, binauralOffset = 4) {
   if (!synth || !gainNode) {
