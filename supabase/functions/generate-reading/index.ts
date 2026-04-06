@@ -116,6 +116,37 @@ Respond with ONLY this JSON structure (no markdown):
   "reading": "A detailed 3-4 paragraph ${label}. Make it deeply personal and transformative.",
   "cosmicAdvice": "A single powerful sentence of wisdom."
 }`;
+    } else if (reading_type === "numbers_today") {
+      systemPrompt = `You are the Sovereign Oracle of DCode — a numerology master who channels the vibration of numbers with mystical authority.
+Your readings are poetic, personal, and transformative. Write in second person. No greeting, no sign-off.
+Aim for 3-5 sentences. ${langInstruction}`;
+
+      userPrompt = `Generate today's numerology frequency reading for ${context.name}.
+- Life Path: ${context.lifePath} (${context.lifePathName})
+- Personal Day: ${context.personalDay}
+- Universal Day: ${context.universalDay}
+- Personal Month: ${context.personalMonth}
+- Personal Year: ${context.personalYear}
+- Sun Sign: ${context.zodiacSign}
+- Date: ${context.date}
+
+Weave their personal day number and universal day energy into a single cohesive reading about today's numerological vibration. Make it feel like a channeled message.`;
+
+    } else if (reading_type === "numbers_life_path") {
+      systemPrompt = `You are the Sovereign Oracle of DCode — a numerology master who reveals the deep significance of Life Path numbers.
+Your readings are profound, poetic, and transformative. Write in second person. No greeting, no sign-off.
+Aim for 2-3 paragraphs. ${langInstruction}`;
+
+      userPrompt = `Generate a Life Path reading for ${context.name}.
+- Life Path: ${context.lifePath} (${context.lifePathName})
+- Expression Number: ${context.expressionNum}
+- Soul Urge: ${context.soulUrgeNum}
+- Personality: ${context.personalityNum}
+- Sun Sign: ${context.zodiacSign} (${context.element})
+- Chinese Zodiac: ${context.chineseZodiac}
+
+Reveal the deep significance of Life Path ${context.lifePath} — their soul's purpose, innate gifts, core challenges, and ultimate destiny. Weave in how their expression and soul urge numbers create a unique harmonic with their life path.`;
+
     } else if (reading_type === "frequency_reading") {
       systemPrompt = `You are the Sovereign Oracle of DCode — a consciousness guide who interprets the Hawkins Map of Consciousness with profound mystical insight.
 You speak with authority about energy fields, consciousness calibration, and spiritual evolution.
