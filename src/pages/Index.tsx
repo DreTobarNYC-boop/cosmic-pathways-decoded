@@ -25,16 +25,20 @@ import { DynastyChamber } from "@/components/chambers/DynastyChamber";
 import { SanctumChamber } from "@/components/chambers/SanctumChamber";
 import { FrequencyChamber } from "@/components/chambers/FrequencyChamber";
 
-const CHAMBERS = [
+const FEATURED_CHAMBERS = [
   { id: "oracle", title: "Oracle", subtitle: "Ask Anything", icon: MessageCircle, accent: "hsl(220, 30%, 62%)", span: "full" as const },
+  { id: "palm", title: "Palm", subtitle: "AI Hand Analysis", icon: Hand, accent: "hsl(280, 40%, 55%)", span: "full" as const },
+];
+
+const SPOTLIGHT_CHAMBER = { id: "frequency", title: "Frequency Scanner", subtitle: "Consciousness Level", icon: Activity, accent: "hsl(170, 50%, 45%)" };
+
+const CHAMBERS = [
   { id: "stars", title: "Stars", subtitle: "Birth Chart & Horoscopes", icon: Star, accent: "hsl(43, 90%, 67%)" },
   { id: "numbers", title: "Numbers", subtitle: "Numerology Profile", icon: Hash, accent: "hsl(43, 90%, 67%)" },
   { id: "vault", title: "Sonic Alchemy", subtitle: "Frequencies & Binaural Beats", icon: Music, accent: "hsl(25, 50%, 45%)" },
-  { id: "palm", title: "Palm", subtitle: "AI Hand Analysis", icon: Hand, accent: "hsl(280, 40%, 55%)" },
   { id: "maps", title: "Maps", subtitle: "Location Numerology", icon: Map, accent: "hsl(160, 40%, 45%)" },
   { id: "dynasty", title: "Dynasty", subtitle: "Chinese Zodiac", icon: ScrollText, accent: "hsl(0, 60%, 50%)" },
   { id: "sanctum", title: "Sanctum", subtitle: "Private Journal", icon: Lock, accent: "hsl(200, 30%, 50%)" },
-  { id: "frequency", title: "Frequency Scanner", subtitle: "Consciousness Level", icon: Activity, accent: "hsl(170, 50%, 45%)" },
 ];
 
 const CHAMBER_COMPONENTS: Record<string, React.ComponentType<{ onBack: () => void }>> = {
