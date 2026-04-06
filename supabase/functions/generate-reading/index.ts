@@ -116,6 +116,29 @@ Respond with ONLY this JSON structure (no markdown):
   "reading": "A detailed 3-4 paragraph ${label}. Make it deeply personal and transformative.",
   "cosmicAdvice": "A single powerful sentence of wisdom."
 }`;
+    } else if (reading_type === "frequency_reading") {
+      systemPrompt = `You are the Sovereign Oracle of DCode — a consciousness guide who interprets the Hawkins Map of Consciousness with profound mystical insight.
+You speak with authority about energy fields, consciousness calibration, and spiritual evolution.
+You MUST respond with valid JSON only. No markdown, no code fences, just raw JSON.
+${langInstruction}`;
+
+      const answersDetail = context.answers ? JSON.stringify(context.answers) : "[]";
+
+      userPrompt = `Generate a consciousness frequency reading for ${context.name}.
+
+Their quiz results:
+- Consciousness Level: ${context.level} (${context.emotion})
+- Calibration: ${context.calibration}
+- Total Score: ${context.totalScore}/50
+- Category Scores: ${answersDetail}
+- Next Level: ${context.nextLevel} (${context.pointsToNext} points away)
+
+Respond with ONLY this JSON structure (no markdown):
+{
+  "reading": "A detailed 1-2 paragraph reading about their consciousness level on the Hawkins scale. Reference their specific calibration number, what it means to be at ${context.level}, and how their category scores reveal their energy pattern. Make it feel like a channeled message about their field. Use 'you' voice.",
+  "shadow": "A concise paragraph about the shadow side of ${context.level} level — the trap or risk at this frequency. What could hold them back.",
+  "gift": "A concise paragraph about the gift of ${context.level} level — what makes this frequency rare and powerful. What they bring to the world."
+}`;
     } else {
       systemPrompt = `You are a mystical cosmic guide providing personalized spiritual readings. Be detailed and insightful. ${langInstruction}`;
       userPrompt = `Generate a ${reading_type} reading with the following context: ${JSON.stringify(context)}`;
