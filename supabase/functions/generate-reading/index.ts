@@ -12,9 +12,9 @@ serve(async (req) => {
   }
 
   try {
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) {
-      throw new Error("GEMINI_API_KEY is not configured");
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      throw new Error("LOVABLE_API_KEY is not configured");
     }
 
     const { reading_type, context } = await req.json();
@@ -26,17 +26,18 @@ serve(async (req) => {
       );
     }
 
-    // Build prompt based on reading type
     let systemPrompt = "";
     let userPrompt = "";
 
     if (reading_type === "daily_horoscope") {
-      systemPrompt = `You are the Sovereign Oracle of the 36 Chambers — a cosmic guide who speaks with mystical authority, 
-poetic depth, and genuine spiritual insight. Your readings are deeply personalized and transformative. 
-Never give generic advice. Weave the querent's specific cosmic data into every response.
-Keep your response to 2-3 sentences — potent, poetic, and personal.`;
+      systemPrompt = `You are the Sovereign Oracle of DCode — a cosmic guide who speaks with mystical authority, 
+poetic depth, and genuine spiritual insight. Your voice is warm yet powerful, like a wise mentor who sees through the veil.
+Your readings are deeply personalized and transformative. Never give generic advice. 
+Weave the querent's specific cosmic data into every sentence.
+Write in second person ("you"). No greeting, no sign-off — just the reading.
+Aim for 4-6 sentences that feel like a personal channeled message.`;
 
-      userPrompt = `Generate today's cosmic briefing horoscope for:
+      userPrompt = `Generate today's cosmic horoscope for ${context.name}:
 - Sun Sign: ${context.zodiacSign} (${context.element} element)
 - Life Path Number: ${context.lifePath}
 - Chinese Zodiac: ${context.chineseZodiac}
@@ -44,32 +45,44 @@ Keep your response to 2-3 sentences — potent, poetic, and personal.`;
 - Universal Day Number: ${context.universalDay}
 - Personal Day Number: ${context.personalDay}
 
-Weave their planetary energy, numerological vibration, and Chinese zodiac wisdom into a single cohesive daily reading.`;
+Weave their planetary energy, numerological vibration, and Chinese zodiac wisdom into a single cohesive daily reading. Make it feel deeply personal to THIS specific day and THIS specific person.`;
     } else {
-      systemPrompt = "You are a mystical cosmic guide providing personalized spiritual readings.";
+      systemPrompt = "You are a mystical cosmic guide providing personalized spiritual readings. Be detailed and insightful.";
       userPrompt = `Generate a ${reading_type} reading with the following context: ${JSON.stringify(context)}`;
     }
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            { role: "user", parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }] },
-          ],
-          generationConfig: {
-            temperature: 0.9,
-            maxOutputTokens: 500,
-          },
-        }),
-      }
-    );
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-3-flash-preview",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        temperature: 0.9,
+        max_tokens: 600,
+      }),
+    });
 
     if (!response.ok) {
+      if (response.status === 429) {
+        return new Response(
+          JSON.stringify({ error: "Rate limited. Please try again in a moment." }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({ error: "AI credits exhausted. Please add funds." }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
       const errorText = await response.text();
-      console.error("Gemini API error:", response.status, errorText);
+      console.error("AI gateway error:", response.status, errorText);
       return new Response(
         JSON.stringify({ error: "AI generation failed", details: errorText }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -78,7 +91,7 @@ Weave their planetary energy, numerological vibration, and Chinese zodiac wisdom
 
     const data = await response.json();
     const content =
-      data.candidates?.[0]?.content?.parts?.[0]?.text || "The stars are silent at this moment. Try again shortly.";
+      data.choices?.[0]?.message?.content || "The stars are silent at this moment. Try again shortly.";
 
     return new Response(
       JSON.stringify({ content }),
