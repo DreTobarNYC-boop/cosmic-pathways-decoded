@@ -511,7 +511,7 @@ function CompatibilityTab({ lifePath }: { lifePath: number }) {
           </div>
 
           <div>
-            <p className="text-xs font-semibold text-rose-400 mb-2">✦ Growth Matches</p>
+            <p className="text-xs font-semibold text-destructive mb-2">✦ Growth Matches</p>
             <div className="flex gap-2 flex-wrap">
               {compat.challenge.map(n => (
                 <NumberCircle key={n} value={n} color="rose" size="sm" />
