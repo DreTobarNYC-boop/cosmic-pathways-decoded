@@ -49,6 +49,8 @@ ${langInstruction}`;
 - Sun Sign: ${context.zodiacSign} (${context.element} element)
 - Life Path Number: ${context.lifePath}
 - Chinese Zodiac: ${context.chineseZodiac}
+- Birth Place: ${context.birthPlace || "Unknown"}
+- Birth Time: ${context.birthTime || "Unknown"}
 - Date: ${context.date}
 - Universal Day Number: ${context.universalDay}
 - Personal Day Number: ${context.personalDay}
