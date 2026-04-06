@@ -117,5 +117,26 @@
     "11": "Intuición elevada — confía en tus visiones",
     "22": "Manifiesta tus ambiciones más grandes hoy",
     "33": "Tu compasión transforma a quienes te rodean"
+  },
+  "palm": {
+    "title": "Palma",
+    "subtitle": "Análisis de Mano con IA",
+    "scanTitle": "Escanea Tu Palma",
+    "scanInstructions": "Coloca tu mano dominante plana, dedos separados, con buena iluminación. La IA analizará las líneas de tu palma, montes y forma de la mano.",
+    "takePhoto": "Tomar Foto",
+    "uploadPhoto": "Subir Foto",
+    "tipsTitle": "Consejos para Mejores Resultados",
+    "tip1": "Usa tu mano dominante (derecha si eres diestro)",
+    "tip2": "Separa los dedos de forma natural — no los fuerces",
+    "tip3": "Asegura luz brillante y pareja sin sombras",
+    "tip4": "Mantén tu mano plana con la palma hacia la cámara",
+    "retake": "Retomar",
+    "analyze": "Analizar Palma",
+    "analyzing": "Leyendo Tus Líneas...",
+    "analyzingSubtext": "El Oráculo está trazando tu mapa de vida a través de las líneas de tu palma",
+    "yourReading": "Tu Lectura de Palma",
+    "poweredByAI": "Impulsado por Visión IA",
+    "newScan": "Escanear Otra Palma",
+    "cameraError": "No se pudo acceder a la cámara. Permite los permisos de cámara o sube una foto."
   }
 }
