@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   formatDate,
@@ -10,11 +9,12 @@ import {
 } from "@/lib/daily";
 import { getFallbackHoroscope } from "@/lib/fallbacks";
 import { useCachedReading } from "@/hooks/use-cached-reading";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 
 interface DailyBriefingProps {
   dob: Date;
   name: string;
+  onOpenStars?: () => void;
 }
 
 /** Truncate to roughly the first 2-3 sentences */
@@ -24,9 +24,8 @@ function getPreview(text: string): string {
   return sentences.slice(0, 2).join("").trim();
 }
 
-export function DailyBriefing({ dob, name }: DailyBriefingProps) {
+export function DailyBriefing({ dob, name, onOpenStars }: DailyBriefingProps) {
   const { t, i18n } = useTranslation();
-  const [expanded, setExpanded] = useState(false);
   const today = new Date();
   const zodiac = getZodiacFromDOB(dob);
   const lifePath = getLifePath(dob);
@@ -56,12 +55,11 @@ export function DailyBriefing({ dob, name }: DailyBriefingProps) {
 
   const formattedDate = formatDate(today, lang);
   const preview = horoscope ? getPreview(horoscope) : "";
-  const hasMore = horoscope ? horoscope.length > preview.length : false;
 
   return (
     <div className="space-y-4 animate-fade-up">
       <button
-        onClick={() => hasMore && setExpanded(!expanded)}
+        onClick={onOpenStars}
         className="card-cosmic rounded-2xl p-6 glow-gold relative overflow-hidden w-full text-left transition-all"
       >
         <div className="animate-shimmer absolute inset-0 pointer-events-none rounded-2xl" />
@@ -91,17 +89,15 @@ export function DailyBriefing({ dob, name }: DailyBriefingProps) {
         ) : (
           <div>
             <p className="text-base text-foreground/90 leading-relaxed font-display">
-              {expanded ? horoscope : preview}
-              {!expanded && hasMore && (
+              {preview}
+              {horoscope && horoscope.length > preview.length && (
                 <span className="text-primary/60">…</span>
               )}
             </p>
-            {hasMore && (
-              <div className="flex items-center justify-center gap-1 mt-3 text-xs text-primary/70">
-                <span>{expanded ? t("briefing.showLess") : t("briefing.readMore")}</span>
-                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${expanded ? "rotate-180" : ""}`} />
-              </div>
-            )}
+            <div className="flex items-center justify-center gap-1 mt-3 text-xs text-primary/70">
+              <span>{t("briefing.readMore")}</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </div>
           </div>
         )}
 
