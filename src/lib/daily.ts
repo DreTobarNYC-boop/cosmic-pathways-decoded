@@ -112,8 +112,16 @@ export const PERSONAL_DAY_MEANINGS: Record<number, string> = {
   33: "Your compassion transforms those around you",
 };
 
-export function formatDate(date: Date = new Date()): string {
-  return date.toLocaleDateString('en-US', {
+const LOCALE_MAP: Record<string, string> = {
+  en: "en-US",
+  es: "es-ES",
+  "pt-BR": "pt-BR",
+  pt: "pt-BR",
+};
+
+export function formatDate(date: Date = new Date(), lang?: string): string {
+  const locale = lang ? (LOCALE_MAP[lang] || lang) : "en-US";
+  return date.toLocaleDateString(locale, {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
