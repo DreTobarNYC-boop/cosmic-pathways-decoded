@@ -46,13 +46,10 @@ export function initEngine() {
   }).connect(gainNode);
 
   // Ambient pad — detuned triangle waves for warmth
-  padSynth = new PolySynth(Tone.Synth, {
+  padSynth = new Tone.PolySynth(Tone.Synth, {
     maxPolyphony: 4,
-    voice: Tone.Synth,
-    options: {
-      oscillator: { type: "triangle" },
-      envelope: { attack: 4, decay: 1, sustain: 0.6, release: 5 },
-    },
+    oscillator: { type: "triangle" } as any,
+    envelope: { attack: 4, decay: 1, sustain: 0.6, release: 5 },
   }).connect(new Tone.Gain(0.15).connect(filter));
 
   // Subtle LFO on filter for organic movement
