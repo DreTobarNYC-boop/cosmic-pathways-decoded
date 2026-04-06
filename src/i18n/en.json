@@ -90,7 +90,7 @@
   },
   "chamberPages": {
     "stars": {
-      "title": "Stars",
+      "title": "The Stars",
       "subtitle": "Birth Chart & Horoscopes",
       "placeholder": "The Stars chamber is being aligned. Birth chart readings coming soon."
     },
@@ -104,6 +104,23 @@
       "subtitle": "Private Journal",
       "placeholder": "Your encrypted private journal. Coming soon."
     }
+  },
+  "stars": {
+    "tabs": {
+      "birthChart": "Birth Chart",
+      "today": "Today",
+      "monthly": "Monthly",
+      "yearly": "{{year}}",
+      "love": "Love",
+      "career": "Career"
+    },
+    "consulting": "Consulting the stars...",
+    "noReading": "Unable to channel the stars right now. Try again shortly.",
+    "cosmicAdvice": "COSMIC ADVICE",
+    "luckyNumber": "LUCKY #",
+    "powerColor": "POWER COLOR",
+    "sun": "SUN",
+    "affirmation": "TODAY'S AFFIRMATION"
   },
   "universalDayMeanings": {
     "1": "New beginnings & initiative",

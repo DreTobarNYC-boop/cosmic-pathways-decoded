@@ -90,20 +90,37 @@
   },
   "chamberPages": {
     "stars": {
-      "title": "Estrellas",
+      "title": "Las Estrellas",
       "subtitle": "Carta Natal y Horóscopos",
-      "placeholder": "La cámara de las Estrellas se está alineando. Lecturas de carta natal próximamente."
+      "placeholder": "La cámara de las Estrellas se está alineando."
     },
     "numbers": {
       "title": "Números",
       "subtitle": "Perfil Numerológico",
-      "placeholder": "La cámara de los Números está calculando. Perfil numerológico completo próximamente."
+      "placeholder": "La cámara de los Números está calculando."
     },
     "sanctum": {
       "title": "Santuario",
       "subtitle": "Diario Privado",
       "placeholder": "Tu diario privado encriptado. Próximamente."
     }
+  },
+  "stars": {
+    "tabs": {
+      "birthChart": "Carta Natal",
+      "today": "Hoy",
+      "monthly": "Mensual",
+      "yearly": "{{year}}",
+      "love": "Amor",
+      "career": "Carrera"
+    },
+    "consulting": "Consultando las estrellas...",
+    "noReading": "No se pudo canalizar las estrellas. Intenta de nuevo.",
+    "cosmicAdvice": "CONSEJO CÓSMICO",
+    "luckyNumber": "NÚMERO",
+    "powerColor": "COLOR",
+    "sun": "SOL",
+    "affirmation": "AFIRMACIÓN DEL DÍA"
   },
   "universalDayMeanings": {
     "1": "Nuevos comienzos e iniciativa",
