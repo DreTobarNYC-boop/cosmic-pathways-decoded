@@ -115,7 +115,34 @@ export default function Index() {
         {/* Daily Briefing */}
         <DailyBriefing dob={dob} name={profile.fullName} />
 
-        {/* Chamber Grid */}
+        {/* Featured Chambers — Oracle & Palm */}
+        <div className="space-y-3">
+          {FEATURED_CHAMBERS.map((chamber) => (
+            <BentoCard
+              key={chamber.id}
+              title={chamber.title}
+              subtitle={chamber.subtitle}
+              icon={chamber.icon}
+              accentColor={chamber.accent}
+              span="full"
+              onClick={() => setActiveChamber(chamber.id)}
+            />
+          ))}
+        </div>
+
+        {/* Frequency Scanner spotlight */}
+        <div>
+          <BentoCard
+            title={SPOTLIGHT_CHAMBER.title}
+            subtitle={SPOTLIGHT_CHAMBER.subtitle}
+            icon={SPOTLIGHT_CHAMBER.icon}
+            accentColor={SPOTLIGHT_CHAMBER.accent}
+            span="full"
+            onClick={() => setActiveChamber(SPOTLIGHT_CHAMBER.id)}
+          />
+        </div>
+
+        {/* Remaining Chambers */}
         <div>
           <h2 className="font-display text-sm uppercase tracking-widest text-muted-foreground mb-3">
             The Chambers
@@ -128,7 +155,6 @@ export default function Index() {
                 subtitle={chamber.subtitle}
                 icon={chamber.icon}
                 accentColor={chamber.accent}
-                span={chamber.span}
                 onClick={() => setActiveChamber(chamber.id)}
               />
             ))}
