@@ -1,0 +1,121 @@
+{
+  "app": {
+    "name": "DCode",
+    "loading": "Carregando..."
+  },
+  "header": {
+    "signOut": "Sair"
+  },
+  "onboarding": {
+    "title": "Complete Seu Mapa Cósmico",
+    "subtitle": "Para decodificar sua identidade cósmica, precisamos dos seus dados de nascimento.",
+    "fullName": "Nome Completo de Nascimento",
+    "fullNamePlaceholder": "Seu nome completo de nascimento",
+    "fullNameHint": "Usado para numerologia — números de expressão, desejo da alma e personalidade",
+    "dob": "Data de Nascimento",
+    "birthPlace": "Local de Nascimento",
+    "birthPlacePlaceholder": "Cidade, País",
+    "birthPlaceHint": "Necessário para posições precisas das casas no seu mapa natal",
+    "birthTime": "Hora de Nascimento",
+    "birthTimeHint": "Para ascendente e cálculos de casas — verifique sua certidão de nascimento",
+    "submit": "Desbloqueie Seu Mapa Cósmico",
+    "submitting": "Decodificando..."
+  },
+  "auth": {
+    "signUpTitle": "Entre Nas Câmaras",
+    "signInTitle": "Bem-Vindo de Volta",
+    "signUpSubtitle": "Crie sua conta para desbloquear seu mapa cósmico.",
+    "signInSubtitle": "Faça login para acessar suas câmaras.",
+    "email": "E-mail",
+    "emailPlaceholder": "voce@exemplo.com",
+    "password": "Senha",
+    "createAccount": "Criar Conta",
+    "signIn": "Entrar",
+    "alreadyHaveAccount": "Já tem uma conta?",
+    "needAccount": "Precisa de uma conta?",
+    "signInLink": "Faça login",
+    "signUpLink": "Cadastre-se",
+    "accountCreated": "Conta criada! Verifique seu e-mail para confirmar."
+  },
+  "briefing": {
+    "yourDailyHoroscope": "Seu Horóscopo Diário",
+    "elementSign": "Signo de {{element}}",
+    "path": "Caminho {{number}}",
+    "universalDay": "Dia Universal",
+    "personalDay": "Dia Pessoal",
+    "errorMessage": "As estrelas estão momentaneamente ocultas. Atualize para tentar novamente."
+  },
+  "schumann": {
+    "title": "Ressonância Schumann",
+    "live": "Ao Vivo",
+    "baseFrequency": "Frequência Base"
+  },
+  "chambers": {
+    "scanYourPalm": "Escaneie Sua Palma",
+    "palmReading": "Leitura da Palma",
+    "theOracle": "O Oráculo",
+    "aiGuide": "Guia IA",
+    "frequencyScanner": "Scanner de Frequência",
+    "consciousness": "Consciência",
+    "theStars": "As Estrelas",
+    "astrology": "Astrologia",
+    "theNumbers": "Os Números",
+    "numerology": "Numerologia",
+    "thePalm": "A Palma",
+    "theDynasty": "A Dinastia",
+    "chineseZodiac": "Zodíaco Chinês",
+    "sonicAlchemy": "Alquimia Sônica",
+    "sound": "Som",
+    "theVault": "O Cofre",
+    "sacredCodes": "Códigos Sagrados",
+    "theMaps": "Os Mapas",
+    "location": "Localização",
+    "theSanctum": "O Santuário",
+    "journal": "Diário"
+  },
+  "chamberPages": {
+    "stars": {
+      "title": "Estrelas",
+      "subtitle": "Mapa Natal e Horóscopos",
+      "placeholder": "A câmara das Estrelas está se alinhando. Leituras do mapa natal em breve."
+    },
+    "numbers": {
+      "title": "Números",
+      "subtitle": "Perfil Numerológico",
+      "placeholder": "A câmara dos Números está calculando. Perfil numerológico completo em breve."
+    },
+    "sanctum": {
+      "title": "Santuário",
+      "subtitle": "Diário Privado",
+      "placeholder": "Seu diário privado criptografado. Em breve."
+    }
+  },
+  "universalDayMeanings": {
+    "1": "Novos começos e iniciativa",
+    "2": "Cooperação e equilíbrio",
+    "3": "Criatividade e autoexpressão",
+    "4": "Fundação e disciplina",
+    "5": "Mudança e liberdade",
+    "6": "Harmonia e responsabilidade",
+    "7": "Reflexão e sabedoria interior",
+    "8": "Poder e abundância",
+    "9": "Conclusão e humanitarismo",
+    "11": "Percepção espiritual e intuição",
+    "22": "Energia do mestre construtor",
+    "33": "Vibração do mestre espiritual"
+  },
+  "personalDayMeanings": {
+    "1": "Seu poder pessoal está no auge — inicie com ousadia",
+    "2": "Busque parcerias e ouça profundamente",
+    "3": "Expresse-se — a criatividade flui livremente",
+    "4": "Construa estruturas que apoiem sua visão",
+    "5": "Abrace o inesperado — a aventura chama",
+    "6": "Cuide dos seus relacionamentos mais próximos",
+    "7": "Volte-se para dentro — a meditação revela respostas",
+    "8": "A energia financeira e profissional está amplificada",
+    "9": "Libere o que não serve mais à sua evolução",
+    "11": "Intuição elevada — confie em suas visões",
+    "22": "Manifeste suas maiores ambições hoje",
+    "33": "Sua compaixão transforma quem está ao seu redor"
+  }
+}
