@@ -14,8 +14,10 @@ i18n
       en: { translation: en },
       es: { translation: es },
       "pt-BR": { translation: ptBR },
-      pt: { translation: ptBR }, // fallback pt → pt-BR
+      pt: { translation: ptBR },
     },
+    supportedLngs: ["en", "es", "pt-BR", "pt"],
+    nonExplicitSupportedLngs: true, // es-MX, es-CO, es-419 → es; pt-BR → pt-BR
     fallbackLng: "en",
     interpolation: { escapeValue: false },
     detection: {
