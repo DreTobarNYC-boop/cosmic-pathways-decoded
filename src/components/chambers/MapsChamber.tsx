@@ -55,6 +55,17 @@ const WORLD_CITIES: { name: string; lat: number; lng: number }[] = [
   { name: "Havana", lat: 23.1, lng: -82.4 }, { name: "Cartagena", lat: 10.4, lng: -75.5 },
   { name: "Oaxaca", lat: 17.1, lng: -96.7 }, { name: "Chiang Mai", lat: 18.8, lng: 98.9 },
   { name: "Porto", lat: 41.2, lng: -8.6 }, { name: "Nashville", lat: 36.2, lng: -86.8 },
+  // 20 additional cities
+  { name: "Bogotá", lat: 4.7, lng: -74.1 }, { name: "Lima", lat: -12.0, lng: -77.0 },
+  { name: "Seoul", lat: 37.6, lng: 127.0 }, { name: "Nairobi", lat: -1.3, lng: 36.8 },
+  { name: "Cairo", lat: 30.0, lng: 31.2 }, { name: "Athens", lat: 37.9, lng: 23.7 },
+  { name: "Prague", lat: 50.1, lng: 14.4 }, { name: "Zürich", lat: 47.4, lng: 8.5 },
+  { name: "Sydney", lat: -33.9, lng: 151.2 }, { name: "Ubud", lat: -8.5, lng: 115.3 },
+  { name: "Kathmandu", lat: 27.7, lng: 85.3 }, { name: "Petra", lat: 30.3, lng: 35.4 },
+  { name: "Santorini", lat: 36.4, lng: 25.4 }, { name: "Taipei", lat: 25.0, lng: 121.5 },
+  { name: "Accra", lat: 5.6, lng: -0.2 }, { name: "Santiago", lat: -33.4, lng: -70.7 },
+  { name: "Mumbai", lat: 19.1, lng: 72.9 }, { name: "Berlin", lat: 52.5, lng: 13.4 },
+  { name: "Guadalajara", lat: 20.7, lng: -103.3 }, { name: "Vancouver", lat: 49.3, lng: -123.1 },
 ];
 
 function nameVibration(name: string): number {
