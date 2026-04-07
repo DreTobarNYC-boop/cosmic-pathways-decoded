@@ -535,7 +535,7 @@ export default function PalmScanner() {
               📸 Keep your hand steady for the scan
             </p>
           </div>
-          onClick={() => fileInputRef.current?.click()}
+          <button style={s.btn} onClick={() => startCamera()}>
             ✋ Open Palm Scanner
           </button>
         </div>
