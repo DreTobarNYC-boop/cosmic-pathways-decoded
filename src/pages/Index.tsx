@@ -30,6 +30,7 @@ import { MapsChamber } from "@/components/chambers/MapsChamber";
 import { DynastyChamber } from "@/components/chambers/DynastyChamber";
 import { SanctumChamber } from "@/components/chambers/SanctumChamber";
 import { FrequencyChamber } from "@/components/chambers/FrequencyChamber";
+import { SacredCodesChamber } from "@/components/chambers/SacredCodesChamber";
 
 const CHAMBER_COMPONENTS: Record<string, React.ComponentType<{ onBack: () => void }>> = {
   oracle: OracleChamber,
@@ -41,6 +42,7 @@ const CHAMBER_COMPONENTS: Record<string, React.ComponentType<{ onBack: () => voi
   dynasty: DynastyChamber,
   sanctum: SanctumChamber,
   frequency: FrequencyChamber,
+  "sacred-codes": SacredCodesChamber,
 };
 
 export default function Index() {
