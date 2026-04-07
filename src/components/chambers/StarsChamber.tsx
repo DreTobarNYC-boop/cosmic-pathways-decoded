@@ -237,13 +237,21 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
       </div>
 
       {/* Tab content */}
-      <StarsTabContent
-        key={activeTab}
-        readingType={currentTab.readingType}
-        cacheKey={currentTab.cacheKey}
-        context={baseContext}
-        zodiac={zodiac}
-      />
+      {activeTab === "birth_chart" ? (
+        <BirthChartContent
+          readingType={currentTab.readingType}
+          cacheKey={currentTab.cacheKey}
+          context={baseContext}
+        />
+      ) : (
+        <StarsTabContent
+          key={activeTab}
+          readingType={currentTab.readingType}
+          cacheKey={currentTab.cacheKey}
+          context={baseContext}
+          zodiac={zodiac}
+        />
+      )}
     </ChamberLayout>
   );
 }
