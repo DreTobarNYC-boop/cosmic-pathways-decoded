@@ -10,7 +10,7 @@ interface PalmChamberProps {
 
 // Warrior Oracle color palette
 const BURNT_GOLD = "#C5A059";
-const ABSOLUTE_BLACK = "#000000";
+const COSMIC_BG = "hsl(170, 40%, 7%)"; // Dark teal cosmic background
 
 export function PalmChamber({ onBack }: PalmChamberProps) {
   const [phase, setPhase] = useState<"idle" | "scanning" | "done">("idle");
