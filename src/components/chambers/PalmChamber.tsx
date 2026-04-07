@@ -1,13 +1,16 @@
 import { useState, useRef } from "react";
-import { Camera, RotateCcw, Loader2, Scan } from "lucide-react";
+import { Camera, RotateCcw, Loader2, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ChamberLayout } from "@/components/ChamberLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 
 interface PalmChamberProps {
   onBack: () => void;
 }
+
+// Warrior Oracle color palette
+const BURNT_GOLD = "#C5A059";
+const ABSOLUTE_BLACK = "#000000";
 
 export function PalmChamber({ onBack }: PalmChamberProps) {
   const [phase, setPhase] = useState<"idle" | "scanning" | "done">("idle");
@@ -59,13 +62,44 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
     if (fileRef.current) fileRef.current.value = "";
   };
 
-  // Warrior Oracle color palette
-  const burntGold = "#C5A059";
-  const absoluteBlack = "#000000";
-
   return (
-    <div className="min-h-screen" style={{ backgroundColor: absoluteBlack }}>
-      <ChamberLayout title="The Palm" subtitle="Warrior Oracle" onBack={onBack}>
+    <div 
+      className="min-h-screen"
+      style={{ backgroundColor: ABSOLUTE_BLACK }}
+    >
+      {/* Custom header for Warrior Oracle */}
+      <header className="px-5 pt-6 pb-4 flex items-center gap-4">
+        <button
+          onClick={onBack}
+          className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300"
+          style={{ 
+            border: `1px solid ${BURNT_GOLD}40`,
+            color: BURNT_GOLD,
+          }}
+        >
+          <ArrowLeft className="w-4 h-4" />
+        </button>
+        <div>
+          <h1 
+            className="text-lg tracking-wide"
+            style={{ 
+              color: BURNT_GOLD,
+              fontFamily: "'Libre Baskerville', serif",
+              fontWeight: 400
+            }}
+          >
+            The Palm
+          </h1>
+          <p 
+            className="text-xs tracking-widest uppercase"
+            style={{ color: `${BURNT_GOLD}60` }}
+          >
+            Warrior Oracle
+          </p>
+        </div>
+      </header>
+
+      <main className="px-5 pb-10">
         <input
           ref={fileRef}
           type="file"
@@ -78,21 +112,48 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
         {/* IDLE STATE */}
         {phase === "idle" && (
           <div className="flex flex-col items-center text-center pt-16 space-y-10">
-            {/* Icon container */}
+            {/* Palm icon */}
             <div 
               className="relative w-28 h-28 rounded-full flex items-center justify-center"
               style={{ 
-                border: `1px solid ${burntGold}30`,
-                background: `radial-gradient(circle, ${burntGold}08 0%, transparent 70%)`
+                border: `1px solid ${BURNT_GOLD}30`,
+                background: `radial-gradient(circle, ${BURNT_GOLD}08 0%, transparent 70%)`
               }}
             >
               <div 
                 className="absolute inset-0 rounded-full animate-pulse"
                 style={{ 
-                  boxShadow: `0 0 40px ${burntGold}15, inset 0 0 30px ${burntGold}05`
+                  boxShadow: `0 0 40px ${BURNT_GOLD}15, inset 0 0 30px ${BURNT_GOLD}05`
                 }}
               />
-              <Scan className="w-12 h-12" style={{ color: burntGold }} />
+              {/* Custom palm/fingerprint icon */}
+              <svg 
+                viewBox="0 0 48 48" 
+                className="w-12 h-12"
+                style={{ color: BURNT_GOLD }}
+              >
+                <path 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="1.5" 
+                  strokeLinecap="round"
+                  d="M24 8c-8 0-14 6-14 14s6 18 14 18 14-10 14-18-6-14-14-14z"
+                />
+                <path 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="1.5" 
+                  strokeLinecap="round"
+                  d="M24 14c-4.5 0-8 3.5-8 8s3.5 12 8 12 8-6 8-12-3.5-8-8-8z"
+                />
+                <path 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="1.5" 
+                  strokeLinecap="round"
+                  d="M24 20c-2 0-3.5 1.5-3.5 3.5s1.5 6 3.5 6 3.5-3 3.5-6-1.5-3.5-3.5-3.5z"
+                />
+              </svg>
             </div>
 
             {/* Text */}
@@ -100,7 +161,7 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
               <h2 
                 className="text-2xl tracking-wide"
                 style={{ 
-                  color: burntGold,
+                  color: BURNT_GOLD,
                   fontFamily: "'Libre Baskerville', serif",
                   fontWeight: 400
                 }}
@@ -110,7 +171,7 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
               <p 
                 className="text-sm leading-relaxed tracking-wide"
                 style={{ 
-                  color: `${burntGold}99`,
+                  color: `${BURNT_GOLD}90`,
                   fontWeight: 300
                 }}
               >
@@ -122,11 +183,10 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
             <Button
               onClick={() => fileRef.current?.click()}
               size="lg"
-              className="rounded-full px-10 py-6 text-sm tracking-widest uppercase transition-all duration-300 hover:scale-105"
+              className="rounded-full px-10 py-6 text-sm tracking-widest uppercase transition-all duration-300 hover:scale-105 border bg-transparent"
               style={{ 
-                backgroundColor: 'transparent',
-                border: `1px solid ${burntGold}`,
-                color: burntGold,
+                borderColor: BURNT_GOLD,
+                color: BURNT_GOLD,
               }}
             >
               <Camera className="w-4 h-4 mr-3" />
@@ -140,8 +200,11 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
           <div className="flex flex-col items-center text-center pt-10 space-y-8">
             {imagePreview && (
               <div 
-                className="relative w-64 h-64 rounded-lg overflow-hidden"
-                style={{ border: `1px solid ${burntGold}40` }}
+                className="relative w-72 h-72 overflow-hidden"
+                style={{ 
+                  border: `1px solid ${BURNT_GOLD}50`,
+                  borderRadius: '4px'
+                }}
               >
                 {/* Captured image */}
                 <img 
@@ -156,54 +219,100 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
                   className="absolute inset-0 pointer-events-none"
                   style={{
                     backgroundImage: `
-                      linear-gradient(${burntGold}20 1px, transparent 1px),
-                      linear-gradient(90deg, ${burntGold}20 1px, transparent 1px)
+                      linear-gradient(${BURNT_GOLD}25 1px, transparent 1px),
+                      linear-gradient(90deg, ${BURNT_GOLD}25 1px, transparent 1px)
                     `,
-                    backgroundSize: '20px 20px',
+                    backgroundSize: '24px 24px',
                   }}
                 />
 
                 {/* Diagonal laser lines */}
                 <div 
-                  className="absolute inset-0 pointer-events-none opacity-30"
+                  className="absolute inset-0 pointer-events-none"
                   style={{
                     backgroundImage: `
-                      linear-gradient(45deg, ${burntGold}15 1px, transparent 1px),
-                      linear-gradient(-45deg, ${burntGold}15 1px, transparent 1px)
+                      linear-gradient(45deg, ${BURNT_GOLD}12 1px, transparent 1px),
+                      linear-gradient(-45deg, ${BURNT_GOLD}12 1px, transparent 1px)
                     `,
-                    backgroundSize: '30px 30px',
+                    backgroundSize: '32px 32px',
                   }}
                 />
 
                 {/* Moving horizontal scan line */}
                 <div 
-                  className="absolute left-0 right-0 h-1 pointer-events-none"
+                  className="absolute left-0 right-0 h-0.5 pointer-events-none scan-line-animation"
                   style={{
-                    background: `linear-gradient(90deg, transparent 0%, ${burntGold} 20%, ${burntGold} 80%, transparent 100%)`,
-                    boxShadow: `0 0 20px ${burntGold}, 0 0 40px ${burntGold}80, 0 0 60px ${burntGold}40`,
-                    animation: 'scanLine 2s ease-in-out infinite',
+                    background: `linear-gradient(90deg, transparent 0%, ${BURNT_GOLD} 15%, ${BURNT_GOLD} 85%, transparent 100%)`,
+                    boxShadow: `0 0 15px ${BURNT_GOLD}, 0 0 30px ${BURNT_GOLD}80, 0 0 45px ${BURNT_GOLD}40`,
                   }}
                 />
 
-                {/* Corner brackets */}
-                <svg className="absolute inset-0 w-full h-full pointer-events-none">
-                  {/* Top-left */}
-                  <path d="M 8 24 L 8 8 L 24 8" stroke={burntGold} strokeWidth="2" fill="none" opacity="0.8" />
-                  {/* Top-right */}
-                  <path d="M 240 8 L 256 8 L 256 24" stroke={burntGold} strokeWidth="2" fill="none" opacity="0.8" />
-                  {/* Bottom-left */}
-                  <path d="M 8 240 L 8 256 L 24 256" stroke={burntGold} strokeWidth="2" fill="none" opacity="0.8" />
-                  {/* Bottom-right */}
-                  <path d="M 256 240 L 256 256 L 240 256" stroke={burntGold} strokeWidth="2" fill="none" opacity="0.8" />
-                </svg>
+                {/* Secondary scan line (offset) */}
+                <div 
+                  className="absolute left-0 right-0 h-px pointer-events-none scan-line-animation-delayed"
+                  style={{
+                    background: `linear-gradient(90deg, transparent 0%, ${BURNT_GOLD}60 20%, ${BURNT_GOLD}60 80%, transparent 100%)`,
+                    boxShadow: `0 0 8px ${BURNT_GOLD}60`,
+                  }}
+                />
+
+                {/* Corner brackets - Top Left */}
+                <div 
+                  className="absolute top-2 left-2 w-6 h-6 pointer-events-none"
+                  style={{
+                    borderTop: `2px solid ${BURNT_GOLD}`,
+                    borderLeft: `2px solid ${BURNT_GOLD}`,
+                  }}
+                />
+                {/* Top Right */}
+                <div 
+                  className="absolute top-2 right-2 w-6 h-6 pointer-events-none"
+                  style={{
+                    borderTop: `2px solid ${BURNT_GOLD}`,
+                    borderRight: `2px solid ${BURNT_GOLD}`,
+                  }}
+                />
+                {/* Bottom Left */}
+                <div 
+                  className="absolute bottom-2 left-2 w-6 h-6 pointer-events-none"
+                  style={{
+                    borderBottom: `2px solid ${BURNT_GOLD}`,
+                    borderLeft: `2px solid ${BURNT_GOLD}`,
+                  }}
+                />
+                {/* Bottom Right */}
+                <div 
+                  className="absolute bottom-2 right-2 w-6 h-6 pointer-events-none"
+                  style={{
+                    borderBottom: `2px solid ${BURNT_GOLD}`,
+                    borderRight: `2px solid ${BURNT_GOLD}`,
+                  }}
+                />
 
                 {/* Subtle vignette */}
                 <div 
                   className="absolute inset-0 pointer-events-none"
                   style={{
-                    background: `radial-gradient(circle at center, transparent 40%, ${absoluteBlack}90 100%)`
+                    background: `radial-gradient(circle at center, transparent 30%, ${ABSOLUTE_BLACK}95 100%)`
                   }}
                 />
+
+                {/* Scanning indicator in corner */}
+                <div 
+                  className="absolute top-4 right-4 flex items-center gap-2 px-2 py-1 rounded"
+                  style={{ backgroundColor: `${ABSOLUTE_BLACK}80` }}
+                >
+                  <div 
+                    className="w-2 h-2 rounded-full animate-pulse"
+                    style={{ backgroundColor: BURNT_GOLD }}
+                  />
+                  <span 
+                    className="text-[10px] tracking-wider uppercase"
+                    style={{ color: BURNT_GOLD }}
+                  >
+                    Scanning
+                  </span>
+                </div>
               </div>
             )}
 
@@ -212,20 +321,19 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
               <div className="flex items-center gap-3">
                 <Loader2 
                   className="w-4 h-4 animate-spin" 
-                  style={{ color: burntGold }} 
+                  style={{ color: BURNT_GOLD }} 
                 />
                 <span 
-                  className="text-xs tracking-[0.3em] uppercase"
-                  style={{ color: burntGold }}
+                  className="text-xs tracking-[0.25em] uppercase"
+                  style={{ color: BURNT_GOLD, fontWeight: 300 }}
                 >
                   Analyzing Patterns
                 </span>
               </div>
               <div 
-                className="w-48 h-px"
+                className="w-48 h-px animate-pulse"
                 style={{
-                  background: `linear-gradient(90deg, transparent, ${burntGold}60, transparent)`,
-                  animation: 'pulse 2s ease-in-out infinite'
+                  background: `linear-gradient(90deg, transparent, ${BURNT_GOLD}60, transparent)`,
                 }}
               />
             </div>
@@ -241,20 +349,20 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
                 <div 
                   className="inline-flex items-center gap-3 rounded-full px-5 py-2"
                   style={{ 
-                    border: `1px solid ${burntGold}30`,
-                    backgroundColor: `${burntGold}08`
+                    border: `1px solid ${BURNT_GOLD}30`,
+                    backgroundColor: `${BURNT_GOLD}08`
                   }}
                 >
                   <span 
                     className="text-xs tracking-widest uppercase"
-                    style={{ color: `${burntGold}80`, fontWeight: 300 }}
+                    style={{ color: `${BURNT_GOLD}80`, fontWeight: 300 }}
                   >
                     {reading.handType}
                   </span>
-                  <span style={{ color: `${burntGold}40` }}>|</span>
+                  <span style={{ color: `${BURNT_GOLD}40` }}>|</span>
                   <span 
                     className="text-xs tracking-widest uppercase"
-                    style={{ color: `${burntGold}80`, fontWeight: 300 }}
+                    style={{ color: `${BURNT_GOLD}80`, fontWeight: 300 }}
                   >
                     {reading.element}
                   </span>
@@ -263,7 +371,7 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
                 <h2 
                   className="text-3xl tracking-wide"
                   style={{ 
-                    color: burntGold,
+                    color: BURNT_GOLD,
                     fontFamily: "'Libre Baskerville', serif",
                     fontWeight: 400
                   }}
@@ -278,8 +386,8 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
                         key={t} 
                         className="text-xs tracking-wider px-4 py-1.5 rounded-full"
                         style={{ 
-                          color: `${burntGold}90`,
-                          border: `1px solid ${burntGold}20`,
+                          color: `${BURNT_GOLD}90`,
+                          border: `1px solid ${BURNT_GOLD}25`,
                           fontWeight: 300
                         }}
                       >
@@ -292,7 +400,7 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
                 <p 
                   className="text-sm max-w-sm mx-auto leading-relaxed"
                   style={{ 
-                    color: `${burntGold}70`,
+                    color: `${BURNT_GOLD}75`,
                     fontWeight: 300
                   }}
                 >
@@ -302,7 +410,7 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
                 {reading.archetype.shadow && (
                   <p 
                     className="text-xs max-w-sm mx-auto italic"
-                    style={{ color: `${burntGold}50` }}
+                    style={{ color: `${BURNT_GOLD}50` }}
                   >
                     {reading.archetype.shadow}
                   </p>
@@ -313,27 +421,27 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
             {/* Divider */}
             <div 
               className="w-full h-px mx-auto"
-              style={{ background: `linear-gradient(90deg, transparent, ${burntGold}30, transparent)` }}
+              style={{ background: `linear-gradient(90deg, transparent, ${BURNT_GOLD}30, transparent)` }}
             />
 
             {/* Overview */}
             {reading.reading?.overview && (
               <div 
-                className="rounded-lg p-5"
+                className="rounded p-5"
                 style={{ 
-                  border: `1px solid ${burntGold}15`,
-                  backgroundColor: `${burntGold}05`
+                  border: `1px solid ${BURNT_GOLD}20`,
+                  backgroundColor: `${BURNT_GOLD}05`
                 }}
               >
                 <h3 
                   className="text-xs tracking-[0.2em] uppercase mb-3"
-                  style={{ color: burntGold, fontWeight: 400 }}
+                  style={{ color: BURNT_GOLD, fontWeight: 400 }}
                 >
                   Overview
                 </h3>
                 <p 
                   className="text-sm leading-relaxed"
-                  style={{ color: `${burntGold}80`, fontWeight: 300 }}
+                  style={{ color: `${BURNT_GOLD}80`, fontWeight: 300 }}
                 >
                   {reading.reading.overview}
                 </p>
@@ -345,24 +453,24 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
               <div className="space-y-4">
                 <h3 
                   className="text-xs tracking-[0.2em] uppercase"
-                  style={{ color: burntGold, fontWeight: 400 }}
+                  style={{ color: BURNT_GOLD, fontWeight: 400 }}
                 >
                   Lines
                 </h3>
                 {Object.entries(reading.lines).map(([key, line]: [string, any]) => (
                   <div 
                     key={key} 
-                    className="rounded-lg p-4"
+                    className="rounded p-4"
                     style={{ 
-                      border: `1px solid ${burntGold}15`,
-                      backgroundColor: `${burntGold}05`
+                      border: `1px solid ${BURNT_GOLD}20`,
+                      backgroundColor: `${BURNT_GOLD}05`
                     }}
                   >
                     <div className="flex items-center justify-between mb-2">
                       <span 
                         className="text-sm capitalize"
                         style={{ 
-                          color: burntGold,
+                          color: BURNT_GOLD,
                           fontFamily: "'Libre Baskerville', serif"
                         }}
                       >
@@ -370,14 +478,14 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
                       </span>
                       <span 
                         className="text-xs tracking-wider uppercase"
-                        style={{ color: `${burntGold}50`, fontWeight: 300 }}
+                        style={{ color: `${BURNT_GOLD}50`, fontWeight: 300 }}
                       >
                         {line.strength}
                       </span>
                     </div>
                     <p 
                       className="text-sm leading-relaxed"
-                      style={{ color: `${burntGold}70`, fontWeight: 300 }}
+                      style={{ color: `${BURNT_GOLD}70`, fontWeight: 300 }}
                     >
                       {line.description}
                     </p>
@@ -391,7 +499,7 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
               <div className="space-y-4">
                 <h3 
                   className="text-xs tracking-[0.2em] uppercase"
-                  style={{ color: burntGold, fontWeight: 400 }}
+                  style={{ color: BURNT_GOLD, fontWeight: 400 }}
                 >
                   Mounts
                 </h3>
@@ -399,17 +507,17 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
                   {Object.entries(reading.mounts).map(([key, mount]: [string, any]) => (
                     <div 
                       key={key} 
-                      className="rounded-lg p-4"
+                      className="rounded p-4"
                       style={{ 
-                        border: `1px solid ${burntGold}15`,
-                        backgroundColor: `${burntGold}05`
+                        border: `1px solid ${BURNT_GOLD}20`,
+                        backgroundColor: `${BURNT_GOLD}05`
                       }}
                     >
                       <div className="flex items-center justify-between mb-2">
                         <span 
                           className="text-xs capitalize"
                           style={{ 
-                            color: burntGold,
+                            color: BURNT_GOLD,
                             fontFamily: "'Libre Baskerville', serif"
                           }}
                         >
@@ -417,14 +525,14 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
                         </span>
                         <span 
                           className="text-[10px] tracking-wider uppercase"
-                          style={{ color: `${burntGold}50`, fontWeight: 300 }}
+                          style={{ color: `${BURNT_GOLD}50`, fontWeight: 300 }}
                         >
                           {mount.prominence}
                         </span>
                       </div>
                       <p 
                         className="text-xs leading-relaxed"
-                        style={{ color: `${burntGold}70`, fontWeight: 300 }}
+                        style={{ color: `${BURNT_GOLD}70`, fontWeight: 300 }}
                       >
                         {mount.meaning}
                       </p>
@@ -439,23 +547,23 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
               <div className="space-y-4">
                 <h3 
                   className="text-xs tracking-[0.2em] uppercase"
-                  style={{ color: burntGold, fontWeight: 400 }}
+                  style={{ color: BURNT_GOLD, fontWeight: 400 }}
                 >
                   Markings
                 </h3>
                 {reading.markings.map((m: any, i: number) => (
                   <div 
                     key={i} 
-                    className="rounded-lg p-4"
+                    className="rounded p-4"
                     style={{ 
-                      border: `1px solid ${burntGold}15`,
-                      backgroundColor: `${burntGold}05`
+                      border: `1px solid ${BURNT_GOLD}20`,
+                      backgroundColor: `${BURNT_GOLD}05`
                     }}
                   >
                     <span 
                       className="text-xs"
                       style={{ 
-                        color: burntGold,
+                        color: BURNT_GOLD,
                         fontFamily: "'Libre Baskerville', serif"
                       }}
                     >
@@ -463,7 +571,7 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
                     </span>
                     <p 
                       className="text-xs mt-2 leading-relaxed"
-                      style={{ color: `${burntGold}70`, fontWeight: 300 }}
+                      style={{ color: `${BURNT_GOLD}70`, fontWeight: 300 }}
                     >
                       {m.meaning}
                     </p>
@@ -477,11 +585,10 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
               <Button 
                 variant="outline" 
                 onClick={handleReset} 
-                className="rounded-full px-8 py-5 text-xs tracking-widest uppercase transition-all duration-300 hover:scale-105"
+                className="rounded-full px-8 py-5 text-xs tracking-widest uppercase transition-all duration-300 hover:scale-105 bg-transparent border"
                 style={{ 
-                  backgroundColor: 'transparent',
-                  border: `1px solid ${burntGold}50`,
-                  color: burntGold,
+                  borderColor: `${BURNT_GOLD}60`,
+                  color: BURNT_GOLD,
                 }}
               >
                 <RotateCcw className="w-4 h-4 mr-3" />
@@ -490,27 +597,36 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
             </div>
           </div>
         )}
+      </main>
 
-        {/* Keyframe animation styles */}
-        <style>{`
-          @keyframes scanLine {
-            0%, 100% {
-              top: 0%;
-              opacity: 0;
-            }
-            10% {
-              opacity: 1;
-            }
-            90% {
-              opacity: 1;
-            }
-            100% {
-              top: 100%;
-              opacity: 0;
-            }
+      {/* Keyframe animation styles */}
+      <style>{`
+        @keyframes scanLineMove {
+          0% {
+            top: 0%;
+            opacity: 0;
           }
-        `}</style>
-      </ChamberLayout>
+          5% {
+            opacity: 1;
+          }
+          95% {
+            opacity: 1;
+          }
+          100% {
+            top: 100%;
+            opacity: 0;
+          }
+        }
+        
+        .scan-line-animation {
+          animation: scanLineMove 2.5s ease-in-out infinite;
+        }
+        
+        .scan-line-animation-delayed {
+          animation: scanLineMove 2.5s ease-in-out infinite;
+          animation-delay: 1.25s;
+        }
+      `}</style>
     </div>
   );
 }
