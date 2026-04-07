@@ -165,6 +165,13 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
     setScanProgress(0);
     startScanSound();
 
+    // Haptic vibration on mobile — subtle pulse every 400ms
+    if (navigator.vibrate) {
+      hapticIntervalRef.current = setInterval(() => {
+        navigator.vibrate(15);
+      }, 400);
+    }
+
     const scanDuration = SCAN_PHASES.length * 1800;
     const startTime = performance.now();
 
@@ -182,6 +189,8 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
 
     const stepInterval = setInterval(() => {
       setScanStep((prev) => {
+        // Haptic bump on each phase change
+        if (navigator.vibrate) navigator.vibrate(30);
         if (prev >= SCAN_PHASES.length - 1) {
           clearInterval(stepInterval);
           return prev;
@@ -198,6 +207,7 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
 
       clearInterval(stepInterval);
       if (scanAnimRef.current) cancelAnimationFrame(scanAnimRef.current);
+      if (hapticIntervalRef.current) clearInterval(hapticIntervalRef.current);
 
       if (error) throw new Error(error.message);
       if (!data?.content) throw new Error("No reading returned");
@@ -206,7 +216,11 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
       setScanProgress(100);
       updateScanPitch(100);
       stopScanSound();
+
+      // Strong haptic for completion
+      if (navigator.vibrate) navigator.vibrate([50, 30, 80]);
       playCompletionChime();
+
       await new Promise((r) => setTimeout(r, 1200));
       setReading(data.content);
       setActiveTab("reading");
@@ -214,6 +228,7 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
     } catch (err) {
       clearInterval(stepInterval);
       if (scanAnimRef.current) cancelAnimationFrame(scanAnimRef.current);
+      if (hapticIntervalRef.current) clearInterval(hapticIntervalRef.current);
       stopScanSound();
       const msg = err instanceof Error ? err.message : "Analysis failed";
       toast.error(msg);
@@ -225,11 +240,13 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
     stopCamera();
     stopScanSound();
     if (scanAnimRef.current) cancelAnimationFrame(scanAnimRef.current);
+    if (hapticIntervalRef.current) clearInterval(hapticIntervalRef.current);
     setPhase("permission");
     setImageData(null);
     setReading(null);
     setScanStep(0);
     setScanProgress(0);
+    setCameraLoading(false);
   }, [stopCamera]);
 
   useEffect(() => {
