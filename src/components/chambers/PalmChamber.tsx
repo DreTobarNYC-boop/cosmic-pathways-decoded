@@ -184,8 +184,8 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
     stopScanSound();
   }, []);
 
-  // Cleanup camera on unmount
-  useEffect(() => () => stopCamera(), [stopCamera]);
+  // Cleanup camera and sound on unmount
+  useEffect(() => () => { stopCamera(); stopScanSound(); if (scanAnimRef.current) cancelAnimationFrame(scanAnimRef.current); }, [stopCamera]);
 
   const currentScan = SCAN_PHASES[scanStep] || SCAN_PHASES[0];
 
@@ -311,9 +311,9 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
 
             {/* PRIMARY LASER LINE — bright green, tall glow */}
             <div
-              className="absolute left-0 right-0 transition-all duration-[1600ms] ease-in-out"
+              className="absolute left-0 right-0"
               style={{
-                top: `${currentScan.pct}%`,
+                top: `${scanProgress}%`,
                 height: "3px",
                 background: "linear-gradient(90deg, transparent 0%, hsl(145, 100%, 60%) 15%, hsl(145, 100%, 75%) 50%, hsl(145, 100%, 60%) 85%, transparent 100%)",
                 boxShadow: `
@@ -327,9 +327,9 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
 
             {/* Secondary trailing glow below laser */}
             <div
-              className="absolute left-0 right-0 transition-all duration-[1600ms] ease-in-out pointer-events-none"
+              className="absolute left-0 right-0 pointer-events-none"
               style={{
-                top: `${Math.min(currentScan.pct + 1, 100)}%`,
+                top: `${Math.min(scanProgress + 1, 100)}%`,
                 height: "40px",
                 background: "linear-gradient(180deg, hsl(145, 100%, 55%, 0.2) 0%, transparent 100%)",
               }}
@@ -349,7 +349,7 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
 
             {/* Progress badge */}
             <div className="absolute bottom-3 right-3 bg-background/80 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-primary/20">
-              <span className="text-sm font-display font-bold" style={{ color: "hsl(145, 80%, 55%)" }}>{currentScan.pct}%</span>
+              <span className="text-sm font-display font-bold" style={{ color: "hsl(145, 80%, 55%)" }}>{Math.round(scanProgress)}%</span>
             </div>
 
             {/* Scan type badge */}
@@ -368,9 +368,9 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
             {/* Mini progress bar */}
             <div className="w-48 h-1 mx-auto rounded-full overflow-hidden" style={{ backgroundColor: "hsl(160, 20%, 15%)" }}>
               <div
-                className="h-full rounded-full transition-all duration-[1600ms] ease-in-out"
+                className="h-full rounded-full"
                 style={{
-                  width: `${currentScan.pct}%`,
+                  width: `${scanProgress}%`,
                   background: "linear-gradient(90deg, hsl(145, 80%, 40%), hsl(145, 100%, 55%))",
                   boxShadow: "0 0 8px hsl(145, 100%, 55%, 0.5)",
                 }}
