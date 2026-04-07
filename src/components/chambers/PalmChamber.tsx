@@ -263,7 +263,7 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
         )}
 
         <video
-          ref={videoRefCallback}
+          ref={videoRef}
           autoPlay
           playsInline
           muted
