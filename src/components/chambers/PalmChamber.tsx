@@ -166,12 +166,12 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
     setPhase("scanning");
     setIsAnalyzing(true);
     setScanProgress(0);
-    startScanSound();
+    // sound disabled
 
     const interval = setInterval(() => {
       setScanProgress((p) => {
         const next = p + Math.random() * 8;
-        updateScanPitch(Math.min(next, 95));
+        // sound disabled
         if (next >= 95) {
           clearInterval(interval);
           return 95;
@@ -193,9 +193,6 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
       }
 
       setScanProgress(100);
-      updateScanPitch(100);
-      stopScanSound();
-      playCompletionChime();
       if (navigator.vibrate) navigator.vibrate([50, 30, 80]);
 
       setTimeout(() => {
@@ -205,7 +202,7 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
       }, 600);
     } catch (err) {
       clearInterval(interval);
-      stopScanSound();
+      // sound disabled
       console.error("Analysis error:", err);
       setReading({
         archetype: "The Mystic Wanderer",
@@ -235,7 +232,7 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
 
   const reset = useCallback(() => {
     stopCamera();
-    stopScanSound();
+    // sound disabled
     setCapturedImage(null);
     setReading(null);
     setScanProgress(0);
