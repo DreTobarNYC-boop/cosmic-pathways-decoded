@@ -127,6 +127,86 @@ const TABS = [
   { id: "address", label: "Address", icon: "▣" },
 ];
 
+/* ─── World Map ─── */
+
+function latLngToXY(lat: number, lng: number, width: number, height: number): [number, number] {
+  const x = ((lng + 180) / 360) * width;
+  const y = ((90 - lat) / 180) * height;
+  return [x, y];
+}
+
+function WorldMapViz({ cities, onCityClick }: {
+  cities: { city: string; lat: number; lng: number; score: number }[];
+  onCityClick: (city: string) => void;
+}) {
+  const W = 400;
+  const H = 200;
+
+  // Simplified continent outlines as polylines (very minimal)
+  const continents = [
+    // North America
+    "120,45 110,50 100,55 95,60 85,65 80,75 75,80 82,85 90,82 100,78 105,75 115,70 120,65 125,60 118,50",
+    // South America
+    "100,95 95,100 90,108 88,115 85,125 88,135 92,145 95,150 100,155 102,148 105,140 108,130 105,120 102,110",
+    // Europe
+    "175,45 180,48 185,52 190,55 195,50 200,48 205,52 200,60 195,58 190,55 185,55",
+    // Africa
+    "180,70 175,75 172,85 175,95 178,105 182,115 188,120 195,118 200,110 198,100 195,90 192,80 188,72",
+    // Asia
+    "210,40 220,45 235,48 250,45 265,50 275,55 280,60 285,65 275,70 265,75 255,72 245,68 235,65 225,60 215,55 210,50",
+    // Australia
+    "280,120 290,118 300,120 305,125 302,132 295,135 285,132 280,125",
+  ];
+
+  return (
+    <div className="card-cosmic rounded-2xl p-4 overflow-hidden">
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" style={{ minHeight: 140 }}>
+        <defs>
+          <radialGradient id="dotGlow">
+            <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.8" />
+            <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="0" />
+          </radialGradient>
+        </defs>
+
+        {/* Grid lines */}
+        {[0, 1, 2, 3, 4].map(i => (
+          <line key={`h${i}`} x1="0" y1={H * i / 4} x2={W} y2={H * i / 4} stroke="hsl(var(--muted-foreground))" strokeOpacity="0.08" strokeWidth="0.5" />
+        ))}
+        {[0, 1, 2, 3, 4, 5, 6, 7].map(i => (
+          <line key={`v${i}`} x1={W * i / 7} y1="0" x2={W * i / 7} y2={H} stroke="hsl(var(--muted-foreground))" strokeOpacity="0.08" strokeWidth="0.5" />
+        ))}
+
+        {/* Continent shapes */}
+        {continents.map((points, i) => (
+          <polyline key={i} points={points} fill="hsl(var(--muted-foreground))" fillOpacity="0.06" stroke="hsl(var(--muted-foreground))" strokeOpacity="0.15" strokeWidth="0.5" />
+        ))}
+
+        {/* City dots */}
+        {cities.map((c) => {
+          const [x, y] = latLngToXY(c.lat, c.lng, W, H);
+          const intensity = Math.min(1, c.score / 90);
+          const r = 2 + intensity * 3;
+          return (
+            <g key={c.city} onClick={() => onCityClick(c.city)} className="cursor-pointer">
+              {/* Glow */}
+              <circle cx={x} cy={y} r={r * 3} fill="url(#dotGlow)" opacity={0.3 + intensity * 0.4}>
+                <animate attributeName="r" values={`${r * 2.5};${r * 3.5};${r * 2.5}`} dur="3s" repeatCount="indefinite" />
+                <animate attributeName="opacity" values={`${0.2 + intensity * 0.3};${0.4 + intensity * 0.4};${0.2 + intensity * 0.3}`} dur="3s" repeatCount="indefinite" />
+              </circle>
+              {/* Dot */}
+              <circle cx={x} cy={y} r={r} fill="hsl(var(--primary))" opacity={0.6 + intensity * 0.4} />
+              {/* Label */}
+              <text x={x} y={y - r - 3} textAnchor="middle" fill="hsl(var(--foreground))" fillOpacity="0.7" fontSize="5" fontWeight="600">
+                {c.city}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
 /* ─── Main ─── */
 
 export function MapsChamber({ onBack }: { onBack: () => void }) {
