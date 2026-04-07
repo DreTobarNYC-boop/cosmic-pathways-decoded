@@ -224,8 +224,16 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
       if (scanAnimRef.current) cancelAnimationFrame(scanAnimRef.current);
       if (hapticIntervalRef.current) clearInterval(hapticIntervalRef.current);
 
-      if (error) throw new Error(error.message);
-      if (!data?.content) throw new Error("No reading returned");
+      if (error) {
+        // Check if error response contains a message from the function
+        const errBody = typeof error === "object" && error !== null ? error : {};
+        const message = (errBody as Record<string, unknown>).message as string || "Analysis failed";
+        throw new Error(message);
+      }
+      if (!data?.content) {
+        if (data?.error) throw new Error(data.error);
+        throw new Error("No reading returned");
+      }
 
       setScanStep(SCAN_PHASES.length - 1);
       setScanProgress(100);
