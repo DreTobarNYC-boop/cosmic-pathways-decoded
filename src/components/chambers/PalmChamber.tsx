@@ -66,187 +66,86 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scanAnimRef = useRef<number | null>(null);
   const hapticIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const cameraRetryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const clearCameraRetryTimeout = useCallback(() => {
-    if (cameraRetryTimeoutRef.current) {
-      clearTimeout(cameraRetryTimeoutRef.current);
-      cameraRetryTimeoutRef.current = null;
-    }
-  }, []);
-
-  const cleanupVideoElement = useCallback(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    video.onloadedmetadata = null;
-    video.oncanplay = null;
-    video.onplaying = null;
-
-    try {
-      video.pause();
-    } catch {
-      // ignore
-    }
-
-    video.srcObject = null;
-    video.load();
-  }, []);
 
   const stopCamera = useCallback(() => {
-    clearCameraRetryTimeout();
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
     setMediaStream(null);
     setVideoReady(false);
     setCameraLoading(false);
-    cleanupVideoElement();
-  }, [cleanupVideoElement, clearCameraRetryTimeout]);
-
-  const attachStreamToVideo = useCallback(async (stream: MediaStream) => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    const markReady = () => {
-      setVideoReady(true);
-      setCameraLoading(false);
-      clearCameraRetryTimeout();
-    };
-
-    video.muted = true;
-    video.defaultMuted = true;
-    video.autoplay = true;
-    video.playsInline = true;
-    video.setAttribute("muted", "true");
-    video.setAttribute("autoplay", "true");
-    video.setAttribute("playsinline", "true");
-    video.setAttribute("webkit-playsinline", "true");
-
-    if (video.srcObject !== stream) {
-      video.srcObject = stream;
-    }
-
-    video.onloadedmetadata = () => {
-      void video.play().then(markReady).catch(() => undefined);
-    };
-    video.oncanplay = () => {
-      void video.play().then(markReady).catch(() => undefined);
-    };
-    video.onplaying = markReady;
-
-    try {
-      await video.play();
-      if (video.readyState >= 2 && video.videoWidth > 0) {
-        markReady();
-      }
-    } catch {
-      // wait for media events
-    }
-  }, [clearCameraRetryTimeout]);
-
-  const requestCameraStream = useCallback(async () => {
-    if (!navigator.mediaDevices?.getUserMedia) {
-      throw new Error("Camera API unavailable");
-    }
-
-    const constraintSets: MediaStreamConstraints[] = [
-      {
-        video: {
-          facingMode: { ideal: "environment" },
-          width: { ideal: 1080 },
-          height: { ideal: 1920 },
-          aspectRatio: { ideal: 9 / 16 },
-        },
-        audio: false,
-      },
-      {
-        video: { facingMode: "environment" },
-        audio: false,
-      },
-      {
-        video: true,
-        audio: false,
-      },
-    ];
-
-    let lastError: unknown = null;
-
-    for (const constraints of constraintSets) {
-      try {
-        return await navigator.mediaDevices.getUserMedia(constraints);
-      } catch (error) {
-        lastError = error;
-      }
-    }
-
-    throw lastError ?? new Error("Unable to access camera");
   }, []);
+
+  // Ref callback — attaches stream the instant the <video> element mounts
+  const videoRefCallback = useCallback(
+    (node: HTMLVideoElement | null) => {
+      (videoRef as React.MutableRefObject<HTMLVideoElement | null>).current = node;
+      if (!node || !streamRef.current) return;
+
+      // iOS Safari: set attributes BEFORE srcObject
+      node.setAttribute("autoplay", "");
+      node.setAttribute("playsinline", "");
+      node.setAttribute("muted", "");
+      node.setAttribute("webkit-playsinline", "");
+      node.muted = true;
+      node.playsInline = true;
+
+      node.srcObject = streamRef.current;
+      node.onloadedmetadata = () => {
+        node.play().then(() => {
+          setVideoReady(true);
+          setCameraLoading(false);
+        }).catch(() => undefined);
+      };
+      // Fallback: if loadedmetadata already fired
+      if (node.readyState >= 1) {
+        node.play().then(() => {
+          setVideoReady(true);
+          setCameraLoading(false);
+        }).catch(() => undefined);
+      }
+    },
+    // Re-run when mediaStream changes so React re-attaches on new stream
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [mediaStream],
+  );
 
   const startCamera = useCallback(async () => {
     try {
-      clearCameraRetryTimeout();
       setVideoReady(false);
       setCameraLoading(true);
       setPhase("camera");
 
       if (streamRef.current) {
-        void attachStreamToVideo(streamRef.current);
+        // Stream already exists, just let the ref callback re-attach
+        setMediaStream(streamRef.current);
         return;
       }
 
-      cleanupVideoElement();
+      const constraints: MediaStreamConstraints[] = [
+        { video: { facingMode: { ideal: "environment" }, width: { ideal: 1080 }, height: { ideal: 1920 } }, audio: false },
+        { video: { facingMode: "environment" }, audio: false },
+        { video: true, audio: false },
+      ];
 
-      const stream = await requestCameraStream();
-      streamRef.current = stream;
-      setMediaStream(stream);
-      void attachStreamToVideo(stream);
-
-      cameraRetryTimeoutRef.current = setTimeout(async () => {
-        const video = videoRef.current;
-        const hasLiveVideo = Boolean(video && video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0);
-
-        if (hasLiveVideo) {
-          markCameraReady();
-          return;
-        }
-
+      let stream: MediaStream | null = null;
+      for (const c of constraints) {
         try {
-          streamRef.current?.getTracks().forEach((track) => track.stop());
-          streamRef.current = null;
-          cleanupVideoElement();
-          const retryStream = await requestCameraStream();
-          streamRef.current = retryStream;
-          setMediaStream(retryStream);
-          await attachStreamToVideo(retryStream);
+          stream = await navigator.mediaDevices.getUserMedia(c);
+          break;
         } catch {
-          setCameraLoading(false);
-          toast.error(t("palm.cameraError"));
+          continue;
         }
-      }, 2500);
+      }
+      if (!stream) throw new Error("Camera unavailable");
+
+      streamRef.current = stream;
+      setMediaStream(stream); // triggers re-render → videoRefCallback fires
     } catch {
       setCameraLoading(false);
       setPhase("permission");
       toast.error(t("palm.cameraError"));
     }
-  }, [attachStreamToVideo, cleanupVideoElement, clearCameraRetryTimeout, requestCameraStream, t]);
-
-  const markCameraReady = useCallback(() => {
-    setVideoReady(true);
-    setCameraLoading(false);
-    clearCameraRetryTimeout();
-  }, [clearCameraRetryTimeout]);
-
-  useEffect(() => {
-    if (phase !== "camera" || !mediaStream || !videoRef.current) {
-      return;
-    }
-
-    const frame = requestAnimationFrame(() => {
-      void attachStreamToVideo(mediaStream);
-    });
-
-    return () => cancelAnimationFrame(frame);
-  }, [phase, mediaStream, attachStreamToVideo]);
+  }, [t]);
 
   const capturePhoto = useCallback(() => {
     const video = videoRef.current;
