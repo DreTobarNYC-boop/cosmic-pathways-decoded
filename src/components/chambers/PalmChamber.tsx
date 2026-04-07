@@ -5,6 +5,7 @@ import { Camera, RotateCcw, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { startScanSound, stopScanSound } from "@/lib/scan-sound";
 
 type Phase = "permission" | "camera" | "preview" | "scanning" | "result";
 type ResultTab = "reading" | "lines" | "mounts" | "markings";
@@ -59,6 +60,8 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [scanProgress, setScanProgress] = useState(0);
+  const scanAnimRef = useRef<number | null>(null);
 
   const stopCamera = useCallback(() => {
     streamRef.current?.getTracks().forEach((track) => track.stop());
