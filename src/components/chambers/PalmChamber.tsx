@@ -49,7 +49,7 @@ export default function PalmScanner() {
   }, []);
 
   const analyzePalm = useCallback(async () => {
-    if (!capturedImage) return;
+    if (!capturedFileRef.current) return;
     setPhase("scanning");
     setScanProgress(0);
 
@@ -64,7 +64,11 @@ export default function PalmScanner() {
     }, 200);
 
     try {
-      const base64 = capturedImage.split(",")[1];
+      const base64 = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(",")[1]);
+        reader.readAsDataURL(capturedFileRef.current);
+      });
       const seed = Math.floor(Math.random() * 999999);
       const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + GEMINI_API_KEY;
 
