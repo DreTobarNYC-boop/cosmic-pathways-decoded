@@ -197,9 +197,10 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
 
       setScanStep(SCAN_PHASES.length - 1);
       setScanProgress(100);
-      await new Promise((r) => setTimeout(r, 800));
-
+      updateScanPitch(100);
       stopScanSound();
+      playCompletionChime();
+      await new Promise((r) => setTimeout(r, 1200));
       setReading(data.content);
       setActiveTab("reading");
       setPhase("result");
