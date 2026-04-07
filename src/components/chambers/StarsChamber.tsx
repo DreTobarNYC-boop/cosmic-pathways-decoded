@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { ChamberLayout } from "@/components/ChamberLayout";
 import { Star, Loader2 } from "lucide-react";
 import { getZodiacImage } from "@/lib/zodiac-images";
+import { BirthChartContent } from "@/components/BirthChartContent";
 import { useAuth } from "@/hooks/use-auth";
 import {
   formatDate,
