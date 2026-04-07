@@ -32,7 +32,7 @@ Structure your response as JSON with this exact format:
 Be mystical, specific, and deeply personal. Never give generic readings. Each palm is unique.`;
 
 export default function PalmScanner() {
-  const videoRef = useRef(null);
+  const fileInputRef = useRef(null);
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
   const [phase, setPhase] = useState("intro");
@@ -512,7 +512,21 @@ export default function PalmScanner() {
 
   return (
     <div style={s.wrap}>
-      <canvas ref={canvasRef} style={{ display: "none" }} />
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        style={{ display: "none" }}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) {
+            const url = URL.createObjectURL(file);
+            setCapturedImage(url);
+            setPhase("preview");
+          }
+        }}
+      />
 
       <div style={s.header}>
         <button style={s.backBtn} onClick={reset}>← Back</button>
@@ -535,38 +549,12 @@ export default function PalmScanner() {
               📸 Keep your hand steady for the scan
             </p>
           </div>
-          <button style={s.btn} onClick={() => startCamera()}>
+          <button style={s.btn} onClick={() => fileInputRef.current?.click()}>
             ✋ Open Palm Scanner
           </button>
         </div>
       )}
 
-      {phase === "camera" && (
-        <div style={{ ...s.content, gap: "16px" }}>
-          <div style={s.videoWrap}>
-            <video
-              ref={videoRef}
-              style={s.video}
-              autoPlay
-              playsInline
-              muted
-            />
-            <div style={s.overlay}>
-              <div style={s.palmGuide}>
-                <div style={s.guideText}>ALIGN PALM HERE</div>
-              </div>
-            </div>
-            <button style={s.flipBtn} onClick={flipCamera}>⟳</button>
-          </div>
-          <p style={{ ...s.p, fontSize: "13px" }}>
-            Center your palm within the guide. Tap capture when ready.
-          </p>
-          <button style={s.captureBtn} onClick={capturePhoto}>
-            📸
-          </button>
-          <button style={s.btnSecondary} onClick={reset}>Cancel</button>
-        </div>
-      )}
 
       {phase === "error" && (
         <div style={s.content}>
