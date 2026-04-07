@@ -35,6 +35,7 @@ export function DailyBriefing({ dob, name, birthPlace, birthTime, onOpenStars }:
   const chineseZodiac = getChineseZodiac(dob.getFullYear());
   const universalDay = getUniversalDay(today);
   const personalDay = getPersonalDay(dob, today);
+  const cusp = getCuspInfo(dob.getMonth() + 1, dob.getDate());
   const dateKey = today.toISOString().split("T")[0];
 
   const lang = i18n.language;
@@ -53,6 +54,7 @@ export function DailyBriefing({ dob, name, birthPlace, birthTime, onOpenStars }:
       name,
       birthPlace: birthPlace || "Unknown",
       birthTime: birthTime || "Unknown",
+      cuspInfo: cusp.onCusp ? cusp.cuspDescription : null,
       language: lang,
     },
     fallback: getFallbackHoroscope(zodiac.element, today),
