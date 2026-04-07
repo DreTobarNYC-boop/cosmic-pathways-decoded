@@ -254,6 +254,7 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
       stopCamera();
       stopScanSound();
       if (scanAnimRef.current) cancelAnimationFrame(scanAnimRef.current);
+      if (hapticIntervalRef.current) clearInterval(hapticIntervalRef.current);
     };
   }, [stopCamera]);
 
