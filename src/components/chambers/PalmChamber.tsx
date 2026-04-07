@@ -547,5 +547,15 @@ export default function PalmScanner() {
 }
 
 export function PalmChamber({ onBack }: { onBack: () => void }) {
-  return <PalmScanner />;
+  return (
+    <div className="relative w-full h-full bg-[#0B1A1A]">
+      <button 
+        onClick={onBack} 
+        className="absolute top-6 left-6 z-50 text-[#B87333] text-sm tracking-widest font-bold"
+      >
+        ← BACK
+      </button>
+      <PalmScanner />
+    </div>
+  );
 }
