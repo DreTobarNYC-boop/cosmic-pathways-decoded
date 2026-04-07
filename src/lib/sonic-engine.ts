@@ -927,8 +927,14 @@ export function play(hz: number, binauralOffset = 4) {
   masterGain!.gain.setValueAtTime(0, Tone.now());
   masterGain!.gain.rampTo(0.5, 2);
 
-  // Solfeggio undertone
-  solfeggioSynth!.triggerAttack(hz);
+  // Solfeggio undertone — for very low hz (Focus/Sleep), use binaural method instead
+  // For Focus (40 Hz gamma): play 200 Hz + 240 Hz to create 40 Hz binaural beat
+  // For Sleep (3 Hz delta): play 150 Hz + 153 Hz to create 3 Hz binaural beat
+  // For solfeggio frequencies: play the actual hz as subtle undertone
+  const isLowHz = hz < 100;
+  const baseFreq = isLowHz ? (hz < 10 ? 150 : 200) : hz;
+
+  solfeggioSynth!.triggerAttack(baseFreq);
 
   // Binaural beat
   if (binauralOsc) {
@@ -936,10 +942,11 @@ export function play(hz: number, binauralOffset = 4) {
     binauralOsc.dispose();
     binauralOsc = null;
   }
+  const binauralFreq = isLowHz ? baseFreq + hz : hz + binauralOffset;
   binauralOsc = new Tone.Oscillator({
-    frequency: hz + binauralOffset,
+    frequency: binauralFreq,
     type: "sine",
-  }).connect(new Tone.Gain(0.04).connect(reverb!));
+  }).connect(new Tone.Gain(isLowHz ? 0.06 : 0.04).connect(reverb!));
   binauralOsc.start();
 
   // Start all sequences
