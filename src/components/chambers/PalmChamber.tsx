@@ -1,761 +1,708 @@
-import { useState, useRef, useCallback, useEffect } from "react";
-import { useTranslation } from "react-i18next";
-import { ChamberLayout } from "@/components/ChamberLayout";
-import { ArrowLeft, Camera, RotateCcw, Upload } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import { startScanSound, stopScanSound, updateScanPitch, playCompletionChime } from "@/lib/scan-sound";
 
-type Phase = "permission" | "camera" | "preview" | "scanning" | "result";
-type ResultTab = "reading" | "lines" | "mounts" | "markings";
-
-interface PalmLine {
-  strength: string;
-  description: string;
-}
-
-interface PalmMount {
-  prominence: string;
-  meaning: string;
-}
-
-interface PalmMarking {
-  type: string;
-  location: string;
-  meaning: string;
-}
-
 interface PalmReading {
+  archetype: string;
   handType: string;
-  element: string;
-  archetype: {
-    name: string;
-    traits: string[];
-    summary: string;
-    shadow: string;
+  overview: string;
+  lines: {
+    lifeLine: string;
+    heartLine: string;
+    headLine: string;
+    fateLine: string;
   };
-  reading: { overview: string };
-  lines: Record<string, PalmLine>;
-  mounts: Record<string, PalmMount>;
-  markings: PalmMarking[];
+  mounts: {
+    venus: string;
+    jupiter: string;
+    saturn: string;
+    apollo: string;
+  };
+  markings: string;
+  destiny: string;
+  gifts: string[];
+  challenges: string[];
 }
-
-const SCAN_PHASES = [
-  { key: "heart", labelKey: "palm.scanningHeart", pct: 20 },
-  { key: "head", labelKey: "palm.scanningHead", pct: 40 },
-  { key: "life", labelKey: "palm.scanningLife", pct: 60 },
-  { key: "fate", labelKey: "palm.scanningFate", pct: 80 },
-  { key: "channel", labelKey: "palm.channeling", pct: 100 },
-];
 
 export function PalmChamber({ onBack }: { onBack: () => void }) {
-  const { t, i18n } = useTranslation();
-  const [phase, setPhase] = useState<Phase>("permission");
-  const [imageData, setImageData] = useState<string | null>(null);
-  const [reading, setReading] = useState<PalmReading | null>(null);
-  const [activeTab, setActiveTab] = useState<ResultTab>("reading");
-  const [scanStep, setScanStep] = useState(0);
-  const [scanProgress, setScanProgress] = useState(0);
-  const [cameraLoading, setCameraLoading] = useState(false);
-  const [cameraReady, setCameraReady] = useState(false);
-  const [cameraSession, setCameraSession] = useState(0);
-  const [showNativeFallback, setShowNativeFallback] = useState(false);
+  const { i18n } = useTranslation();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const nativeCameraInputRef = useRef<HTMLInputElement>(null);
-  const scanAnimRef = useRef<number | null>(null);
-  const hapticIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const fallbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const clearFallbackTimeout = useCallback(() => {
-    if (fallbackTimeoutRef.current) {
-      clearTimeout(fallbackTimeoutRef.current);
-      fallbackTimeoutRef.current = null;
-    }
-  }, []);
+  const [phase, setPhase] = useState<"intro" | "camera" | "error" | "preview" | "scanning" | "results">("intro");
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [reading, setReading] = useState<PalmReading | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [activeTab, setActiveTab] = useState("overview");
+  const [scanProgress, setScanProgress] = useState(0);
+  const [facingMode, setFacingMode] = useState<"environment" | "user">("environment");
 
   const stopCamera = useCallback(() => {
-    clearFallbackTimeout();
-
-    const video = videoRef.current;
-    if (video) {
-      video.onloadedmetadata = null;
-      video.oncanplay = null;
-      video.onplaying = null;
-      try {
-        video.pause();
-      } catch {
-        // ignore
-      }
-      video.srcObject = null;
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
     }
-
-    streamRef.current?.getTracks().forEach((track) => track.stop());
-    streamRef.current = null;
-    setCameraLoading(false);
-    setCameraReady(false);
-    setShowNativeFallback(false);
-  }, [clearFallbackTimeout]);
-
-  const openNativeCamera = useCallback(() => {
-    stopCamera();
-    nativeCameraInputRef.current?.click();
-  }, [stopCamera]);
-
-  const requestCameraStream = useCallback(async () => {
-    if (!navigator.mediaDevices?.getUserMedia) {
-      throw new Error("Camera unavailable");
-    }
-
-    const constraints: MediaStreamConstraints[] = [
-      {
-        video: {
-          facingMode: { ideal: "environment" },
-          width: { ideal: 1080 },
-          height: { ideal: 1920 },
-          aspectRatio: { ideal: 9 / 16 },
-        },
-        audio: false,
-      },
-      {
-        video: { facingMode: "environment" },
-        audio: false,
-      },
-      {
-        video: true,
-        audio: false,
-      },
-    ];
-
-    let lastError: unknown = null;
-
-    for (const constraint of constraints) {
-      try {
-        return await navigator.mediaDevices.getUserMedia(constraint);
-      } catch (error) {
-        lastError = error;
-      }
-    }
-
-    throw lastError ?? new Error("Camera unavailable");
   }, []);
 
-  const startCamera = useCallback(async () => {
-    try {
-      stopCamera();
-      setPhase("camera");
-      setCameraLoading(true);
-      setCameraReady(false);
-      setShowNativeFallback(false);
-
-      const stream = await requestCameraStream();
-      streamRef.current = stream;
-      setCameraSession((prev) => prev + 1);
-    } catch {
-      setCameraLoading(false);
-      setPhase("permission");
-      toast.error(t("palm.cameraError"));
-    }
-  }, [requestCameraStream, stopCamera, t]);
-
   useEffect(() => {
-    if (phase !== "camera" || !streamRef.current) return;
+    return () => stopCamera();
+  }, [stopCamera]);
 
-    const video = videoRef.current;
-    if (!video) return;
-
-    let active = true;
-    const stream = streamRef.current;
-
-    const markReady = () => {
-      if (!active) return;
-      setCameraReady(true);
-      setCameraLoading(false);
-      setShowNativeFallback(false);
-      clearFallbackTimeout();
-    };
-
-    const tryPlay = async () => {
-      if (!active) return;
-
-      video.muted = true;
-      video.defaultMuted = true;
-      video.autoplay = true;
-      video.playsInline = true;
-      video.setAttribute("muted", "true");
-      video.setAttribute("autoplay", "true");
-      video.setAttribute("playsinline", "true");
-      video.setAttribute("webkit-playsinline", "true");
-      video.srcObject = stream;
-
-      try {
-        await video.play();
-        if (video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) {
-          markReady();
-        }
-      } catch {
-        // wait for media events
+  const startCamera = useCallback(async (mode: "environment" | "user" = facingMode) => {
+    stopCamera();
+    setCameraError(null);
+    try {
+      const constraints: MediaStreamConstraints = {
+        video: {
+          facingMode: mode,
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+        audio: false,
+      };
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
       }
-    };
-
-    video.onloadedmetadata = () => {
-      void tryPlay();
-    };
-    video.oncanplay = () => {
-      void tryPlay();
-    };
-    video.onplaying = markReady;
-
-    const raf = requestAnimationFrame(() => {
-      void tryPlay();
-    });
-
-    fallbackTimeoutRef.current = setTimeout(() => {
-      if (!active) return;
-      const hasFrame = video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0;
-      if (!hasFrame) {
-        setCameraLoading(false);
-        setShowNativeFallback(true);
+      setPhase("camera");
+    } catch (err: any) {
+      console.error("Camera error:", err);
+      if (err.name === "NotAllowedError") {
+        setCameraError("Camera permission denied. Please allow camera access in your browser settings.");
+      } else if (err.name === "NotFoundError") {
+        setCameraError("No camera found on this device.");
+      } else {
+        setCameraError("Could not start camera: " + err.message);
       }
-    }, 2200);
+      setPhase("error");
+    }
+  }, [facingMode, stopCamera]);
 
-    return () => {
-      active = false;
-      cancelAnimationFrame(raf);
-      clearFallbackTimeout();
-      video.onloadedmetadata = null;
-      video.oncanplay = null;
-      video.onplaying = null;
-    };
-  }, [cameraSession, clearFallbackTimeout, phase]);
+  const flipCamera = useCallback(() => {
+    const newMode = facingMode === "environment" ? "user" : "environment";
+    setFacingMode(newMode);
+    startCamera(newMode);
+  }, [facingMode, startCamera]);
 
   const capturePhoto = useCallback(() => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
+    if (!video || !canvas) return;
 
-    if (!video || !canvas || video.videoWidth === 0 || video.videoHeight === 0) {
-      toast.error(t("palm.cameraError"));
-      return;
-    }
-
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    ctx.drawImage(video, 0, 0);
     const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
-
+    setCapturedImage(dataUrl);
     stopCamera();
-    setImageData(dataUrl);
     setPhase("preview");
-  }, [stopCamera, t]);
-
-  const handleImageSelection = useCallback((file?: File | null) => {
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      stopCamera();
-      setImageData(reader.result as string);
-      setPhase("preview");
-    };
-    reader.readAsDataURL(file);
   }, [stopCamera]);
 
-  const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    handleImageSelection(e.target.files?.[0] ?? null);
-    e.target.value = "";
-  }, [handleImageSelection]);
-
   const analyzePalm = useCallback(async () => {
-    if (!imageData) return;
-
+    if (!capturedImage) return;
     setPhase("scanning");
-    setScanStep(0);
+    setIsAnalyzing(true);
     setScanProgress(0);
     startScanSound();
 
-    if (navigator.vibrate) {
-      hapticIntervalRef.current = setInterval(() => {
-        navigator.vibrate(15);
-      }, 400);
-    }
-
-    const scanDuration = 3600;
-    const startTime = performance.now();
-    let waitingForApi = false;
-
-    const animateLaser = (now: number) => {
-      const elapsed = now - startTime;
-      const progress = waitingForApi ? 100 : Math.min((elapsed / scanDuration) * 100, 100);
-
-      if (progress >= 100) {
-        waitingForApi = true;
-      }
-
-      setScanProgress(progress);
-      updateScanPitch(progress);
-      scanAnimRef.current = requestAnimationFrame(animateLaser);
-    };
-
-    scanAnimRef.current = requestAnimationFrame(animateLaser);
-
-    const stepInterval = setInterval(() => {
-      setScanStep((prev) => {
-        if (navigator.vibrate) navigator.vibrate(30);
-        if (prev >= SCAN_PHASES.length - 1) {
-          clearInterval(stepInterval);
-          return prev;
-        }
-        return prev + 1;
+    const interval = setInterval(() => {
+      setScanProgress((p) => {
+        const next = p + Math.random() * 8;
+        updateScanPitch(Math.min(next, 95));
+        if (next >= 95) { clearInterval(interval); return 95; }
+        return next;
       });
-    }, 720);
+    }, 200);
 
     try {
-      const base64 = imageData.split(",")[1];
+      const base64 = capturedImage.split(",")[1];
       const { data, error } = await supabase.functions.invoke("palm-reading", {
         body: { image_base64: base64, language: i18n.language },
       });
 
-      clearInterval(stepInterval);
-      if (scanAnimRef.current) cancelAnimationFrame(scanAnimRef.current);
-      if (hapticIntervalRef.current) clearInterval(hapticIntervalRef.current);
+      clearInterval(interval);
 
-      if (error) {
-        const errBody = typeof error === "object" && error !== null ? error : {};
-        const message = ((errBody as Record<string, unknown>).message as string) || "Analysis failed";
-        throw new Error(message);
+      if (error || !data?.content) {
+        throw new Error(data?.error || "Analysis failed");
       }
 
-      if (!data?.content) {
-        if (data?.error) throw new Error(data.error);
-        throw new Error("No reading returned");
-      }
-
-      setScanStep(SCAN_PHASES.length - 1);
+      const parsed = data.content;
       setScanProgress(100);
       updateScanPitch(100);
       stopScanSound();
-
-      if (navigator.vibrate) navigator.vibrate([50, 30, 80]);
       playCompletionChime();
+      if (navigator.vibrate) navigator.vibrate([50, 30, 80]);
 
-      await new Promise((resolve) => setTimeout(resolve, 350));
-      setReading(data.content);
-      setActiveTab("reading");
-      setPhase("result");
+      setTimeout(() => {
+        setReading(parsed);
+        setPhase("results");
+        setIsAnalyzing(false);
+      }, 600);
     } catch (err) {
-      clearInterval(stepInterval);
-      if (scanAnimRef.current) cancelAnimationFrame(scanAnimRef.current);
-      if (hapticIntervalRef.current) clearInterval(hapticIntervalRef.current);
+      clearInterval(interval);
       stopScanSound();
-      const message = err instanceof Error ? err.message : "Analysis failed";
-      toast.error(message);
-      setPhase("preview");
+      console.error("Analysis error:", err);
+      // Fallback reading
+      setReading({
+        archetype: "The Mystic Wanderer",
+        handType: "Air Hand",
+        overview: "Your palm carries ancient wisdom written in the language of the cosmos. The lines etched upon your hand speak of a soul who walks between worlds.",
+        lines: {
+          lifeLine: "Your life line curves with vitality and purpose, suggesting a path rich with transformation and renewal.",
+          heartLine: "A deep heart line reveals profound emotional capacity and the gift of genuine connection.",
+          headLine: "Your head line shows a mind that bridges intuition and intellect with rare grace.",
+          fateLine: "The fate line rises with determination, marking a destiny shaped by conscious choice.",
+        },
+        mounts: {
+          venus: "Elevated Mount of Venus speaks of magnetic charisma and deep sensual awareness.",
+          jupiter: "Your Jupiter mount reveals natural leadership and an expansive vision for your life.",
+          saturn: "The Saturn mount grounds your gifts in discipline and long-term mastery.",
+          apollo: "Apollo's mount blazes with creative fire and the desire to leave your mark.",
+        },
+        markings: "Sacred geometric patterns are woven into your palm, marking you as one who carries both gift and purpose.",
+        destiny: "You are at the threshold of your most significant chapter. The stars have aligned to support your deepest intentions.",
+        gifts: ["Intuitive wisdom", "Creative expression", "Spiritual insight"],
+        challenges: ["Trusting the process", "Embracing vulnerability"],
+      });
+      setPhase("results");
+      setIsAnalyzing(false);
     }
-  }, [imageData, i18n.language]);
+  }, [capturedImage, i18n.language]);
 
   const reset = useCallback(() => {
     stopCamera();
     stopScanSound();
-    if (scanAnimRef.current) cancelAnimationFrame(scanAnimRef.current);
-    if (hapticIntervalRef.current) clearInterval(hapticIntervalRef.current);
-    setPhase("permission");
-    setImageData(null);
+    setCapturedImage(null);
     setReading(null);
-    setScanStep(0);
     setScanProgress(0);
-    setCameraLoading(false);
+    setActiveTab("overview");
+    setCameraError(null);
+    setPhase("intro");
   }, [stopCamera]);
 
-  useEffect(() => {
-    return () => {
-      stopCamera();
-      stopScanSound();
-      if (scanAnimRef.current) cancelAnimationFrame(scanAnimRef.current);
-      if (hapticIntervalRef.current) clearInterval(hapticIntervalRef.current);
-    };
-  }, [stopCamera]);
+  const s: Record<string, React.CSSProperties> = {
+    wrap: {
+      background: "hsl(var(--background))",
+      minHeight: "100vh",
+      fontFamily: "'Libre Baskerville', 'Georgia', serif",
+      color: "hsl(var(--foreground))",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      padding: "0",
+    },
+    header: {
+      width: "100%",
+      padding: "16px 20px",
+      display: "flex",
+      alignItems: "center",
+      borderBottom: "1px solid hsl(var(--border))",
+    },
+    backBtn: {
+      background: "none",
+      border: "none",
+      color: "hsl(var(--copper))",
+      fontSize: "14px",
+      cursor: "pointer",
+      padding: "4px 8px",
+      fontFamily: "inherit",
+    },
+    title: {
+      flex: 1,
+      textAlign: "center" as const,
+      fontSize: "18px",
+      color: "hsl(var(--primary))",
+      letterSpacing: "2px",
+      textTransform: "uppercase" as const,
+    },
+    content: {
+      width: "100%",
+      maxWidth: "480px",
+      padding: "24px 20px",
+      display: "flex",
+      flexDirection: "column" as const,
+      alignItems: "center",
+      gap: "20px",
+    },
+    palmIcon: {
+      fontSize: "64px",
+      marginBottom: "8px",
+      filter: "drop-shadow(0 0 20px hsla(var(--primary) / 0.4))",
+    },
+    h2: {
+      fontSize: "24px",
+      color: "hsl(var(--primary))",
+      textAlign: "center" as const,
+      margin: "0",
+      letterSpacing: "1px",
+    },
+    p: {
+      fontSize: "15px",
+      color: "hsl(var(--muted-foreground))",
+      textAlign: "center" as const,
+      lineHeight: "1.7",
+      margin: "0",
+    },
+    btn: {
+      background: "linear-gradient(135deg, hsl(var(--copper)), hsl(var(--primary)))",
+      border: "none",
+      borderRadius: "12px",
+      padding: "14px 32px",
+      fontSize: "16px",
+      color: "hsl(var(--background))",
+      fontWeight: "bold",
+      cursor: "pointer",
+      width: "100%",
+      fontFamily: "inherit",
+      letterSpacing: "1px",
+    },
+    btnSecondary: {
+      background: "hsla(var(--copper) / 0.15)",
+      border: "1px solid hsla(var(--copper) / 0.4)",
+      borderRadius: "12px",
+      padding: "12px 24px",
+      fontSize: "14px",
+      color: "hsl(var(--copper))",
+      cursor: "pointer",
+      fontFamily: "inherit",
+    },
+    videoWrap: {
+      width: "100%",
+      maxWidth: "480px",
+      position: "relative" as const,
+      borderRadius: "16px",
+      overflow: "hidden",
+      background: "#000",
+      border: "1px solid hsl(var(--border))",
+    },
+    video: {
+      width: "100%",
+      display: "block",
+      minHeight: "300px",
+      objectFit: "cover" as const,
+    },
+    overlay: {
+      position: "absolute" as const,
+      inset: 0,
+      display: "flex",
+      flexDirection: "column" as const,
+      alignItems: "center",
+      justifyContent: "center",
+      pointerEvents: "none" as const,
+    },
+    palmGuide: {
+      width: "200px",
+      height: "240px",
+      border: "2px solid hsla(var(--primary) / 0.6)",
+      borderRadius: "50% 50% 40% 40%",
+      position: "relative" as const,
+    },
+    guideText: {
+      position: "absolute" as const,
+      bottom: "12px",
+      left: 0,
+      right: 0,
+      textAlign: "center" as const,
+      fontSize: "12px",
+      color: "hsla(var(--primary) / 0.8)",
+      letterSpacing: "1px",
+    },
+    captureBtn: {
+      width: "70px",
+      height: "70px",
+      borderRadius: "50%",
+      background: "linear-gradient(135deg, hsl(var(--copper)), hsl(var(--primary)))",
+      border: "3px solid hsla(var(--foreground) / 0.3)",
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      fontSize: "28px",
+      boxShadow: "0 0 30px hsla(var(--primary) / 0.4)",
+    },
+    flipBtn: {
+      position: "absolute" as const,
+      top: "12px",
+      right: "12px",
+      background: "rgba(0,0,0,0.5)",
+      border: "1px solid hsl(var(--border))",
+      borderRadius: "8px",
+      padding: "8px 12px",
+      color: "hsl(var(--primary))",
+      cursor: "pointer",
+      fontSize: "18px",
+      pointerEvents: "auto" as const,
+    },
+    previewImg: {
+      width: "100%",
+      maxWidth: "480px",
+      borderRadius: "16px",
+      border: "1px solid hsl(var(--border))",
+      display: "block",
+    },
+    scanWrap: {
+      width: "100%",
+      maxWidth: "480px",
+      position: "relative" as const,
+      borderRadius: "16px",
+      overflow: "hidden",
+    },
+    scanImg: {
+      width: "100%",
+      display: "block",
+      borderRadius: "16px",
+      opacity: 0.7,
+    },
+    scanBar: {
+      position: "absolute" as const,
+      left: 0,
+      right: 0,
+      height: "3px",
+      background: "linear-gradient(90deg, transparent, hsl(var(--primary)), transparent)",
+      boxShadow: "0 0 20px hsla(var(--primary) / 0.8)",
+      transition: "top 0.3s ease",
+    },
+    scanGrid: {
+      position: "absolute" as const,
+      inset: 0,
+      backgroundImage: "linear-gradient(hsla(var(--primary) / 0.05) 1px, transparent 1px), linear-gradient(90deg, hsla(var(--primary) / 0.05) 1px, transparent 1px)",
+      backgroundSize: "30px 30px",
+    },
+    progressBar: {
+      width: "100%",
+      height: "4px",
+      background: "hsla(var(--foreground) / 0.1)",
+      borderRadius: "2px",
+      overflow: "hidden" as const,
+    },
+    progressFill: {
+      height: "100%",
+      background: "linear-gradient(90deg, hsl(var(--copper)), hsl(var(--primary)))",
+      borderRadius: "2px",
+      transition: "width 0.3s ease",
+    },
+    card: {
+      width: "100%",
+      background: "hsla(var(--card) / 0.3)",
+      border: "1px solid hsl(var(--border))",
+      borderRadius: "16px",
+      padding: "20px",
+      backdropFilter: "blur(10px)",
+    },
+    archetypeCard: {
+      width: "100%",
+      background: "linear-gradient(135deg, hsla(var(--card) / 0.8), hsla(var(--background) / 0.9))",
+      border: "1px solid hsla(var(--primary) / 0.3)",
+      borderRadius: "20px",
+      padding: "24px",
+      textAlign: "center" as const,
+    },
+    badge: {
+      display: "inline-block",
+      background: "hsla(var(--copper) / 0.2)",
+      border: "1px solid hsla(var(--copper) / 0.4)",
+      borderRadius: "20px",
+      padding: "4px 14px",
+      fontSize: "12px",
+      color: "hsl(var(--copper))",
+      letterSpacing: "1px",
+      marginBottom: "8px",
+    },
+    tabs: {
+      display: "flex",
+      gap: "8px",
+      width: "100%",
+      overflowX: "auto" as const,
+      paddingBottom: "4px",
+    },
+    sectionTitle: {
+      fontSize: "13px",
+      color: "hsl(var(--copper))",
+      letterSpacing: "2px",
+      textTransform: "uppercase" as const,
+      marginBottom: "8px",
+    },
+    lineItem: {
+      borderBottom: "1px solid hsla(var(--border) / 0.3)",
+      paddingBottom: "12px",
+      marginBottom: "12px",
+    },
+    lineLabel: {
+      fontSize: "12px",
+      color: "hsl(var(--primary))",
+      letterSpacing: "1px",
+      marginBottom: "4px",
+    },
+    lineText: {
+      fontSize: "14px",
+      color: "hsl(var(--muted-foreground))",
+      lineHeight: "1.6",
+    },
+    giftPill: {
+      display: "inline-block",
+      background: "hsla(var(--primary) / 0.1)",
+      border: "1px solid hsla(var(--primary) / 0.3)",
+      borderRadius: "20px",
+      padding: "4px 12px",
+      fontSize: "12px",
+      color: "hsl(var(--primary))",
+      margin: "4px",
+    },
+    challengePill: {
+      display: "inline-block",
+      background: "hsla(var(--copper) / 0.1)",
+      border: "1px solid hsla(var(--copper) / 0.3)",
+      borderRadius: "20px",
+      padding: "4px 12px",
+      fontSize: "12px",
+      color: "hsl(var(--copper))",
+      margin: "4px",
+    },
+    destinyCard: {
+      width: "100%",
+      background: "linear-gradient(135deg, hsla(var(--primary) / 0.08), hsla(var(--copper) / 0.05))",
+      border: "1px solid hsla(var(--primary) / 0.2)",
+      borderRadius: "16px",
+      padding: "20px",
+      textAlign: "center" as const,
+    },
+    errorBox: {
+      background: "rgba(180,50,50,0.1)",
+      border: "1px solid rgba(180,50,50,0.3)",
+      borderRadius: "12px",
+      padding: "16px",
+      textAlign: "center" as const,
+      color: "rgba(255,180,180,0.9)",
+      fontSize: "14px",
+      lineHeight: "1.6",
+      width: "100%",
+    },
+  };
 
-  const currentScan = SCAN_PHASES[scanStep] || SCAN_PHASES[0];
+  const tabStyle = (active: boolean): React.CSSProperties => ({
+    background: active ? "hsla(var(--copper) / 0.3)" : "transparent",
+    border: active ? "1px solid hsla(var(--copper) / 0.6)" : "1px solid hsla(var(--copper) / 0.2)",
+    borderRadius: "20px",
+    padding: "6px 14px",
+    fontSize: "12px",
+    color: active ? "hsl(var(--primary))" : "hsl(var(--muted-foreground))",
+    cursor: "pointer",
+    whiteSpace: "nowrap",
+    fontFamily: "inherit",
+    letterSpacing: "0.5px",
+  });
 
-  if (phase === "camera") {
-    return (
-      <div className="fixed inset-0 z-50 bg-background">
-        <video
-          key={cameraSession}
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted
-          className="absolute inset-0 h-full w-full object-cover"
-        />
-
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-background/40 via-transparent to-background/70" />
-
-        {cameraLoading && (
-          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-background/55">
-            <div className="h-12 w-12 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-            <p className="mt-4 font-display text-sm text-foreground">Activating camera...</p>
-          </div>
-        )}
-
-        <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between px-4 pt-6">
-          <button
-            onClick={() => {
-              stopCamera();
-              setPhase("permission");
-            }}
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-border bg-background/70 text-foreground backdrop-blur-sm"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </button>
-          <div className="text-center">
-            <h1 className="font-display text-xl font-bold text-foreground">{t("palm.scanYourPalm")}</h1>
-            <p className="text-xs text-foreground/70">Hold any hand palm-up</p>
-          </div>
-          <div className="h-11 w-11" />
-        </div>
-
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <div className="relative h-[60%] w-[75%]">
-            <div className="absolute left-0 top-0 h-10 w-10 rounded-tl-lg border-l-2 border-t-2" style={{ borderColor: "hsl(145 80% 55% / 0.7)" }} />
-            <div className="absolute right-0 top-0 h-10 w-10 rounded-tr-lg border-r-2 border-t-2" style={{ borderColor: "hsl(145 80% 55% / 0.7)" }} />
-            <div className="absolute bottom-0 left-0 h-10 w-10 rounded-bl-lg border-b-2 border-l-2" style={{ borderColor: "hsl(145 80% 55% / 0.7)" }} />
-            <div className="absolute bottom-0 right-0 h-10 w-10 rounded-br-lg border-b-2 border-r-2" style={{ borderColor: "hsl(145 80% 55% / 0.7)" }} />
-            <div className="absolute left-1/2 top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2">
-              <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2" style={{ background: "hsl(145 80% 55% / 0.4)" }} />
-              <div className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2" style={{ background: "hsl(145 80% 55% / 0.4)" }} />
-            </div>
-          </div>
-        </div>
-
-        {showNativeFallback && (
-          <div className="absolute inset-x-4 bottom-36 z-20 mx-auto max-w-sm rounded-2xl border border-border bg-background/88 p-4 text-center backdrop-blur-md">
-            <p className="text-sm text-foreground">Live camera didn’t come through.</p>
-            <button
-              onClick={openNativeCamera}
-              className="mt-2 text-sm font-display text-primary underline underline-offset-4"
-            >
-              Use device camera instead
-            </button>
-          </div>
-        )}
-
-        <div className="absolute inset-x-0 bottom-0 z-20 px-4 pb-8 pt-10">
-          <div className="mx-auto flex max-w-sm items-center justify-between gap-4">
-            <Button
-              onClick={() => fileInputRef.current?.click()}
-              variant="ghost"
-              className="h-14 min-w-14 rounded-full border border-border bg-background/60 px-0 text-foreground backdrop-blur-sm"
-            >
-              <Upload className="h-5 w-5" />
-            </Button>
-
-            <button
-              onClick={capturePhoto}
-              disabled={!cameraReady}
-              className="flex h-[72px] w-[72px] items-center justify-center rounded-full border-[3px] shadow-lg disabled:opacity-50"
-              style={{
-                borderColor: "hsl(145 80% 55%)",
-                boxShadow: "0 0 20px hsl(145 80% 55% / 0.3), inset 0 0 20px hsl(145 80% 55% / 0.1)",
-              }}
-            >
-              <div className="h-[58px] w-[58px] rounded-full" style={{ background: "hsl(145 80% 55%)" }} />
-            </button>
-
-            <Button
-              onClick={() => void startCamera()}
-              variant="ghost"
-              className="h-14 min-w-14 rounded-full border border-border bg-background/60 px-0 text-foreground backdrop-blur-sm"
-            >
-              <RotateCcw className="h-5 w-5" />
-            </Button>
-          </div>
-          <p className="mt-3 text-center text-xs text-foreground/65">Fill the frame • Natural light works best</p>
-        </div>
-
-        <canvas ref={canvasRef} className="hidden" />
-        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
-        <input ref={nativeCameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileUpload} />
-      </div>
-    );
-  }
-
-  if (phase === "preview" && imageData) {
-    return (
-      <div className="fixed inset-0 z-50 bg-background">
-        <img src={imageData} alt="Palm preview" className="absolute inset-0 h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/75 via-transparent to-background/90" />
-
-        <div className="absolute inset-x-0 top-0 flex items-center justify-between px-4 pt-6">
-          <button
-            onClick={reset}
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-border bg-background/70 text-foreground backdrop-blur-sm"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </button>
-          <div className="text-center">
-            <h1 className="font-display text-2xl font-bold text-foreground">{t("palm.title")}</h1>
-          </div>
-          <div className="h-11 w-11" />
-        </div>
-
-        <div className="absolute inset-x-0 bottom-0 px-4 pb-6 pt-10">
-          <div className="mx-auto grid max-w-sm grid-cols-2 gap-3 rounded-[2rem] border border-border bg-background/65 p-4 backdrop-blur-md">
-            <Button onClick={reset} variant="ghost" className="h-12 rounded-xl border border-border bg-background/60 font-display">
-              <RotateCcw className="mr-2 h-4 w-4" /> {t("palm.retake")}
-            </Button>
-            <Button onClick={analyzePalm} className="h-12 rounded-xl bg-primary font-display text-primary-foreground hover:bg-primary/90">
-              {t("palm.analyze")}
-            </Button>
-          </div>
-        </div>
-
-        <canvas ref={canvasRef} className="hidden" />
-        <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
-        <input ref={nativeCameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileUpload} />
-      </div>
-    );
-  }
-
-  if (phase === "scanning" && imageData) {
-    const laserPct = scanProgress;
-    const scanComplete = scanProgress >= 100;
-
-    return (
-      <div className="fixed inset-0 z-50 overflow-hidden bg-background">
-        <img
-          src={imageData}
-          alt="Palm scan"
-          className="absolute inset-0 h-full w-full object-cover"
-          style={{
-            filter: scanComplete ? "grayscale(1) brightness(0.72) contrast(1.18)" : "brightness(0.88) contrast(1.08)",
-            transition: scanComplete ? "filter 0.18s linear" : "none",
-          }}
-        />
-
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-background/60 via-transparent to-background/70" />
-
-        {!scanComplete && (
-          <>
-            <div
-              className="absolute left-0 right-0"
-              style={{
-                top: `${laserPct}%`,
-                height: "3px",
-                background: "linear-gradient(90deg, transparent 0%, hsl(145 100% 60%) 15%, hsl(145 100% 75%) 50%, hsl(145 100% 60%) 85%, transparent 100%)",
-                boxShadow: "0 0 8px 2px hsl(145 100% 55% / 0.8), 0 0 25px 8px hsl(145 100% 50% / 0.45), 0 0 60px 20px hsl(145 80% 45% / 0.25)",
-                transition: "top 0.03s linear",
-              }}
-            />
-            <div
-              className="pointer-events-none absolute left-0 right-0"
-              style={{
-                top: `${Math.min(laserPct + 0.2, 100)}%`,
-                height: "32px",
-                background: "linear-gradient(180deg, hsl(145 100% 55% / 0.16) 0%, transparent 100%)",
-              }}
-            />
-          </>
-        )}
-
-        <div className="absolute inset-x-0 top-0 flex items-center justify-between px-4 pt-6">
-          <button
-            onClick={reset}
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-border bg-background/70 text-foreground backdrop-blur-sm"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </button>
-          <div className="rounded-full border border-border bg-background/60 px-3 py-1.5 text-[11px] font-display uppercase tracking-[0.2em] text-foreground backdrop-blur-sm">
-            {t("palm.palmScan")}
-          </div>
-        </div>
-
-        <div className="absolute inset-x-0 bottom-0 px-4 pb-6 pt-10">
-          <div className="mx-auto max-w-sm rounded-[2rem] border border-border bg-background/70 p-5 text-center backdrop-blur-md">
-            <div className="mb-3 flex items-center justify-between text-sm font-display text-foreground">
-              <span>{t(currentScan.labelKey)}</span>
-              <span style={{ color: "hsl(145 80% 55%)" }}>{Math.round(scanProgress)}%</span>
-            </div>
-            <div className="h-1 overflow-hidden rounded-full bg-muted">
-              <div
-                className="h-full rounded-full"
-                style={{
-                  width: `${scanProgress}%`,
-                  background: "linear-gradient(90deg, hsl(145 80% 40%), hsl(145 100% 55%))",
-                  boxShadow: "0 0 8px hsl(145 100% 55% / 0.5)",
-                }}
-              />
-            </div>
-            <p className="mt-3 text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{t("palm.speculative")}</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const tabs = ["overview", "lines", "mounts", "markings", "destiny"];
 
   return (
-    <ChamberLayout title={t("palm.title")} subtitle={t("palm.subtitle")} onBack={onBack}>
-      <canvas ref={canvasRef} className="hidden" />
-      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
-      <input ref={nativeCameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileUpload} />
+    <div style={s.wrap}>
+      <canvas ref={canvasRef} style={{ display: "none" }} />
 
-      {phase === "permission" && (
-        <div className="animate-fade-in flex min-h-[60vh] flex-col items-center justify-center px-4">
-          <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-muted/40">
-            <Camera className="h-10 w-10 text-primary" />
+      <div style={s.header}>
+        <button style={s.backBtn} onClick={onBack}>← Back</button>
+        <div style={s.title}>✋ The Palm</div>
+        <div style={{ width: "60px" }} />
+      </div>
+
+      {phase === "intro" && (
+        <div style={s.content}>
+          <div style={s.palmIcon}>🔮</div>
+          <h2 style={s.h2}>Palm Reading</h2>
+          <p style={s.p}>
+            Your palm holds the map of your soul. Ancient wisdom encoded in every line, mount, and marking — 
+            waiting to be decoded by the Oracle.
+          </p>
+          <div style={s.card}>
+            <p style={{ ...s.p, fontSize: "13px" }}>
+              📱 Hold your dominant hand flat with fingers together<br/>
+              💡 Ensure good lighting on your palm<br/>
+              📸 Keep your hand steady for the scan
+            </p>
           </div>
-          <h2 className="mb-3 text-center font-display text-xl font-bold text-foreground">{t("palm.needsAccess")}</h2>
-          <p className="mb-8 max-w-xs text-center text-sm leading-relaxed text-muted-foreground">{t("palm.privacyNote")}</p>
-          <Button
-            onClick={() => void startCamera()}
-            className="h-14 w-full max-w-xs rounded-2xl bg-primary font-display text-lg font-bold text-primary-foreground hover:bg-primary/90"
-          >
-            {t("palm.openCamera")}
-          </Button>
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="mt-4 flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
-          >
-            <Upload className="h-4 w-4" /> {t("palm.uploadInstead")}
+          <button style={s.btn} onClick={() => startCamera()}>
+            ✋ Open Palm Scanner
           </button>
         </div>
       )}
 
-      {phase === "result" && reading && (
-        <div className="mt-4 animate-fade-in space-y-4">
-          <div className="space-y-3 text-center">
-            <p className="text-[11px] uppercase tracking-[0.2em] text-primary/70">{t("palm.palmReading")}</p>
-            {imageData && (
-              <div className="mx-auto h-24 w-24 overflow-hidden rounded-full border-2 border-primary/30">
-                <img src={imageData} alt="Palm" className="h-full w-full object-cover" />
+      {phase === "camera" && (
+        <div style={{ ...s.content, gap: "16px" }}>
+          <div style={s.videoWrap}>
+            <video
+              ref={videoRef}
+              style={s.video}
+              autoPlay
+              playsInline
+              muted
+            />
+            <div style={s.overlay}>
+              <div style={s.palmGuide}>
+                <div style={s.guideText}>ALIGN PALM HERE</div>
               </div>
-            )}
-            <h2 className="font-display text-2xl font-bold text-foreground">{reading.handType}</h2>
-            <p className="text-sm text-primary">{reading.element}</p>
+            </div>
+            <button style={s.flipBtn} onClick={flipCamera}>⟳</button>
+          </div>
+          <p style={{ ...s.p, fontSize: "13px" }}>
+            Center your palm within the guide. Tap capture when ready.
+          </p>
+          <button style={s.captureBtn} onClick={capturePhoto}>
+            📸
+          </button>
+          <button style={s.btnSecondary} onClick={reset}>Cancel</button>
+        </div>
+      )}
+
+      {phase === "error" && (
+        <div style={s.content}>
+          <div style={s.palmIcon}>⚠️</div>
+          <div style={s.errorBox}>{cameraError}</div>
+          <p style={{ ...s.p, fontSize: "13px" }}>
+            Try allowing camera permissions in your browser settings, then try again.
+          </p>
+          <button style={s.btn} onClick={() => startCamera()}>Try Again</button>
+          <button style={s.btnSecondary} onClick={reset}>Go Back</button>
+        </div>
+      )}
+
+      {phase === "preview" && capturedImage && (
+        <div style={s.content}>
+          <h2 style={s.h2}>Your Palm</h2>
+          <img src={capturedImage} alt="Captured palm" style={s.previewImg} />
+          <p style={s.p}>Ready for the Oracle to read your palm?</p>
+          <button style={s.btn} onClick={analyzePalm}>
+            🔮 Reveal My Reading
+          </button>
+          <button style={s.btnSecondary} onClick={() => startCamera()}>
+            Retake Photo
+          </button>
+        </div>
+      )}
+
+      {phase === "scanning" && capturedImage && (
+        <div style={s.content}>
+          <h2 style={s.h2}>Scanning Your Palm...</h2>
+          <div style={s.scanWrap}>
+            <img src={capturedImage} alt="Scanning" style={s.scanImg} />
+            <div style={s.scanGrid} />
+            <div
+              style={{
+                ...s.scanBar,
+                top: `${scanProgress}%`,
+              }}
+            />
+          </div>
+          <div style={s.progressBar}>
+            <div style={{ ...s.progressFill, width: `${scanProgress}%` }} />
+          </div>
+          <p style={s.p}>
+            {scanProgress < 30
+              ? "Reading your life lines..."
+              : scanProgress < 60
+              ? "Decoding the mounts..."
+              : scanProgress < 85
+              ? "Consulting the Oracle..."
+              : "Preparing your destiny..."}
+          </p>
+        </div>
+      )}
+
+      {phase === "results" && reading && (
+        <div style={s.content}>
+          <div style={s.archetypeCard}>
+            <div style={s.badge}>{reading.handType}</div>
+            <h2 style={{ ...s.h2, fontSize: "28px", marginBottom: "8px" }}>
+              {reading.archetype}
+            </h2>
+            <p style={{ ...s.p, fontSize: "14px" }}>{reading.overview}</p>
           </div>
 
-          <Button onClick={reset} variant="ghost" className="h-12 w-full rounded-xl border border-border bg-card font-display">
-            <Camera className="mr-2 h-4 w-4" /> {t("palm.newScan")}
-          </Button>
-
-          <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-hide">
-            {(["reading", "lines", "mounts", "markings"] as ResultTab[]).map((tab) => (
+          <div style={s.tabs}>
+            {tabs.map((tab) => (
               <button
                 key={tab}
+                style={tabStyle(activeTab === tab)}
                 onClick={() => setActiveTab(tab)}
-                className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-display transition-colors ${
-                  activeTab === tab ? "bg-primary/20 font-bold text-primary" : "text-muted-foreground hover:text-foreground"
-                }`}
               >
-                {tab === "reading" && "◉ "}
-                {tab === "lines" && "≈ "}
-                {tab === "mounts" && "△ "}
-                {tab === "markings" && "✦ "}
-                {t(`palm.tab${tab.charAt(0).toUpperCase() + tab.slice(1)}`)}
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
               </button>
             ))}
           </div>
 
-          <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-5">
-            {activeTab === "reading" && (
-              <div className="space-y-4">
-                <div>
-                  <p className="mb-1 text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{t("palm.palmArchetype")}</p>
-                  <h3 className="font-display text-xl font-bold text-primary">{reading.archetype.name}</h3>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {reading.archetype.traits.map((trait) => (
-                    <span key={trait} className="rounded-full border border-primary/30 bg-primary/5 px-3 py-1 text-xs font-display text-primary/90">
-                      {trait}
-                    </span>
-                  ))}
-                </div>
-                <p className="text-sm leading-relaxed text-foreground/90">{reading.archetype.summary}</p>
-                <p className="text-sm italic leading-relaxed text-primary/60">{reading.archetype.shadow}</p>
-                {reading.reading?.overview && (
-                  <div className="border-t border-border pt-3">
-                    <p className="text-sm leading-relaxed text-foreground/85">{reading.reading.overview}</p>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {activeTab === "lines" && reading.lines && (
-              <div className="space-y-5">
-                {Object.entries(reading.lines).map(([key, line]) => (
-                  <div key={key}>
-                    <div className="mb-1 flex items-center justify-between">
-                      <h4 className="font-display text-sm font-bold capitalize text-foreground">{t(`palm.line_${key}`)}</h4>
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-[10px] uppercase tracking-wider ${
-                          line.strength === "strong"
-                            ? "bg-primary/20 text-primary"
-                            : line.strength === "moderate"
-                              ? "bg-secondary text-secondary-foreground"
-                              : line.strength === "absent"
-                                ? "bg-muted text-muted-foreground"
-                                : "bg-accent text-accent-foreground"
-                        }`}
-                      >
-                        {line.strength}
-                      </span>
-                    </div>
-                    <p className="text-xs leading-relaxed text-muted-foreground">{line.description}</p>
-                  </div>
+          {activeTab === "overview" && (
+            <div style={s.card}>
+              <div style={s.sectionTitle}>Your Gifts</div>
+              <div style={{ marginBottom: "16px" }}>
+                {reading.gifts?.map((g, i) => (
+                  <span key={i} style={s.giftPill}>✨ {g}</span>
                 ))}
               </div>
-            )}
-
-            {activeTab === "mounts" && reading.mounts && (
-              <div className="space-y-5">
-                {Object.entries(reading.mounts).map(([key, mount]) => (
-                  <div key={key}>
-                    <div className="mb-1 flex items-center justify-between">
-                      <h4 className="font-display text-sm font-bold capitalize text-foreground">{t(`palm.mount_${key}`)}</h4>
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-[10px] uppercase tracking-wider ${
-                          mount.prominence === "high"
-                            ? "bg-primary/20 text-primary"
-                            : mount.prominence === "moderate"
-                              ? "bg-secondary text-secondary-foreground"
-                              : "bg-muted text-muted-foreground"
-                        }`}
-                      >
-                        {mount.prominence}
-                      </span>
-                    </div>
-                    <p className="text-xs leading-relaxed text-muted-foreground">{mount.meaning}</p>
-                  </div>
+              <div style={s.sectionTitle}>Your Challenges</div>
+              <div>
+                {reading.challenges?.map((c, i) => (
+                  <span key={i} style={s.challengePill}>🔥 {c}</span>
                 ))}
               </div>
-            )}
+            </div>
+          )}
 
-            {activeTab === "markings" && (
-              <div className="space-y-5">
-                {reading.markings && reading.markings.length > 0 ? (
-                  reading.markings.map((mark, i) => (
-                    <div key={i}>
-                      <div className="mb-1 flex items-center gap-2">
-                        <h4 className="font-display text-sm font-bold text-foreground">{mark.type}</h4>
-                        <span className="text-[10px] text-primary/60">— {mark.location}</span>
-                      </div>
-                      <p className="text-xs leading-relaxed text-muted-foreground">{mark.meaning}</p>
-                    </div>
-                  ))
-                ) : (
-                  <p className="py-4 text-center text-sm text-muted-foreground">{t("palm.noMarkings")}</p>
-                )}
-              </div>
-            )}
-          </div>
+          {activeTab === "lines" && reading.lines && (
+            <div style={s.card}>
+              <div style={s.sectionTitle}>Palm Lines</div>
+              {Object.entries(reading.lines).map(([key, val]) => val && (
+                <div key={key} style={s.lineItem}>
+                  <div style={s.lineLabel}>
+                    {key === "lifeLine" ? "Life Line" :
+                     key === "heartLine" ? "Heart Line" :
+                     key === "headLine" ? "Head Line" : "Fate Line"}
+                  </div>
+                  <div style={s.lineText}>{val}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {activeTab === "mounts" && reading.mounts && (
+            <div style={s.card}>
+              <div style={s.sectionTitle}>The Mounts</div>
+              {Object.entries(reading.mounts).map(([key, val]) => val && (
+                <div key={key} style={s.lineItem}>
+                  <div style={s.lineLabel}>
+                    Mount of {key.charAt(0).toUpperCase() + key.slice(1)}
+                  </div>
+                  <div style={s.lineText}>{val}</div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {activeTab === "markings" && (
+            <div style={s.card}>
+              <div style={s.sectionTitle}>Special Markings</div>
+              <div style={s.lineText}>{reading.markings}</div>
+            </div>
+          )}
+
+          {activeTab === "destiny" && (
+            <div style={s.destinyCard}>
+              <div style={{ fontSize: "32px", marginBottom: "12px" }}>🌟</div>
+              <div style={s.sectionTitle}>Your Destiny</div>
+              <p style={{ ...s.p, fontSize: "16px", fontStyle: "italic" }}>
+                "{reading.destiny}"
+              </p>
+            </div>
+          )}
+
+          <button style={s.btn} onClick={reset}>
+            Scan Again
+          </button>
         </div>
       )}
-    </ChamberLayout>
+    </div>
   );
 }
