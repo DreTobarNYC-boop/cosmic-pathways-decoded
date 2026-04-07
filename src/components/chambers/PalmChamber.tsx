@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import html2canvas from "html2canvas";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
 import { startScanSound, stopScanSound, updateScanPitch, playCompletionChime } from "@/lib/scan-sound";
@@ -39,20 +40,46 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
   const [scanProgress, setScanProgress] = useState(0);
   const [facingMode, setFacingMode] = useState<"environment" | "user">("environment");
 
+  const isIOSSafari = useCallback(() => {
+    if (typeof navigator === "undefined") return false;
+    const ua = navigator.userAgent;
+    return /iP(ad|hone|od)/.test(ua) && /WebKit/i.test(ua) && !/CriOS|FxiOS|EdgiOS/i.test(ua);
+  }, []);
+
+  const applyVideoAttributes = useCallback((video: HTMLVideoElement | null) => {
+    if (!video) return;
+    video.autoplay = true;
+    video.muted = true;
+    video.defaultMuted = true;
+    video.playsInline = true;
+    video.setAttribute("autoplay", "true");
+    video.setAttribute("muted", "true");
+    video.setAttribute("playsinline", "true");
+    video.setAttribute("webkit-playsinline", "true");
+  }, []);
+
   const stopCamera = useCallback(() => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
     }
+
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.srcObject = null;
+    }
   }, []);
 
   useEffect(() => {
+    applyVideoAttributes(videoRef.current);
     return () => stopCamera();
-  }, [stopCamera]);
+  }, [applyVideoAttributes, stopCamera]);
 
   const startCamera = useCallback(async (mode: "environment" | "user" = facingMode) => {
     stopCamera();
     setCameraError(null);
+    setPhase("camera");
+
     try {
       const constraints: MediaStreamConstraints = {
         video: {
@@ -62,13 +89,23 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
         },
         audio: false,
       };
+
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
+
+      const video = videoRef.current;
+      if (video) {
+        applyVideoAttributes(video);
+        video.srcObject = stream;
+
+        await new Promise<void>((resolve) => {
+          const done = () => resolve();
+          video.onloadedmetadata = done;
+          setTimeout(done, 300);
+        });
+
+        await video.play();
       }
-      setPhase("camera");
     } catch (err: any) {
       console.error("Camera error:", err);
       if (err.name === "NotAllowedError") {
@@ -80,29 +117,49 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
       }
       setPhase("error");
     }
-  }, [facingMode, stopCamera]);
+  }, [applyVideoAttributes, facingMode, stopCamera]);
 
   const flipCamera = useCallback(() => {
     const newMode = facingMode === "environment" ? "user" : "environment";
     setFacingMode(newMode);
-    startCamera(newMode);
+    void startCamera(newMode);
   }, [facingMode, startCamera]);
 
-  const capturePhoto = useCallback(() => {
+  const capturePhoto = useCallback(async () => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
     if (!video || !canvas) return;
 
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.drawImage(video, 0, 0);
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
-    setCapturedImage(dataUrl);
-    stopCamera();
-    setPhase("preview");
-  }, [stopCamera]);
+    try {
+      let dataUrl: string;
+
+      if (isIOSSafari()) {
+        applyVideoAttributes(video);
+        const safariCanvas = await html2canvas(video, {
+          backgroundColor: null,
+          scale: 2,
+          useCORS: true,
+          logging: false,
+        });
+        dataUrl = safariCanvas.toDataURL("image/jpeg", 0.92);
+      } else {
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 480;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        dataUrl = canvas.toDataURL("image/jpeg", 0.92);
+      }
+
+      setCapturedImage(dataUrl);
+      stopCamera();
+      setPhase("preview");
+    } catch (err) {
+      console.error("Capture error:", err);
+      setCameraError("Could not capture photo on this device.");
+      setPhase("error");
+    }
+  }, [applyVideoAttributes, isIOSSafari, stopCamera]);
 
   const analyzePalm = useCallback(async () => {
     if (!capturedImage) return;
@@ -115,7 +172,10 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
       setScanProgress((p) => {
         const next = p + Math.random() * 8;
         updateScanPitch(Math.min(next, 95));
-        if (next >= 95) { clearInterval(interval); return 95; }
+        if (next >= 95) {
+          clearInterval(interval);
+          return 95;
+        }
         return next;
       });
     }, 200);
@@ -132,7 +192,6 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
         throw new Error(data?.error || "Analysis failed");
       }
 
-      const parsed = data.content;
       setScanProgress(100);
       updateScanPitch(100);
       stopScanSound();
@@ -140,7 +199,7 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
       if (navigator.vibrate) navigator.vibrate([50, 30, 80]);
 
       setTimeout(() => {
-        setReading(parsed);
+        setReading(data.content);
         setPhase("results");
         setIsAnalyzing(false);
       }, 600);
@@ -148,7 +207,6 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
       clearInterval(interval);
       stopScanSound();
       console.error("Analysis error:", err);
-      // Fallback reading
       setReading({
         archetype: "The Mystic Wanderer",
         handType: "Air Hand",
@@ -515,17 +573,17 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
           <div style={s.palmIcon}>🔮</div>
           <h2 style={s.h2}>Palm Reading</h2>
           <p style={s.p}>
-            Your palm holds the map of your soul. Ancient wisdom encoded in every line, mount, and marking — 
+            Your palm holds the map of your soul. Ancient wisdom encoded in every line, mount, and marking —
             waiting to be decoded by the Oracle.
           </p>
           <div style={s.card}>
             <p style={{ ...s.p, fontSize: "13px" }}>
-              📱 Hold your dominant hand flat with fingers together<br/>
-              💡 Ensure good lighting on your palm<br/>
+              📱 Hold your dominant hand flat with fingers together<br />
+              💡 Ensure good lighting on your palm<br />
               📸 Keep your hand steady for the scan
             </p>
           </div>
-          <button style={s.btn} onClick={() => startCamera()}>
+          <button style={s.btn} onClick={() => void startCamera()}>
             ✋ Open Palm Scanner
           </button>
         </div>
@@ -551,7 +609,7 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
           <p style={{ ...s.p, fontSize: "13px" }}>
             Center your palm within the guide. Tap capture when ready.
           </p>
-          <button style={s.captureBtn} onClick={capturePhoto}>
+          <button style={s.captureBtn} onClick={() => void capturePhoto()}>
             📸
           </button>
           <button style={s.btnSecondary} onClick={reset}>Cancel</button>
@@ -565,7 +623,7 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
           <p style={{ ...s.p, fontSize: "13px" }}>
             Try allowing camera permissions in your browser settings, then try again.
           </p>
-          <button style={s.btn} onClick={() => startCamera()}>Try Again</button>
+          <button style={s.btn} onClick={() => void startCamera()}>Try Again</button>
           <button style={s.btnSecondary} onClick={reset}>Go Back</button>
         </div>
       )}
@@ -575,10 +633,10 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
           <h2 style={s.h2}>Your Palm</h2>
           <img src={capturedImage} alt="Captured palm" style={s.previewImg} />
           <p style={s.p}>Ready for the Oracle to read your palm?</p>
-          <button style={s.btn} onClick={analyzePalm}>
+          <button style={s.btn} onClick={() => void analyzePalm()}>
             🔮 Reveal My Reading
           </button>
-          <button style={s.btnSecondary} onClick={() => startCamera()}>
+          <button style={s.btnSecondary} onClick={() => void startCamera()}>
             Retake Photo
           </button>
         </div>
@@ -604,10 +662,10 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
             {scanProgress < 30
               ? "Reading your life lines..."
               : scanProgress < 60
-              ? "Decoding the mounts..."
-              : scanProgress < 85
-              ? "Consulting the Oracle..."
-              : "Preparing your destiny..."}
+                ? "Decoding the mounts..."
+                : scanProgress < 85
+                  ? "Consulting the Oracle..."
+                  : "Preparing your destiny..."}
           </p>
         </div>
       )}
