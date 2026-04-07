@@ -341,15 +341,25 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
 
     const scanDuration = SCAN_PHASES.length * 1800;
     const startTime = performance.now();
+    let waitingForApi = false;
 
     const animateLaser = (now: number) => {
       const elapsed = now - startTime;
-      const progress = Math.min((elapsed / scanDuration) * 95, 95);
+
+      let progress: number;
+      if (!waitingForApi) {
+        progress = Math.min((elapsed / scanDuration) * 95, 95);
+        if (progress >= 95) {
+          waitingForApi = true;
+        }
+      } else {
+        const waitElapsed = elapsed - scanDuration;
+        progress = 95 + 4.5 * (1 - Math.exp(-waitElapsed / 12000));
+      }
+
       setScanProgress(progress);
       updateScanPitch(progress);
-      if (progress < 95) {
-        scanAnimRef.current = requestAnimationFrame(animateLaser);
-      }
+      scanAnimRef.current = requestAnimationFrame(animateLaser);
     };
 
     scanAnimRef.current = requestAnimationFrame(animateLaser);
