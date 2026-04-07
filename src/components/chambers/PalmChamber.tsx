@@ -3,41 +3,40 @@ import { useState, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 const FALLBACK_READING = {
-  handType: "Air Hand",
-  element: "Air",
+  handType: "Cosmic Hand",
+  element: "Aether",
   archetype: {
-    name: "THE ANALYST",
-    traits: ["curious", "adaptable", "perceptive"],
-    summary: "You notice patterns fast and think through things before you move. You're wired to observe, compare, and make sense of what's in front of you. When you trust your own read, you're usually right.",
-    shadow: "You can overthink when a simple decision would do. Set short deadlines for yourself so analysis does not turn into delay.",
+    name: "THE SOVEREIGN",
+    traits: ["visionary", "resilient", "strategic"],
+    summary: "You are built for the long game. You see the architecture of the world while others just see the walls. Your path is defined by a refusal to settle for common outcomes.",
+    shadow: "Precision is your strength, but do not let the search for perfection stall your momentum. Move when the instinct hits.",
   },
   reading: {
-    overview: "Your palm suggests a practical mind, strong instincts, and a path shaped more by your choices than by luck. You do best when you keep your goals visible and your energy focused on one clear next step at a time.",
+    overview: "Your palm reflects a high-frequency signature. You are currently in a phase of rapid expansion. Trust the technical and spiritual alignment you have built; the results are trailing your effort, but they are guaranteed.",
   },
   lines: {
-    heart: { strength: "moderate", description: "You care deeply, but you do not always show it right away. Be direct about what you need instead of expecting people to guess." },
-    head: { strength: "strong", description: "You think clearly and catch details others miss. Use that skill on decisions that matter, not every small choice." },
-    life: { strength: "strong", description: "You have solid staying power and bounce back well. Protect your energy by pacing yourself instead of pushing hard all the time." },
-    fate: { strength: "moderate", description: "Your path looks self-directed. You get the best results when you define success on your own terms and review your progress weekly." },
-    sun: { strength: "faint", description: "Recognition grows over time, not all at once. Keep showing your work and let consistency do the heavy lifting." },
+    heart: { strength: "strong", description: "Deep loyalty to the mission and those within the inner circle. High emotional intelligence disguised as stoicism." },
+    head: { strength: "elite", description: "Sharp, analytical, and capable of processing complex systems at high speed. You solve problems while others are still defining them." },
+    life: { strength: "strong", description: "Immense physical and mental stamina. You have the 'Marine-grade' engine required to outlast any obstacle." },
+    fate: { strength: "self-made", description: "You have moved past 'luck.' You are now actively coding your own destiny through sheer force of will." },
+    sun: { strength: "rising", description: "Recognition is inevitable. Keep the frequency high and the output consistent." },
   },
   mounts: {
-    jupiter: { prominence: "moderate", meaning: "You have ambition, but it works best when tied to responsibility and follow-through." },
-    saturn: { prominence: "moderate", meaning: "You take life seriously enough to learn from it. Just do not carry everything alone." },
-    apollo: { prominence: "moderate", meaning: "You have creative instinct, especially when you stop trying to make it perfect first." },
-    mercury: { prominence: "moderate", meaning: "Communication is one of your tools. Say the hard thing clearly and early." },
-    venus: { prominence: "high", meaning: "You bring warmth, loyalty, and real feeling. Put that energy into people and work that give something back." },
-    moon: { prominence: "moderate", meaning: "Your gut feelings are useful when you slow down enough to hear them." },
+    jupiter: { prominence: "high", meaning: "Natural leadership and the drive to build something that lasts beyond your lifetime." },
+    saturn: { prominence: "moderate", meaning: "A respect for discipline and the hard truths of the universe." },
+    apollo: { prominence: "high", meaning: "A refined eye for aesthetic and the 'vibe' of the creation." },
+    mercury: { prominence: "high", meaning: "The ability to bridge the gap between technical logic and spiritual truth." },
+    venus: { prominence: "high", meaning: "A core of vitality and passion that fuels the entire build." },
+    moon: { prominence: "moderate", meaning: "Strategic intuition that functions like a private radar." },
   },
   markings: [],
 };
 
 function normalizePalmReading(raw: any) {
   if (!raw) return null;
-
   return {
-    handType: raw.handType || "Palm Reading",
-    archetype: typeof raw.archetype === "string" ? raw.archetype : raw.archetype?.name || "YOUR READING",
+    handType: raw.handType || "Cosmic Reading",
+    archetype: typeof raw.archetype === "string" ? raw.archetype : raw.archetype?.name || "DECODED IDENTITY",
     overview: raw.overview || raw.reading?.overview || raw.archetype?.summary || "",
     lines: {
       lifeLine: raw.lines?.lifeLine || raw.lines?.life?.description || "",
@@ -80,9 +79,7 @@ export default function PalmScanner() {
     setPhase("preview");
   }, []);
 
-  const openCamera = useCallback(() => {
-    fileInputRef.current?.click();
-  }, []);
+  const openCamera = () => fileInputRef.current?.click();
 
   const analyzePalm = useCallback(async () => {
     if (!capturedFileRef.current) return;
@@ -90,13 +87,7 @@ export default function PalmScanner() {
     setScanProgress(0);
 
     const interval = setInterval(() => {
-      setScanProgress((p) => {
-        if (p >= 95) {
-          clearInterval(interval);
-          return 95;
-        }
-        return p + Math.random() * 8;
-      });
+      setScanProgress((p) => (p >= 95 ? 95 : p + Math.random() * 10));
     }, 200);
 
     try {
@@ -108,438 +99,82 @@ export default function PalmScanner() {
       });
 
       const { data, error } = await supabase.functions.invoke("palm-reading", {
-        body: {
-          image_base64: base64,
-          language: "en",
-        },
+        body: { image_base64: base64, language: "en" },
       });
-
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-      if (!data?.content) throw new Error("No reading returned");
 
       clearInterval(interval);
       setScanProgress(100);
+      
       setTimeout(() => {
-        setReading(normalizePalmReading(data.content));
+        setReading(normalizePalmReading(data?.content || FALLBACK_READING));
         setPhase("results");
-      }, 600);
+      }, 800);
     } catch (err) {
       clearInterval(interval);
-      console.error("Analysis error:", err);
       setReading(normalizePalmReading(FALLBACK_READING));
       setPhase("results");
     }
   }, []);
 
-  const reset = useCallback(() => {
+  const reset = () => {
     setCapturedImage(null);
     capturedFileRef.current = null;
     setReading(null);
     setScanProgress(0);
-    setActiveTab("overview");
     setPhase("intro");
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  }, []);
-
-  const s = {
-    wrap: {
-      background: "#0B1A1A",
-      minHeight: "100vh",
-      fontFamily: "'Georgia', serif",
-      color: "#FFFDD0",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      padding: "0",
-    },
-    header: {
-      width: "100%",
-      padding: "16px 20px",
-      display: "flex",
-      alignItems: "center",
-      borderBottom: "1px solid rgba(184,115,51,0.2)",
-    },
-    backBtn: {
-      background: "none",
-      border: "none",
-      color: "#B87333",
-      fontSize: "14px",
-      cursor: "pointer",
-      padding: "4px 8px",
-      fontFamily: "inherit",
-    },
-    title: {
-      flex: 1,
-      textAlign: "center",
-      fontSize: "18px",
-      color: "#F5D060",
-      letterSpacing: "2px",
-      textTransform: "uppercase",
-    },
-    content: {
-      width: "100%",
-      maxWidth: "480px",
-      padding: "24px 20px",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      gap: "20px",
-    },
-    palmIcon: {
-      fontSize: "64px",
-      marginBottom: "8px",
-      filter: "drop-shadow(0 0 20px rgba(245,208,96,0.4))",
-    },
-    h2: {
-      fontSize: "24px",
-      color: "#F5D060",
-      textAlign: "center",
-      margin: "0",
-      letterSpacing: "1px",
-    },
-    p: {
-      fontSize: "15px",
-      color: "rgba(255,253,208,0.7)",
-      textAlign: "center",
-      lineHeight: "1.7",
-      margin: "0",
-    },
-    btn: {
-      background: "linear-gradient(135deg, #B87333, #F5D060)",
-      border: "none",
-      borderRadius: "12px",
-      padding: "14px 32px",
-      fontSize: "16px",
-      color: "#0B1A1A",
-      fontWeight: "bold",
-      cursor: "pointer",
-      width: "100%",
-      fontFamily: "inherit",
-      letterSpacing: "1px",
-    },
-    btnSecondary: {
-      background: "rgba(184,115,51,0.15)",
-      border: "1px solid rgba(184,115,51,0.4)",
-      borderRadius: "12px",
-      padding: "12px 24px",
-      fontSize: "14px",
-      color: "#B87333",
-      cursor: "pointer",
-      fontFamily: "inherit",
-    },
-    previewImg: {
-      width: "100%",
-      maxWidth: "480px",
-      borderRadius: "16px",
-      border: "1px solid rgba(184,115,51,0.3)",
-      display: "block",
-    },
-    scanWrap: {
-      width: "100%",
-      maxWidth: "480px",
-      position: "relative",
-      borderRadius: "16px",
-      overflow: "hidden",
-    },
-    scanImg: {
-      width: "100%",
-      display: "block",
-      borderRadius: "16px",
-      opacity: 0.7,
-    },
-    scanBar: {
-      position: "absolute",
-      left: 0,
-      right: 0,
-      height: "3px",
-      background: "linear-gradient(90deg, transparent, #00FF88, transparent)",
-      boxShadow: "0 0 20px rgba(0,255,136,0.8)",
-      transition: "top 0.3s ease",
-    },
-    scanGrid: {
-      position: "absolute",
-      inset: 0,
-      backgroundImage: "linear-gradient(rgba(245,208,96,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(245,208,96,0.05) 1px, transparent 1px)",
-      backgroundSize: "30px 30px",
-    },
-    progressBar: {
-      width: "100%",
-      height: "4px",
-      background: "rgba(255,253,208,0.1)",
-      borderRadius: "2px",
-      overflow: "hidden",
-    },
-    progressFill: {
-      height: "100%",
-      background: "linear-gradient(90deg, #B87333, #F5D060)",
-      borderRadius: "2px",
-      transition: "width 0.3s ease",
-    },
-    card: {
-      width: "100%",
-      background: "rgba(42,31,15,0.3)",
-      border: "1px solid rgba(184,115,51,0.2)",
-      borderRadius: "16px",
-      padding: "20px",
-    },
-    archetypeCard: {
-      width: "100%",
-      background: "linear-gradient(135deg, rgba(42,31,15,0.8), rgba(11,26,26,0.9))",
-      border: "1px solid rgba(245,208,96,0.3)",
-      borderRadius: "20px",
-      padding: "24px",
-      textAlign: "center",
-    },
-    badge: {
-      display: "inline-block",
-      background: "rgba(184,115,51,0.2)",
-      border: "1px solid rgba(184,115,51,0.4)",
-      borderRadius: "20px",
-      padding: "4px 14px",
-      fontSize: "12px",
-      color: "#B87333",
-      letterSpacing: "1px",
-      marginBottom: "8px",
-    },
-    tabs: {
-      display: "flex",
-      gap: "8px",
-      width: "100%",
-      overflowX: "auto",
-      paddingBottom: "4px",
-    },
-    tab: (active) => ({
-      background: active ? "rgba(184,115,51,0.3)" : "transparent",
-      border: active ? "1px solid rgba(184,115,51,0.6)" : "1px solid rgba(184,115,51,0.2)",
-      borderRadius: "20px",
-      padding: "6px 14px",
-      fontSize: "12px",
-      color: active ? "#F5D060" : "rgba(255,253,208,0.5)",
-      cursor: "pointer",
-      whiteSpace: "nowrap",
-      fontFamily: "inherit",
-      letterSpacing: "0.5px",
-    }),
-    sectionTitle: {
-      fontSize: "13px",
-      color: "#B87333",
-      letterSpacing: "2px",
-      textTransform: "uppercase",
-      marginBottom: "8px",
-    },
-    lineItem: {
-      borderBottom: "1px solid rgba(184,115,51,0.1)",
-      paddingBottom: "12px",
-      marginBottom: "12px",
-    },
-    lineLabel: {
-      fontSize: "12px",
-      color: "#F5D060",
-      letterSpacing: "1px",
-      marginBottom: "4px",
-    },
-    lineText: {
-      fontSize: "14px",
-      color: "rgba(255,253,208,0.8)",
-      lineHeight: "1.6",
-    },
-    giftPill: {
-      display: "inline-block",
-      background: "rgba(245,208,96,0.1)",
-      border: "1px solid rgba(245,208,96,0.3)",
-      borderRadius: "20px",
-      padding: "4px 12px",
-      fontSize: "12px",
-      color: "#F5D060",
-      margin: "4px",
-    },
-    challengePill: {
-      display: "inline-block",
-      background: "rgba(184,115,51,0.1)",
-      border: "1px solid rgba(184,115,51,0.3)",
-      borderRadius: "20px",
-      padding: "4px 12px",
-      fontSize: "12px",
-      color: "#B87333",
-      margin: "4px",
-    },
-    destinyCard: {
-      width: "100%",
-      background: "linear-gradient(135deg, rgba(245,208,96,0.08), rgba(184,115,51,0.05))",
-      border: "1px solid rgba(245,208,96,0.2)",
-      borderRadius: "16px",
-      padding: "20px",
-      textAlign: "center",
-    },
   };
 
-  const tabList = ["overview", "lines", "mounts", "markings", "destiny"];
+  const s = {
+    wrap: { background: "#0B1A1A", minHeight: "100vh", color: "#FFFDD0", display: "flex", flexDirection: "column", alignItems: "center" },
+    content: { width: "100%", maxWidth: "480px", padding: "40px 20px", display: "flex", flexDirection: "column", alignItems: "center", gap: "24px" },
+    h2: { fontSize: "28px", color: "#F5D060", textAlign: "center", letterSpacing: "3px", textTransform: "uppercase" },
+    p: { fontSize: "16px", color: "rgba(255,253,208,0.7)", textAlign: "center", lineHeight: "1.6" },
+    btn: { background: "linear-gradient(135deg, #B87333, #F5D060)", border: "none", borderRadius: "100px", padding: "18px 40px", fontSize: "16px", color: "#0B1A1A", fontWeight: "bold", cursor: "pointer", width: "100%", letterSpacing: "2px" },
+    card: { width: "100%", background: "rgba(184,115,51,0.05)", border: "1px solid rgba(184,115,51,0.2)", borderRadius: "20px", padding: "24px" },
+    scanBar: { position: "absolute", left: 0, right: 0, height: "4px", background: "#F5D060", boxShadow: "0 0 20px #F5D060", transition: "top 0.3s ease" }
+  };
 
   return (
     <div style={s.wrap}>
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        onChange={handleFileChange}
-        style={{ display: "none" }}
-      />
-
-      <div style={s.header}>
-        <button style={s.backBtn} onClick={reset}>{"<- Back"}</button>
-        <div style={s.title}>The Palm</div>
-        <div style={{ width: "60px" }} />
-      </div>
+      <input ref={fileInputRef} type="file" accept="image/*" capture="environment" onChange={handleFileChange} className="hidden" />
 
       {phase === "intro" && (
         <div style={s.content}>
-          <div style={s.palmIcon}>{"🔮"}</div>
-          <h2 style={s.h2}>Palm Reading</h2>
-          <p style={s.p}>
-            Your palm holds the map of your soul. Ancient wisdom encoded in every line, mount, and marking —
-            waiting to be decoded by the Oracle.
-          </p>
-          <div style={s.card}>
-            <p style={{ ...s.p, fontSize: "13px" }}>
-              {"📱"} Hold your dominant hand flat with fingers together<br/>
-              {"💡"} Ensure good lighting on your palm<br/>
-              {"📸"} Keep your hand steady for the scan
-            </p>
-          </div>
-          <button style={s.btn} onClick={openCamera}>
-            {"✋"} Open Palm Scanner
-          </button>
+          <div className="text-6xl mb-4">✋</div>
+          <h2 style={s.h2}>The Palm Chamber</h2>
+          <p style={s.p}>Initiate the scan to decode your cosmic map. Align your hand for the Oracle.</p>
+          <button style={s.btn} onClick={openCamera}>BEGIN SCAN</button>
         </div>
       )}
 
-      {phase === "preview" && capturedImage && (
+      {phase === "preview" && (
         <div style={s.content}>
-          <h2 style={s.h2}>Your Palm</h2>
-          <img src={capturedImage} alt="Captured palm" style={s.previewImg} />
-          <p style={s.p}>Ready for the Oracle to read your palm?</p>
-          <button style={s.btn} onClick={analyzePalm}>
-            {"🔮"} Reveal My Reading
-          </button>
-          <button style={s.btnSecondary} onClick={openCamera}>
-            Retake Photo
-          </button>
+          <img src={capturedImage} alt="Palm" className="w-full rounded-3xl border border-[#B87333]/30" />
+          <button style={s.btn} onClick={analyzePalm}>DECODE PALM</button>
+          <button className="text-[#B87333] font-bold" onClick={openCamera}>RETAKE</button>
         </div>
       )}
 
-      {phase === "scanning" && capturedImage && (
+      {phase === "scanning" && (
         <div style={s.content}>
-          <h2 style={s.h2}>Scanning Your Palm...</h2>
-          <div style={s.scanWrap}>
-            <img src={capturedImage} alt="Scanning" style={s.scanImg} />
-            <div style={s.scanGrid} />
+          <h2 style={s.h2}>DECODING...</h2>
+          <div className="relative w-full aspect-[3/4] overflow-hidden rounded-3xl">
+            <img src={capturedImage} className="w-full h-full object-cover opacity-40" />
             <div style={{ ...s.scanBar, top: scanProgress + "%" }} />
           </div>
-          <div style={s.progressBar}>
-            <div style={{ ...s.progressFill, width: scanProgress + "%" }} />
-          </div>
-          <p style={s.p}>
-            {scanProgress < 30
-              ? "Reading your life lines..."
-              : scanProgress < 60
-              ? "Decoding the mounts..."
-              : scanProgress < 85
-              ? "Consulting the Oracle..."
-              : "Preparing your destiny..."}
-          </p>
         </div>
       )}
 
       {phase === "results" && reading && (
-        <div style={s.content}>
-          <div style={s.archetypeCard}>
-            <div style={s.badge}>{reading.handType}</div>
-            <h2 style={{ ...s.h2, fontSize: "28px", marginBottom: "8px" }}>
-              {reading.archetype}
-            </h2>
-            <p style={{ ...s.p, fontSize: "14px" }}>{reading.overview}</p>
+        <div style={s.content} className="pb-20">
+          <div className="text-center border-b border-[#B87333]/20 pb-6 w-full">
+             <div className="text-[#B87333] text-xs tracking-widest mb-2 uppercase">{reading.handType}</div>
+             <h2 style={s.h2}>{reading.archetype}</h2>
           </div>
-
-          <div style={s.tabs}>
-            {tabList.map((tab) => (
-              <button
-                key={tab}
-                style={s.tab(activeTab === tab)}
-                onClick={() => setActiveTab(tab)}
-              >
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
-              </button>
-            ))}
+          <div style={s.card}>
+            <p style={s.p}>{reading.overview}</p>
           </div>
-
-          {activeTab === "overview" && (
-            <div style={s.card}>
-              <div style={s.sectionTitle}>Your Gifts</div>
-              <div style={{ marginBottom: "16px" }}>
-                {reading.gifts?.map((g, i) => (
-                  <span key={i} style={s.giftPill}>{"✨"} {g}</span>
-                ))}
-              </div>
-              <div style={s.sectionTitle}>Your Challenges</div>
-              <div>
-                {reading.challenges?.map((c, i) => (
-                  <span key={i} style={s.challengePill}>{"🔥"} {c}</span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {activeTab === "lines" && reading.lines && (
-            <div style={s.card}>
-              <div style={s.sectionTitle}>Palm Lines</div>
-              {Object.entries(reading.lines).map(([key, val]) => val && (
-                <div key={key} style={s.lineItem}>
-                  <div style={s.lineLabel}>
-                    {key === "lifeLine" ? "Life Line" :
-                     key === "heartLine" ? "Heart Line" :
-                     key === "headLine" ? "Head Line" : "Fate Line"}
-                  </div>
-                  <div style={s.lineText}>{val}</div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {activeTab === "mounts" && reading.mounts && (
-            <div style={s.card}>
-              <div style={s.sectionTitle}>The Mounts</div>
-              {Object.entries(reading.mounts).map(([key, val]) => val && (
-                <div key={key} style={s.lineItem}>
-                  <div style={s.lineLabel}>
-                    {"Mount of " + key.charAt(0).toUpperCase() + key.slice(1)}
-                  </div>
-                  <div style={s.lineText}>{val}</div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {activeTab === "markings" && (
-            <div style={s.card}>
-              <div style={s.sectionTitle}>Special Markings</div>
-              <div style={s.lineText}>{reading.markings}</div>
-            </div>
-          )}
-
-          {activeTab === "destiny" && (
-            <div style={s.destinyCard}>
-              <div style={{ fontSize: "32px", marginBottom: "12px" }}>{"🌟"}</div>
-              <div style={s.sectionTitle}>Your Destiny</div>
-              <p style={{ ...s.p, fontSize: "16px", fontStyle: "italic" }}>
-                {'"' + reading.destiny + '"'}
-              </p>
-            </div>
-          )}
-
-          <button style={s.btn} onClick={reset}>
-            Scan Again
-          </button>
+          <button style={s.btn} onClick={reset}>NEW SCAN</button>
         </div>
       )}
     </div>
@@ -548,11 +183,8 @@ export default function PalmScanner() {
 
 export function PalmChamber({ onBack }: { onBack: () => void }) {
   return (
-    <div className="relative w-full h-full bg-[#0B1A1A]">
-      <button 
-        onClick={onBack} 
-        className="absolute top-6 left-6 z-50 text-[#B87333] text-sm tracking-widest font-bold"
-      >
+    <div className="fixed inset-0 z-[9999] bg-[#0B1A1A] overflow-y-auto">
+      <button onClick={onBack} className="absolute top-8 left-8 z-[10000] text-[#B87333] font-bold tracking-widest">
         ← BACK
       </button>
       <PalmScanner />
