@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { ChamberLayout } from "@/components/ChamberLayout";
 import { Star, Loader2 } from "lucide-react";
+import { getZodiacImage } from "@/lib/zodiac-images";
 import { useAuth } from "@/hooks/use-auth";
 import {
   formatDate,
