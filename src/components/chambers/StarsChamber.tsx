@@ -178,6 +178,7 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
   const chineseZodiac = getChineseZodiac(dob.getFullYear());
   const universalDay = getUniversalDay(today);
   const personalDay = getPersonalDay(dob, today);
+  const cusp = getCuspInfo(dob.getMonth() + 1, dob.getDate());
   const lang = i18n.language;
   const dateKey = today.toISOString().split("T")[0];
   const monthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
@@ -194,8 +195,9 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
     birthPlace: profile?.birthPlace || "",
     birthTime: profile?.birthTime || "",
     dateOfBirth: profile?.dateOfBirth || "",
+    cuspInfo: cusp.onCusp ? cusp.cuspDescription : null,
     language: lang,
-  }), [zodiac.sign, zodiac.element, lifePath, chineseZodiac, lang, profile?.fullName]);
+  }), [zodiac.sign, zodiac.element, lifePath, chineseZodiac, lang, profile?.fullName, cusp.onCusp]);
 
   const tabConfig: Record<string, { readingType: string; cacheKey: string }> = {
     today: { readingType: "stars_today", cacheKey: `${dateKey}_${lang}` },
