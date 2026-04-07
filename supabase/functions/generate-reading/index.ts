@@ -106,10 +106,12 @@ Your readings are profound, poetic, and transformative. You speak with mystical 
 You MUST respond with valid JSON only. No markdown, no code fences, just raw JSON.
 ${langInstruction}`;
 
+      const cuspLine = context.cuspInfo ? `\n- Cusp Placement: ${context.cuspInfo}` : "";
+
       userPrompt = `Generate a detailed ${label} for ${context.name}.
 
 Cosmic Profile:
-- Sun Sign: ${context.zodiacSign} (${context.element} element)
+- Sun Sign: ${context.zodiacSign} (${context.element} element)${cuspLine}
 - Life Path Number: ${context.lifePath}
 - Chinese Zodiac: ${context.chineseZodiac}
 - Date of Birth: ${context.dateOfBirth || "Unknown"}
@@ -121,7 +123,7 @@ Respond with ONLY this JSON structure (no markdown):
 {
   "title": "A poetic 2-4 word title",
   "subtitle": "A brief cosmic context line",
-  "reading": "A detailed 3-4 paragraph ${label}. Make it deeply personal and transformative.",
+  "reading": "A detailed 3-4 paragraph ${label}. Make it deeply personal and transformative.${context.cuspInfo ? " Blend the energies of BOTH cusp signs throughout the reading." : ""}",
   "cosmicAdvice": "A single powerful sentence of wisdom."
 }`;
     } else if (reading_type === "numbers_today") {
