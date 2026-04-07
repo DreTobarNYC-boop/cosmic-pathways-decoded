@@ -94,6 +94,9 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
   const startCamera = useCallback(async () => {
     try {
       stopCamera();
+      setCameraLoading(true);
+      setPhase("camera");
+
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: { ideal: "environment" },
@@ -104,8 +107,10 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
       });
 
       streamRef.current = stream;
-      setPhase("camera");
+      setCameraLoading(false);
     } catch {
+      setCameraLoading(false);
+      setPhase("permission");
       toast.error(t("palm.cameraError"));
     }
   }, [stopCamera, t]);
