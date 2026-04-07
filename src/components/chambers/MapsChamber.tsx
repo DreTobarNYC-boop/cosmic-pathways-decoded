@@ -399,6 +399,12 @@ export function MapsChamber({ onBack }: { onBack: () => void }) {
         {/* ─── POWER MAP TAB ─── */}
         {activeTab === "power" && (
           <div className="space-y-4 animate-fade-up">
+            {/* World Map Visualization */}
+            <WorldMapViz
+              cities={rankedCities}
+              onCityClick={(city) => { setActiveTab("resonance"); setSearchInput(city); decodeLocation(city); }}
+            />
+
             <p className="text-xs text-muted-foreground text-center">Top cities for your unique cosmic blueprint</p>
             <div className="space-y-2">
               {rankedCities.map((item, i) => (
