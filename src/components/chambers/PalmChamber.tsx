@@ -570,42 +570,48 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
   }
 
   if (phase === "scanning" && imageData) {
+    const laserPct = scanProgress;
     return (
       <div className="fixed inset-0 z-50 bg-background overflow-hidden">
+        {/* Color layer (below the laser) */}
         <img
           src={imageData}
-          alt="Palm scan"
+          alt="Palm scan color"
           className="absolute inset-0 h-full w-full object-cover"
-          style={{ filter: "grayscale(0.65) brightness(0.78) contrast(1.15)" }}
+          style={{ filter: "brightness(0.85) contrast(1.1)" }}
         />
 
-        <div className="absolute inset-0 bg-gradient-to-b from-background/75 via-transparent to-background/90" />
-        <div
-          className="absolute inset-0 opacity-20"
+        {/* Grayscale layer (above the laser) — clip-path reveals from top */}
+        <img
+          src={imageData}
+          alt="Palm scan grayscale"
+          className="absolute inset-0 h-full w-full object-cover"
           style={{
-            backgroundImage: `
-              repeating-linear-gradient(0deg, transparent, transparent 29px, hsl(160 50% 55% / 0.25) 30px),
-              repeating-linear-gradient(90deg, transparent, transparent 29px, hsl(160 50% 55% / 0.12) 30px)
-            `,
-            backgroundSize: "30px 30px",
+            filter: "grayscale(1) brightness(0.75) contrast(1.2)",
+            clipPath: `inset(0 0 ${100 - laserPct}% 0)`,
           }}
         />
 
+        <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-transparent to-background/70 pointer-events-none" />
+
+        {/* Laser line */}
         <div
           className="absolute left-0 right-0"
           style={{
-            top: `${scanProgress}%`,
+            top: `${laserPct}%`,
             height: "3px",
             background: "linear-gradient(90deg, transparent 0%, hsl(145 100% 60%) 15%, hsl(145 100% 75%) 50%, hsl(145 100% 60%) 85%, transparent 100%)",
             boxShadow: "0 0 8px 2px hsl(145 100% 55% / 0.8), 0 0 25px 8px hsl(145 100% 50% / 0.45), 0 0 60px 20px hsl(145 80% 45% / 0.25)",
+            transition: "top 0.05s linear",
           }}
         />
+        {/* Glow trail below laser */}
         <div
           className="absolute left-0 right-0 pointer-events-none"
           style={{
-            top: `${Math.min(scanProgress + 1, 100)}%`,
-            height: "44px",
-            background: "linear-gradient(180deg, hsl(145 100% 55% / 0.22) 0%, transparent 100%)",
+            top: `${Math.min(laserPct + 0.3, 100)}%`,
+            height: "40px",
+            background: "linear-gradient(180deg, hsl(145 100% 55% / 0.18) 0%, transparent 100%)",
           }}
         />
 
