@@ -116,14 +116,16 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
   }, [stopCamera, t]);
 
   useEffect(() => {
-    if (phase !== "camera" || !streamRef.current || cameraLoading) return;
+    if (phase !== "camera" || cameraLoading || !streamRef.current || !videoRef.current) {
+      return;
+    }
 
     const frame = requestAnimationFrame(() => {
       void attachStreamToVideo();
     });
 
     return () => cancelAnimationFrame(frame);
-  }, [phase, attachStreamToVideo]);
+  }, [phase, cameraLoading, attachStreamToVideo]);
 
   const capturePhoto = useCallback(() => {
     const video = videoRef.current;

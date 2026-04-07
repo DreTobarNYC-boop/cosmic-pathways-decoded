@@ -157,6 +157,8 @@
     "privacyNote": "Sua câmera é usada para escanear as linhas da sua palma. A imagem fica no seu dispositivo e nunca é compartilhada.",
     "openCamera": "Abrir Câmera",
     "uploadInstead": "Enviar uma foto em vez disso",
+    "scanYourPalm": "Escaneie sua palma",
+    "activatingCamera": "Ativando câmera...",
     "positionHand": "Posicione sua palma dentro do guia",
     "cancel": "Cancelar",
     "capture": "Capturar",

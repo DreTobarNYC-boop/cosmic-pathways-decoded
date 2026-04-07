@@ -157,6 +157,8 @@
     "privacyNote": "Your camera is used to scan your palm lines. The image stays on your device and is never shared.",
     "openCamera": "Open Camera",
     "uploadInstead": "Upload a photo instead",
+    "scanYourPalm": "Scan Your Palm",
+    "activatingCamera": "Activating camera...",
     "positionHand": "Position your palm inside the guide",
     "cancel": "Cancel",
     "capture": "Capture",
