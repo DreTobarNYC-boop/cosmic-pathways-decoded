@@ -1,5 +1,5 @@
-import { useState, useRef } from "react";
-import { Camera, RotateCcw, Loader2, ArrowLeft } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Camera, RotateCcw, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
@@ -10,13 +10,43 @@ interface PalmChamberProps {
 
 // Warrior Oracle color palette
 const BURNT_GOLD = "#C5A059";
-const COSMIC_BG = "hsl(170, 40%, 7%)"; // Dark teal cosmic background
+const MATRIX_GREEN = "#00ff00";
 
 export function PalmChamber({ onBack }: PalmChamberProps) {
   const [phase, setPhase] = useState<"idle" | "scanning" | "done">("idle");
   const [reading, setReading] = useState<any>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [scanProgress, setScanProgress] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
+  const scanIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Matrix characters - Japanese katakana + alphanumeric
+  const matrixChars = "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲンABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+  // Handle scan progress animation - loops from 0 to 100
+  useEffect(() => {
+    if (phase === "scanning") {
+      setScanProgress(0);
+      scanIntervalRef.current = setInterval(() => {
+        setScanProgress(prev => {
+          if (prev >= 100) return 0;
+          return prev + 0.8;
+        });
+      }, 50);
+    } else {
+      if (scanIntervalRef.current) {
+        clearInterval(scanIntervalRef.current);
+        scanIntervalRef.current = null;
+      }
+      setScanProgress(0);
+    }
+
+    return () => {
+      if (scanIntervalRef.current) {
+        clearInterval(scanIntervalRef.current);
+      }
+    };
+  }, [phase]);
 
   const fileToBase64 = (file: File): Promise<string> =>
     new Promise((resolve, reject) => {
@@ -62,10 +92,13 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
     if (fileRef.current) fileRef.current.value = "";
   };
 
+  // Generate random matrix character
+  const getRandomChar = () => matrixChars[Math.floor(Math.random() * matrixChars.length)];
+
   return (
     <div 
       className="min-h-screen"
-      style={{ backgroundColor: ABSOLUTE_BLACK }}
+      style={{ backgroundColor: '#000000' }}
     >
       {/* Custom header for Warrior Oracle */}
       <header className="px-5 pt-6 pb-4 flex items-center gap-4">
@@ -195,147 +228,142 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
           </div>
         )}
 
-        {/* SCANNING STATE with laser grid and scan line */}
+        {/* SCANNING STATE with Matrix rain effect */}
         {phase === "scanning" && (
-          <div className="flex flex-col items-center text-center pt-10 space-y-8">
+          <div className="flex flex-col items-center text-center pt-6 space-y-6">
             {imagePreview && (
               <div 
-                className="relative w-72 h-72 overflow-hidden"
-                style={{ 
-                  border: `1px solid ${BURNT_GOLD}50`,
-                  borderRadius: '4px'
-                }}
+                className="relative w-80 h-96 overflow-hidden"
+                style={{ borderRadius: '8px' }}
               >
                 {/* Captured image */}
                 <img 
                   src={imagePreview} 
                   alt="Your palm" 
                   className="w-full h-full object-cover"
-                  style={{ filter: 'grayscale(30%) contrast(1.1)' }}
                 />
                 
-                {/* Laser grid overlay */}
-                <div 
-                  className="absolute inset-0 pointer-events-none"
-                  style={{
-                    backgroundImage: `
-                      linear-gradient(${BURNT_GOLD}25 1px, transparent 1px),
-                      linear-gradient(90deg, ${BURNT_GOLD}25 1px, transparent 1px)
-                    `,
-                    backgroundSize: '24px 24px',
-                  }}
-                />
-
-                {/* Diagonal laser lines */}
-                <div 
-                  className="absolute inset-0 pointer-events-none"
-                  style={{
-                    backgroundImage: `
-                      linear-gradient(45deg, ${BURNT_GOLD}12 1px, transparent 1px),
-                      linear-gradient(-45deg, ${BURNT_GOLD}12 1px, transparent 1px)
-                    `,
-                    backgroundSize: '32px 32px',
-                  }}
-                />
-
-                {/* Moving horizontal scan line */}
-                <div 
-                  className="absolute left-0 right-0 h-0.5 pointer-events-none scan-line-animation"
-                  style={{
-                    background: `linear-gradient(90deg, transparent 0%, ${BURNT_GOLD} 15%, ${BURNT_GOLD} 85%, transparent 100%)`,
-                    boxShadow: `0 0 15px ${BURNT_GOLD}, 0 0 30px ${BURNT_GOLD}80, 0 0 45px ${BURNT_GOLD}40`,
-                  }}
-                />
-
-                {/* Secondary scan line (offset) */}
-                <div 
-                  className="absolute left-0 right-0 h-px pointer-events-none scan-line-animation-delayed"
-                  style={{
-                    background: `linear-gradient(90deg, transparent 0%, ${BURNT_GOLD}60 20%, ${BURNT_GOLD}60 80%, transparent 100%)`,
-                    boxShadow: `0 0 8px ${BURNT_GOLD}60`,
-                  }}
-                />
-
-                {/* Corner brackets - Top Left */}
-                <div 
-                  className="absolute top-2 left-2 w-6 h-6 pointer-events-none"
-                  style={{
-                    borderTop: `2px solid ${BURNT_GOLD}`,
-                    borderLeft: `2px solid ${BURNT_GOLD}`,
-                  }}
-                />
-                {/* Top Right */}
-                <div 
-                  className="absolute top-2 right-2 w-6 h-6 pointer-events-none"
-                  style={{
-                    borderTop: `2px solid ${BURNT_GOLD}`,
-                    borderRight: `2px solid ${BURNT_GOLD}`,
-                  }}
-                />
-                {/* Bottom Left */}
-                <div 
-                  className="absolute bottom-2 left-2 w-6 h-6 pointer-events-none"
-                  style={{
-                    borderBottom: `2px solid ${BURNT_GOLD}`,
-                    borderLeft: `2px solid ${BURNT_GOLD}`,
-                  }}
-                />
-                {/* Bottom Right */}
-                <div 
-                  className="absolute bottom-2 right-2 w-6 h-6 pointer-events-none"
-                  style={{
-                    borderBottom: `2px solid ${BURNT_GOLD}`,
-                    borderRight: `2px solid ${BURNT_GOLD}`,
-                  }}
-                />
-
-                {/* Subtle vignette */}
-                <div 
-                  className="absolute inset-0 pointer-events-none"
-                  style={{
-                    background: `radial-gradient(circle at center, transparent 30%, ${ABSOLUTE_BLACK}95 100%)`
-                  }}
-                />
-
-                {/* Scanning indicator in corner */}
-                <div 
-                  className="absolute top-4 right-4 flex items-center gap-2 px-2 py-1 rounded"
-                  style={{ backgroundColor: `${ABSOLUTE_BLACK}80` }}
-                >
-                  <div 
-                    className="w-2 h-2 rounded-full animate-pulse"
-                    style={{ backgroundColor: BURNT_GOLD }}
-                  />
-                  <span 
-                    className="text-[10px] tracking-wider uppercase"
-                    style={{ color: BURNT_GOLD }}
-                  >
-                    Scanning
-                  </span>
+                {/* Matrix rain overlay - 20 columns of falling characters */}
+                <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                  {Array.from({ length: 20 }).map((_, colIndex) => (
+                    <div
+                      key={colIndex}
+                      className="absolute top-0 matrix-rain-column"
+                      style={{
+                        left: `${(colIndex / 20) * 100}%`,
+                        animationDelay: `${Math.random() * 2}s`,
+                        animationDuration: `${1.5 + Math.random() * 1.5}s`,
+                      }}
+                    >
+                      {Array.from({ length: 15 }).map((_, charIndex) => (
+                        <div
+                          key={charIndex}
+                          className="text-xs font-mono leading-tight"
+                          style={{
+                            color: charIndex === 0 
+                              ? MATRIX_GREEN 
+                              : `rgba(0, 255, 0, ${Math.max(0.1, 0.9 - charIndex * 0.06)})`,
+                            textShadow: charIndex === 0 
+                              ? `0 0 10px ${MATRIX_GREEN}, 0 0 20px ${MATRIX_GREEN}` 
+                              : `0 0 5px ${MATRIX_GREEN}`,
+                          }}
+                        >
+                          {getRandomChar()}
+                        </div>
+                      ))}
+                    </div>
+                  ))}
                 </div>
+
+                {/* Horizontal laser scan line - position based on progress (0-100%) */}
+                <div 
+                  className="absolute left-0 right-0 h-1 pointer-events-none transition-none"
+                  style={{
+                    top: `${scanProgress}%`,
+                    background: `linear-gradient(90deg, transparent 0%, ${MATRIX_GREEN} 10%, ${MATRIX_GREEN} 90%, transparent 100%)`,
+                    boxShadow: `0 0 10px ${MATRIX_GREEN}, 0 0 20px ${MATRIX_GREEN}, 0 0 40px ${MATRIX_GREEN}, 0 -8px 25px ${MATRIX_GREEN}50, 0 8px 25px ${MATRIX_GREEN}50`,
+                  }}
+                />
+
+                {/* Scan line glow trail above the line */}
+                <div 
+                  className="absolute left-0 right-0 pointer-events-none"
+                  style={{
+                    top: `${Math.max(0, scanProgress - 15)}%`,
+                    height: '15%',
+                    background: `linear-gradient(to bottom, transparent, rgba(0, 255, 0, 0.1))`,
+                  }}
+                />
+
+                {/* Corner brackets - Green to match Matrix theme */}
+                <div 
+                  className="absolute top-3 left-3 w-8 h-8 pointer-events-none"
+                  style={{
+                    borderTop: `2px solid ${MATRIX_GREEN}`,
+                    borderLeft: `2px solid ${MATRIX_GREEN}`,
+                  }}
+                />
+                <div 
+                  className="absolute top-3 right-3 w-8 h-8 pointer-events-none"
+                  style={{
+                    borderTop: `2px solid ${MATRIX_GREEN}`,
+                    borderRight: `2px solid ${MATRIX_GREEN}`,
+                  }}
+                />
+                <div 
+                  className="absolute bottom-3 left-3 w-8 h-8 pointer-events-none"
+                  style={{
+                    borderBottom: `2px solid ${MATRIX_GREEN}`,
+                    borderLeft: `2px solid ${MATRIX_GREEN}`,
+                  }}
+                />
+                <div 
+                  className="absolute bottom-3 right-3 w-8 h-8 pointer-events-none"
+                  style={{
+                    borderBottom: `2px solid ${MATRIX_GREEN}`,
+                    borderRight: `2px solid ${MATRIX_GREEN}`,
+                  }}
+                />
               </div>
             )}
 
+            {/* Progress percentage - large display */}
+            <div 
+              className="text-6xl font-light tracking-wider"
+              style={{ 
+                color: MATRIX_GREEN,
+                fontFamily: "'Libre Baskerville', serif",
+                fontStyle: 'italic',
+                textShadow: `0 0 20px rgba(0, 255, 0, 0.5)`,
+              }}
+            >
+              {Math.round(scanProgress)}%
+            </div>
+
             {/* Status text */}
             <div className="flex flex-col items-center gap-4">
-              <div className="flex items-center gap-3">
-                <Loader2 
-                  className="w-4 h-4 animate-spin" 
-                  style={{ color: BURNT_GOLD }} 
-                />
-                <span 
-                  className="text-xs tracking-[0.25em] uppercase"
-                  style={{ color: BURNT_GOLD, fontWeight: 300 }}
-                >
-                  Analyzing Patterns
-                </span>
-              </div>
+              <span 
+                className="text-sm tracking-[0.3em] uppercase"
+                style={{ color: MATRIX_GREEN, fontWeight: 300 }}
+              >
+                Scanning Palm Lines...
+              </span>
+              
+              {/* Progress bar */}
               <div 
-                className="w-48 h-px animate-pulse"
-                style={{
-                  background: `linear-gradient(90deg, transparent, ${BURNT_GOLD}60, transparent)`,
-                }}
-              />
+                className="w-64 h-1 rounded-full overflow-hidden"
+                style={{ backgroundColor: 'rgba(0, 255, 0, 0.2)' }}
+              >
+                <div 
+                  className="h-full rounded-full"
+                  style={{ 
+                    width: `${scanProgress}%`,
+                    backgroundColor: MATRIX_GREEN,
+                    boxShadow: `0 0 10px ${MATRIX_GREEN}`,
+                    transition: 'width 50ms linear',
+                  }}
+                />
+              </div>
             </div>
           </div>
         )}
@@ -599,32 +627,27 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
         )}
       </main>
 
-      {/* Keyframe animation styles */}
+      {/* Keyframe animation styles for Matrix rain */}
       <style>{`
-        @keyframes scanLineMove {
+        @keyframes matrixRain {
           0% {
-            top: 0%;
+            transform: translateY(-100%);
             opacity: 0;
           }
-          5% {
+          10% {
             opacity: 1;
           }
-          95% {
+          90% {
             opacity: 1;
           }
           100% {
-            top: 100%;
+            transform: translateY(400%);
             opacity: 0;
           }
         }
         
-        .scan-line-animation {
-          animation: scanLineMove 2.5s ease-in-out infinite;
-        }
-        
-        .scan-line-animation-delayed {
-          animation: scanLineMove 2.5s ease-in-out infinite;
-          animation-delay: 1.25s;
+        .matrix-rain-column {
+          animation: matrixRain 2s linear infinite;
         }
       `}</style>
     </div>
