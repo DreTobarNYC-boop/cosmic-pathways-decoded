@@ -289,28 +289,22 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
     setScanProgress(0);
     startScanSound();
 
-    // Haptic vibration on mobile — subtle pulse every 400ms
     if (navigator.vibrate) {
       hapticIntervalRef.current = setInterval(() => {
         navigator.vibrate(15);
       }, 400);
     }
 
-    const scanDuration = 4500; // ~4.5 seconds like Whop reference
+    const scanDuration = 3600;
     const startTime = performance.now();
     let waitingForApi = false;
 
     const animateLaser = (now: number) => {
       const elapsed = now - startTime;
+      const progress = waitingForApi ? 100 : Math.min((elapsed / scanDuration) * 100, 100);
 
-      let progress: number;
-      if (!waitingForApi) {
-        progress = Math.min((elapsed / scanDuration) * 100, 100);
-        if (progress >= 100) {
-          waitingForApi = true;
-        }
-      } else {
-        progress = 100;
+      if (progress >= 100) {
+        waitingForApi = true;
       }
 
       setScanProgress(progress);
@@ -329,7 +323,7 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
         }
         return prev + 1;
       });
-    }, 900); // faster steps to match ~4.5s total
+    }, 720);
 
     try {
       const base64 = imageData.split(",")[1];
@@ -342,7 +336,6 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
       if (hapticIntervalRef.current) clearInterval(hapticIntervalRef.current);
 
       if (error) {
-        // Check if error response contains a message from the function
         const errBody = typeof error === "object" && error !== null ? error : {};
         const message = (errBody as Record<string, unknown>).message as string || "Analysis failed";
         throw new Error(message);
@@ -357,11 +350,10 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
       updateScanPitch(100);
       stopScanSound();
 
-      // Strong haptic for completion
       if (navigator.vibrate) navigator.vibrate([50, 30, 80]);
       playCompletionChime();
 
-      await new Promise((r) => setTimeout(r, 1200));
+      await new Promise((r) => setTimeout(r, 350));
       setReading(data.content);
       setActiveTab("reading");
       setPhase("result");
@@ -528,49 +520,45 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
 
   if (phase === "scanning" && imageData) {
     const laserPct = scanProgress;
+    const scanComplete = scanProgress >= 100;
     return (
-      <div className="fixed inset-0 z-50 bg-background overflow-hidden">
-        {/* Color layer (below the laser) */}
+      <div className="fixed inset-0 z-50 overflow-hidden bg-background">
         <img
           src={imageData}
-          alt="Palm scan color"
-          className="absolute inset-0 h-full w-full object-cover"
-          style={{ filter: "brightness(0.85) contrast(1.1)" }}
-        />
-
-        {/* Grayscale layer (above the laser) — clip-path reveals from top */}
-        <img
-          src={imageData}
-          alt="Palm scan grayscale"
+          alt="Palm scan"
           className="absolute inset-0 h-full w-full object-cover"
           style={{
-            filter: "grayscale(1) brightness(0.75) contrast(1.2)",
-            clipPath: `inset(0 0 ${100 - laserPct}% 0)`,
+            filter: scanComplete
+              ? "grayscale(1) brightness(0.72) contrast(1.18)"
+              : "brightness(0.88) contrast(1.08)",
+            transition: scanComplete ? "filter 0.18s linear" : "none",
           }}
         />
 
-        <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-transparent to-background/70 pointer-events-none" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-background/60 via-transparent to-background/70" />
 
-        {/* Laser line */}
-        <div
-          className="absolute left-0 right-0"
-          style={{
-            top: `${laserPct}%`,
-            height: "3px",
-            background: "linear-gradient(90deg, transparent 0%, hsl(145 100% 60%) 15%, hsl(145 100% 75%) 50%, hsl(145 100% 60%) 85%, transparent 100%)",
-            boxShadow: "0 0 8px 2px hsl(145 100% 55% / 0.8), 0 0 25px 8px hsl(145 100% 50% / 0.45), 0 0 60px 20px hsl(145 80% 45% / 0.25)",
-            transition: "top 0.05s linear",
-          }}
-        />
-        {/* Glow trail below laser */}
-        <div
-          className="absolute left-0 right-0 pointer-events-none"
-          style={{
-            top: `${Math.min(laserPct + 0.3, 100)}%`,
-            height: "40px",
-            background: "linear-gradient(180deg, hsl(145 100% 55% / 0.18) 0%, transparent 100%)",
-          }}
-        />
+        {!scanComplete && (
+          <>
+            <div
+              className="absolute left-0 right-0"
+              style={{
+                top: `${laserPct}%`,
+                height: "3px",
+                background: "linear-gradient(90deg, transparent 0%, hsl(145 100% 60%) 15%, hsl(145 100% 75%) 50%, hsl(145 100% 60%) 85%, transparent 100%)",
+                boxShadow: "0 0 8px 2px hsl(145 100% 55% / 0.8), 0 0 25px 8px hsl(145 100% 50% / 0.45), 0 0 60px 20px hsl(145 80% 45% / 0.25)",
+                transition: "top 0.03s linear",
+              }}
+            />
+            <div
+              className="pointer-events-none absolute left-0 right-0"
+              style={{
+                top: `${Math.min(laserPct + 0.2, 100)}%`,
+                height: "32px",
+                background: "linear-gradient(180deg, hsl(145 100% 55% / 0.16) 0%, transparent 100%)",
+              }}
+            />
+          </>
+        )}
 
         <div className="absolute inset-x-0 top-0 flex items-center justify-between px-4 pt-6">
           <button
