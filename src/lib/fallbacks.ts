@@ -1,26 +1,26 @@
-// Template fallbacks — used ONLY when Gemini API fails
-// These are element-personalized (not sign-specific) as noted in the spec
+// Template fallbacks — used ONLY when AI API fails
+// These are element-personalized (not sign-specific)
 
 const ELEMENT_HOROSCOPES: Record<string, string[]> = {
   Fire: [
-    "Your inner flame burns with renewed purpose today. Channel that bold energy into creative ventures — the universe rewards courage.",
-    "A spark of inspiration ignites your path. Trust your instincts and move decisively. Your passion is your compass.",
-    "The cosmos fuels your ambition. Today's fire burns away doubt — step forward with the confidence of someone who knows their destiny.",
+    "You've got extra energy today — use it. Pick one project that's been sitting there and knock out the first step. Action beats overthinking right now.",
+    "Today's a good day to take a risk you've been putting off. Start that conversation, send that pitch, make that move. Your gut is on point today.",
+    "You might feel restless — that's a signal to channel it into something productive. Set one clear goal for today and go after it hard.",
   ],
   Earth: [
-    "Ground yourself in the present moment. Practical steps taken today build the foundation for lasting abundance.",
-    "The earth beneath you holds ancient wisdom. Trust the slow, steady growth unfolding in your life — roots run deep.",
-    "Material and spiritual realms align today. Your natural stability becomes a magnet for the opportunities you've been cultivating.",
+    "Today is about steady progress. Pick one thing that needs organizing — finances, your schedule, your workspace — and get it sorted. Small wins add up fast.",
+    "Trust your instincts on practical matters today. If something feels off about a deal or plan, look closer before committing. Your grounded nature is your best tool.",
+    "Good day to build something lasting. Focus on the basics — health, finances, relationships. One solid step today is worth more than ten big plans tomorrow.",
   ],
   Air: [
-    "Your mind is a crystal prism today — ideas refract in brilliant new directions. Communicate freely; your words carry power.",
-    "Intellectual currents carry you toward meaningful connections. Share your vision with those who resonate with your frequency.",
-    "The winds of change whisper secrets to those who listen. Stay curious, stay open — breakthrough insights arrive unexpectedly.",
+    "Your mind is sharp today — use it for problem-solving. That issue you've been stuck on? Try a completely different angle. Fresh ideas are right there.",
+    "Great day for conversations that matter. Reach out to someone you've been meaning to connect with. Your words carry weight today — use them well.",
+    "You might feel pulled in different directions. That's fine — pick the two most important things and let the rest wait. Focus beats multitasking today.",
   ],
   Water: [
-    "Emotional depths reveal hidden treasures today. Trust the currents of your intuition — they flow toward healing and renewal.",
-    "Your sensitivity is not weakness but a sacred antenna. Today's undercurrents carry messages from your higher self.",
-    "The cosmic tide pulls you toward profound understanding. Embrace the mystery — not everything needs to be solved, some things need to be felt.",
+    "Trust your gut today — it's picking up on things your head might miss. If someone or something feels off, pay attention. Your intuition is your superpower right now.",
+    "Good day to check in with yourself emotionally. Take 10 minutes to journal, meditate, or just sit with your thoughts. Clarity comes when you stop and listen.",
+    "Your empathy is strong today — use it to connect with someone who needs it. But set boundaries too. Helping others works best when you're not running on empty.",
   ],
 };
 
