@@ -115,8 +115,25 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
     if (!imageData) return;
     setPhase("scanning");
     setScanStep(0);
+    setScanProgress(0);
 
-    // Animate scan steps
+    // Start scanning sound
+    startScanSound();
+
+    // Smooth laser animation from 0 to ~95% over the scan duration
+    const scanDuration = SCAN_PHASES.length * 1800; // total ms
+    const startTime = performance.now();
+    const animateLaser = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min((elapsed / scanDuration) * 95, 95);
+      setScanProgress(progress);
+      if (progress < 95) {
+        scanAnimRef.current = requestAnimationFrame(animateLaser);
+      }
+    };
+    scanAnimRef.current = requestAnimationFrame(animateLaser);
+
+    // Animate scan step labels
     const stepInterval = setInterval(() => {
       setScanStep((prev) => {
         if (prev >= SCAN_PHASES.length - 1) {
@@ -134,19 +151,24 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
       });
 
       clearInterval(stepInterval);
+      if (scanAnimRef.current) cancelAnimationFrame(scanAnimRef.current);
 
       if (error) throw new Error(error.message);
       if (!data?.content) throw new Error("No reading returned");
 
-      // Ensure we're at 100% before showing results
+      // Animate to 100%
       setScanStep(SCAN_PHASES.length - 1);
+      setScanProgress(100);
       await new Promise((r) => setTimeout(r, 800));
 
+      stopScanSound();
       setReading(data.content);
       setActiveTab("reading");
       setPhase("result");
     } catch (err) {
       clearInterval(stepInterval);
+      if (scanAnimRef.current) cancelAnimationFrame(scanAnimRef.current);
+      stopScanSound();
       const msg = err instanceof Error ? err.message : "Analysis failed";
       toast.error(msg);
       setPhase("preview");
@@ -158,6 +180,8 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
     setImageData(null);
     setReading(null);
     setScanStep(0);
+    setScanProgress(0);
+    stopScanSound();
   }, []);
 
   // Cleanup camera on unmount
