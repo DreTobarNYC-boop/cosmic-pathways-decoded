@@ -57,31 +57,62 @@ const WORLD_CITIES: { name: string; lat: number; lng: number }[] = [
   { name: "Porto", lat: 41.2, lng: -8.6 }, { name: "Nashville", lat: 36.2, lng: -86.8 },
 ];
 
-function computeResonanceScore(city: string, lifePath: number, zodiacElement: string): number {
+function nameVibration(name: string): number {
+  return name.split("").reduce((s, ch) => s + ch.charCodeAt(0), 0);
+}
+
+function computeResonanceScore(
+  city: string,
+  lifePath: number,
+  zodiacElement: string,
+  fullName: string,
+  dob: Date | null,
+  chineseAnimal: string,
+  birthPlace: string,
+): number {
   const cityNum = locationNumber(city);
   const meaning = LOCATION_MEANINGS[cityNum];
   if (!meaning) return 40;
 
-  let score = 50;
+  // Personal seed from name + city combo — makes every user unique
+  const personalSeed = nameVibration(fullName + city) % 97;
+  let score = 35 + (personalSeed % 20); // base 35-54, unique per person×city
 
-  // Life path harmony
-  if (cityNum === lifePath) score += 25;
-  else if (Math.abs(cityNum - lifePath) <= 2 || cityNum + lifePath === 10) score += 15;
-  else if (cityNum % 3 === lifePath % 3) score += 10;
+  // Life path harmony (strong signal)
+  if (cityNum === lifePath) score += 22;
+  else if (Math.abs(cityNum - lifePath) <= 1 || cityNum + lifePath === 10) score += 14;
+  else if (cityNum % 3 === lifePath % 3) score += 8;
 
   // Elemental harmony
   const elementAffinities: Record<string, number[]> = {
     Fire: [1, 3, 5, 9], Earth: [4, 6, 8, 22], Air: [3, 5, 7, 11], Water: [2, 6, 7, 9],
   };
-  if (elementAffinities[zodiacElement]?.includes(cityNum)) score += 12;
+  if (elementAffinities[zodiacElement]?.includes(cityNum)) score += 10;
+
+  // Chinese zodiac affinity — animal-city resonance
+  const animalHash = nameVibration(chineseAnimal + city) % 13;
+  score += animalHash > 8 ? 8 : animalHash > 4 ? 4 : 0;
+
+  // DOB digit weave — day/month create unique harmonics
+  if (dob) {
+    const dayNum = dob.getDate();
+    const monthNum = dob.getMonth() + 1;
+    const dobMix = ((dayNum * 7 + monthNum * 13) ^ nameVibration(city)) % 19;
+    score += dobMix > 12 ? 7 : dobMix > 6 ? 3 : 0;
+  }
+
+  // Birth place resonance — shared letters between birth place and city
+  if (birthPlace && birthPlace !== "Unknown") {
+    const bpSet = new Set(birthPlace.toLowerCase().replace(/[^a-z]/g, ""));
+    const citySet = new Set(city.toLowerCase().replace(/[^a-z]/g, ""));
+    const overlap = [...bpSet].filter(ch => citySet.has(ch)).length;
+    score += Math.min(overlap * 2, 8);
+  }
 
   // Master number bonus
-  if (cityNum === 11 || cityNum === 22 || cityNum === 33) score += 5;
+  if (cityNum === 11 || cityNum === 22 || cityNum === 33) score += 4;
 
-  // Name length entropy for variety
-  score += (city.length % 7) + 1;
-
-  return Math.min(99, Math.max(20, score));
+  return Math.min(99, Math.max(15, score));
 }
 
 /* ─── Decode Result ─── */
@@ -222,25 +253,27 @@ export function MapsChamber({ onBack }: { onBack: () => void }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isAddressLoading, setIsAddressLoading] = useState(false);
 
-  const name = profile?.fullName || "Seeker";
+  const fullName = profile?.fullName || "Seeker";
+  const birthPlace = profile?.birthPlace || "Unknown";
   const dob = useMemo(() => profile?.dateOfBirth ? new Date(profile.dateOfBirth + "T12:00:00") : null, [profile?.dateOfBirth]);
   const lifePath = dob ? getLifePath(dob) : 7;
   const zodiac = dob ? getZodiacFromDOB(dob) : null;
   const zodiacElement = zodiac?.element || "Fire";
+  const chineseAnimal = dob ? getChineseZodiac(dob.getFullYear()) : "Dragon";
 
-  // Power Map: ranked cities
+  // Power Map: ranked cities — unique per person
   const rankedCities = useMemo(() => {
     return WORLD_CITIES
       .map(c => ({
         city: c.name,
         lat: c.lat,
         lng: c.lng,
-        score: computeResonanceScore(c.name, lifePath, zodiacElement),
+        score: computeResonanceScore(c.name, lifePath, zodiacElement, fullName, dob, chineseAnimal, birthPlace),
         number: locationNumber(c.name),
       }))
       .sort((a, b) => b.score - a.score)
       .slice(0, 12);
-  }, [lifePath, zodiacElement]);
+  }, [lifePath, zodiacElement, fullName, dob, chineseAnimal, birthPlace]);
 
   const decodeLocation = useCallback(async (locationName: string) => {
     if (!locationName.trim()) return;
@@ -254,7 +287,7 @@ export function MapsChamber({ onBack }: { onBack: () => void }) {
         body: {
           reading_type: "maps_decode",
           context: {
-            name,
+            name: fullName,
             locationName: locationName.trim(),
             locationNumber: num,
             meaning: LOCATION_MEANINGS[num]?.vibe,
@@ -272,7 +305,7 @@ export function MapsChamber({ onBack }: { onBack: () => void }) {
     } finally {
       setIsLoading(false);
     }
-  }, [name, profile, i18n.language]);
+  }, [fullName, profile, i18n.language]);
 
   const decodeAddress = useCallback(async (addr: string) => {
     if (!addr.trim()) return;
@@ -286,7 +319,7 @@ export function MapsChamber({ onBack }: { onBack: () => void }) {
         body: {
           reading_type: "maps_address",
           context: {
-            name,
+            name: fullName,
             address: addr.trim(),
             addressNumber: num,
             meaning: LOCATION_MEANINGS[num]?.vibe,
@@ -304,7 +337,7 @@ export function MapsChamber({ onBack }: { onBack: () => void }) {
     } finally {
       setIsAddressLoading(false);
     }
-  }, [name, profile, i18n.language]);
+  }, [fullName, profile, i18n.language]);
 
   return (
     <ChamberLayout title="The Maps" onBack={onBack}>
