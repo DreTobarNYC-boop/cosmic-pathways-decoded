@@ -319,7 +319,6 @@ const GENRE_PROFILES: Record<number, GenreProfile> = {
     hatDecay: 0.035,
     hatFilterFreq: 9500,
   },
-};
 
   // 432 Hz — Calm / Healing Ambient (432 Hz tuning, gentle, flowing)
   432: {
@@ -428,7 +427,9 @@ const GENRE_PROFILES: Record<number, GenreProfile> = {
     hatDecay: 0.1,
     hatFilterFreq: 3000,
   },
+};
 
+function getProfile(hz: number): GenreProfile {
   return GENRE_PROFILES[hz] || GENRE_PROFILES[528];
 }
 
