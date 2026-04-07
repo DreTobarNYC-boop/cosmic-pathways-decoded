@@ -68,46 +68,12 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
   const hapticIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const stopCamera = useCallback(() => {
-    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current?.getTracks().forEach((t) => t.stop());
     streamRef.current = null;
     setMediaStream(null);
     setVideoReady(false);
     setCameraLoading(false);
   }, []);
-
-  // Ref callback — attaches stream the instant the <video> element mounts
-  const videoRefCallback = useCallback(
-    (node: HTMLVideoElement | null) => {
-      (videoRef as React.MutableRefObject<HTMLVideoElement | null>).current = node;
-      if (!node || !streamRef.current) return;
-
-      // iOS Safari: set attributes BEFORE srcObject
-      node.setAttribute("autoplay", "");
-      node.setAttribute("playsinline", "");
-      node.setAttribute("muted", "");
-      node.setAttribute("webkit-playsinline", "");
-      node.muted = true;
-      node.playsInline = true;
-
-      node.srcObject = streamRef.current;
-      node.onloadedmetadata = () => {
-        node.play().then(() => {
-          setVideoReady(true);
-          setCameraLoading(false);
-        }).catch(() => undefined);
-      };
-      // Fallback: if loadedmetadata already fired
-      if (node.readyState >= 1) {
-        node.play().then(() => {
-          setVideoReady(true);
-          setCameraLoading(false);
-        }).catch(() => undefined);
-      }
-    },
-    // Re-run when mediaStream changes so React re-attaches on new stream
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [mediaStream],
-  );
 
   const startCamera = useCallback(async () => {
     try {
@@ -115,37 +81,31 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
       setCameraLoading(true);
       setPhase("camera");
 
-      if (streamRef.current) {
-        // Stream already exists, just let the ref callback re-attach
-        setMediaStream(streamRef.current);
-        return;
-      }
-
-      const constraints: MediaStreamConstraints[] = [
-        { video: { facingMode: { ideal: "environment" }, width: { ideal: 1080 }, height: { ideal: 1920 } }, audio: false },
-        { video: { facingMode: "environment" }, audio: false },
-        { video: true, audio: false },
-      ];
-
-      let stream: MediaStream | null = null;
-      for (const c of constraints) {
-        try {
-          stream = await navigator.mediaDevices.getUserMedia(c);
-          break;
-        } catch {
-          continue;
-        }
-      }
-      if (!stream) throw new Error("Camera unavailable");
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" },
+        audio: false,
+      });
 
       streamRef.current = stream;
-      setMediaStream(stream); // triggers re-render → videoRefCallback fires
+      setMediaStream(stream);
     } catch {
       setCameraLoading(false);
       setPhase("permission");
       toast.error(t("palm.cameraError"));
     }
   }, [t]);
+
+  // Attach stream to video whenever both exist
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !mediaStream) return;
+
+    video.srcObject = mediaStream;
+    video.play().then(() => {
+      setVideoReady(true);
+      setCameraLoading(false);
+    }).catch(() => undefined);
+  }, [mediaStream]);
 
   const capturePhoto = useCallback(() => {
     const video = videoRef.current;
