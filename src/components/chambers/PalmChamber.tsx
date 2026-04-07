@@ -32,6 +32,37 @@ const FALLBACK_READING = {
   markings: [],
 };
 
+function normalizePalmReading(raw: any) {
+  if (!raw) return null;
+
+  return {
+    handType: raw.handType || "Palm Reading",
+    archetype: typeof raw.archetype === "string" ? raw.archetype : raw.archetype?.name || "YOUR READING",
+    overview: raw.overview || raw.reading?.overview || raw.archetype?.summary || "",
+    lines: {
+      lifeLine: raw.lines?.lifeLine || raw.lines?.life?.description || "",
+      heartLine: raw.lines?.heartLine || raw.lines?.heart?.description || "",
+      headLine: raw.lines?.headLine || raw.lines?.head?.description || "",
+      fateLine: raw.lines?.fateLine || raw.lines?.fate?.description || "",
+      sunLine: raw.lines?.sunLine || raw.lines?.sun?.description || "",
+    },
+    mounts: {
+      venus: typeof raw.mounts?.venus === "string" ? raw.mounts.venus : raw.mounts?.venus?.meaning || "",
+      jupiter: typeof raw.mounts?.jupiter === "string" ? raw.mounts.jupiter : raw.mounts?.jupiter?.meaning || "",
+      saturn: typeof raw.mounts?.saturn === "string" ? raw.mounts.saturn : raw.mounts?.saturn?.meaning || "",
+      apollo: typeof raw.mounts?.apollo === "string" ? raw.mounts.apollo : raw.mounts?.apollo?.meaning || "",
+      mercury: typeof raw.mounts?.mercury === "string" ? raw.mounts.mercury : raw.mounts?.mercury?.meaning || "",
+      moon: typeof raw.mounts?.moon === "string" ? raw.mounts.moon : raw.mounts?.moon?.meaning || "",
+    },
+    markings: Array.isArray(raw.markings)
+      ? raw.markings.map((item: any) => `${item.type}${item.location ? ` (${item.location})` : ""}: ${item.meaning}`).join(" ")
+      : raw.markings || "",
+    destiny: raw.destiny || raw.archetype?.shadow || raw.reading?.overview || "",
+    gifts: raw.gifts || raw.archetype?.traits || [],
+    challenges: raw.challenges || [],
+  };
+}
+
 export default function PalmScanner() {
   const fileInputRef = useRef(null);
   const capturedFileRef = useRef(null);
@@ -90,13 +121,13 @@ export default function PalmScanner() {
       clearInterval(interval);
       setScanProgress(100);
       setTimeout(() => {
-        setReading(data.content);
+        setReading(normalizePalmReading(data.content));
         setPhase("results");
       }, 600);
     } catch (err) {
       clearInterval(interval);
       console.error("Analysis error:", err);
-      setReading(FALLBACK_READING);
+      setReading(normalizePalmReading(FALLBACK_READING));
       setPhase("results");
     }
   }, []);
