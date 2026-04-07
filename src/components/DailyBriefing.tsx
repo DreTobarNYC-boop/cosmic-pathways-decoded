@@ -11,6 +11,7 @@ import {
 import { getFallbackHoroscope } from "@/lib/fallbacks";
 import { useCachedReading } from "@/hooks/use-cached-reading";
 import { ChevronRight } from "lucide-react";
+import { getZodiacImage } from "@/lib/zodiac-images";
 
 interface DailyBriefingProps {
   dob: Date;
@@ -76,7 +77,11 @@ export function DailyBriefing({ dob, name, birthPlace, birthTime, onOpenStars }:
             {formattedDate}
           </p>
           <div className="flex items-center gap-1.5 bg-muted/40 rounded-full px-3 py-1">
-            <span className="text-sm">{zodiac.symbol}</span>
+            {getZodiacImage(zodiac.sign) ? (
+              <img src={getZodiacImage(zodiac.sign)} alt={zodiac.sign} className="w-6 h-6 object-contain" loading="lazy" />
+            ) : (
+              <span className="text-sm">{zodiac.symbol}</span>
+            )}
             <span className="text-xs font-display font-bold text-primary uppercase tracking-wider">
               {zodiac.sign}
             </span>
