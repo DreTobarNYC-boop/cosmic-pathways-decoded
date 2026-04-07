@@ -68,7 +68,8 @@ Cosmic Profile:
 - Sun Sign: ${context.zodiacSign} (${context.element} element)
 - Life Path Number: ${context.lifePath}
 - Chinese Zodiac: ${context.chineseZodiac}
-- Date: ${context.date}
+- Date of Birth: ${context.dateOfBirth || "Unknown"}
+- Current Date: ${context.date}
 - Birth Place: ${context.birthPlace || "Unknown"}
 - Birth Time: ${context.birthTime || "Unknown"}
 - Universal Day Number: ${context.universalDay}
@@ -107,7 +108,8 @@ Cosmic Profile:
 - Sun Sign: ${context.zodiacSign} (${context.element} element)
 - Life Path Number: ${context.lifePath}
 - Chinese Zodiac: ${context.chineseZodiac}
-- Date: ${context.date}
+- Date of Birth: ${context.dateOfBirth || "Unknown"}
+- Current Date: ${context.date}
 - Birth Place: ${context.birthPlace || "Unknown"}
 - Birth Time: ${context.birthTime || "Unknown"}
 
