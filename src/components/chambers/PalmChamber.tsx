@@ -1,31 +1,67 @@
 // @ts-nocheck
 import { useState, useRef, useCallback } from "react";
-
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-
-const PALM_SYSTEM_PROMPT = "You are the Sovereign Oracle of the 36 Chambers, a mystical palmistry reader with ancient wisdom.\nAnalyze this palm image with deep spiritual insight. You MUST provide a unique, personalized reading based on what you actually see in the image.\n\nStructure your response as JSON with this exact format:\n{\n  \"archetype\": \"The [Archetype Name]\",\n  \"handType\": \"Fire Hand | Earth Hand | Air Hand | Water Hand\",\n  \"overview\": \"2-3 sentences of mystical overview\",\n  \"lines\": {\n    \"lifeLine\": \"Reading of the life line\",\n    \"heartLine\": \"Reading of the heart line\",\n    \"headLine\": \"Reading of the head line\",\n    \"fateLine\": \"Reading of the fate line if visible\"\n  },\n  \"mounts\": {\n    \"venus\": \"Reading of the Mount of Venus\",\n    \"jupiter\": \"Reading of the Mount of Jupiter\",\n    \"saturn\": \"Reading of the Mount of Saturn\",\n    \"apollo\": \"Reading of the Mount of Apollo\"\n  },\n  \"markings\": \"Special markings, stars, crosses, or symbols you see\",\n  \"destiny\": \"A powerful, personalized destiny message in 2-3 sentences\",\n  \"gifts\": [\"gift1\", \"gift2\", \"gift3\"],\n  \"challenges\": [\"challenge1\", \"challenge2\"]\n}\n\nBe mystical, specific, and deeply personal. Never give generic readings. Each palm is unique.";
+import { supabase } from "@/integrations/supabase/client";
 
 const FALLBACK_READING = {
-  archetype: "The Mystic Wanderer",
   handType: "Air Hand",
-  overview: "Your palm carries ancient wisdom written in the language of the cosmos. The lines etched upon your hand speak of a soul who walks between worlds.",
+  element: "Air",
+  archetype: {
+    name: "THE ANALYST",
+    traits: ["curious", "adaptable", "perceptive"],
+    summary: "You notice patterns fast and think through things before you move. You're wired to observe, compare, and make sense of what's in front of you. When you trust your own read, you're usually right.",
+    shadow: "You can overthink when a simple decision would do. Set short deadlines for yourself so analysis does not turn into delay.",
+  },
+  reading: {
+    overview: "Your palm suggests a practical mind, strong instincts, and a path shaped more by your choices than by luck. You do best when you keep your goals visible and your energy focused on one clear next step at a time.",
+  },
   lines: {
-    lifeLine: "Your life line curves with vitality and purpose, suggesting a path rich with transformation and renewal.",
-    heartLine: "A deep heart line reveals profound emotional capacity and the gift of genuine connection.",
-    headLine: "Your head line shows a mind that bridges intuition and intellect with rare grace.",
-    fateLine: "The fate line rises with determination, marking a destiny shaped by conscious choice.",
+    heart: { strength: "moderate", description: "You care deeply, but you do not always show it right away. Be direct about what you need instead of expecting people to guess." },
+    head: { strength: "strong", description: "You think clearly and catch details others miss. Use that skill on decisions that matter, not every small choice." },
+    life: { strength: "strong", description: "You have solid staying power and bounce back well. Protect your energy by pacing yourself instead of pushing hard all the time." },
+    fate: { strength: "moderate", description: "Your path looks self-directed. You get the best results when you define success on your own terms and review your progress weekly." },
+    sun: { strength: "faint", description: "Recognition grows over time, not all at once. Keep showing your work and let consistency do the heavy lifting." },
   },
   mounts: {
-    venus: "Elevated Mount of Venus speaks of magnetic charisma and deep sensual awareness.",
-    jupiter: "Your Jupiter mount reveals natural leadership and an expansive vision for your life.",
-    saturn: "The Saturn mount grounds your gifts in discipline and long-term mastery.",
-    apollo: "Apollo's mount blazes with creative fire and the desire to leave your mark.",
+    jupiter: { prominence: "moderate", meaning: "You have ambition, but it works best when tied to responsibility and follow-through." },
+    saturn: { prominence: "moderate", meaning: "You take life seriously enough to learn from it. Just do not carry everything alone." },
+    apollo: { prominence: "moderate", meaning: "You have creative instinct, especially when you stop trying to make it perfect first." },
+    mercury: { prominence: "moderate", meaning: "Communication is one of your tools. Say the hard thing clearly and early." },
+    venus: { prominence: "high", meaning: "You bring warmth, loyalty, and real feeling. Put that energy into people and work that give something back." },
+    moon: { prominence: "moderate", meaning: "Your gut feelings are useful when you slow down enough to hear them." },
   },
-  markings: "Sacred geometric patterns are woven into your palm, marking you as one who carries both gift and purpose.",
-  destiny: "You are at the threshold of your most significant chapter. The stars have aligned to support your deepest intentions.",
-  gifts: ["Intuitive wisdom", "Creative expression", "Spiritual insight"],
-  challenges: ["Trusting the process", "Embracing vulnerability"],
+  markings: [],
 };
+
+function normalizePalmReading(raw: any) {
+  if (!raw) return null;
+
+  return {
+    handType: raw.handType || "Palm Reading",
+    archetype: typeof raw.archetype === "string" ? raw.archetype : raw.archetype?.name || "YOUR READING",
+    overview: raw.overview || raw.reading?.overview || raw.archetype?.summary || "",
+    lines: {
+      lifeLine: raw.lines?.lifeLine || raw.lines?.life?.description || "",
+      heartLine: raw.lines?.heartLine || raw.lines?.heart?.description || "",
+      headLine: raw.lines?.headLine || raw.lines?.head?.description || "",
+      fateLine: raw.lines?.fateLine || raw.lines?.fate?.description || "",
+      sunLine: raw.lines?.sunLine || raw.lines?.sun?.description || "",
+    },
+    mounts: {
+      venus: typeof raw.mounts?.venus === "string" ? raw.mounts.venus : raw.mounts?.venus?.meaning || "",
+      jupiter: typeof raw.mounts?.jupiter === "string" ? raw.mounts.jupiter : raw.mounts?.jupiter?.meaning || "",
+      saturn: typeof raw.mounts?.saturn === "string" ? raw.mounts.saturn : raw.mounts?.saturn?.meaning || "",
+      apollo: typeof raw.mounts?.apollo === "string" ? raw.mounts.apollo : raw.mounts?.apollo?.meaning || "",
+      mercury: typeof raw.mounts?.mercury === "string" ? raw.mounts.mercury : raw.mounts?.mercury?.meaning || "",
+      moon: typeof raw.mounts?.moon === "string" ? raw.mounts.moon : raw.mounts?.moon?.meaning || "",
+    },
+    markings: Array.isArray(raw.markings)
+      ? raw.markings.map((item: any) => `${item.type}${item.location ? ` (${item.location})` : ""}: ${item.meaning}`).join(" ")
+      : raw.markings || "",
+    destiny: raw.destiny || raw.archetype?.shadow || raw.reading?.overview || "",
+    gifts: raw.gifts || raw.archetype?.traits || [],
+    challenges: raw.challenges || [],
+  };
+}
 
 export default function PalmScanner() {
   const fileInputRef = useRef(null);
@@ -64,47 +100,34 @@ export default function PalmScanner() {
     }, 200);
 
     try {
-      const base64 = await new Promise((resolve) => {
+      const base64 = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
-        reader.onload = () => resolve(reader.result.split(",")[1]);
+        reader.onload = () => resolve(String(reader.result).split(",")[1]);
+        reader.onerror = () => reject(new Error("Failed to read file"));
         reader.readAsDataURL(capturedFileRef.current);
       });
-      const seed = Math.floor(Math.random() * 999999);
-      const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + GEMINI_API_KEY;
 
-      const response = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          system_instruction: { parts: [{ text: PALM_SYSTEM_PROMPT }] },
-          contents: [{
-            parts: [
-              { text: "Unique seed: " + seed + ". Analyze this palm image with fresh eyes and provide a completely unique reading." },
-              { inline_data: { mime_type: "image/jpeg", data: base64 } },
-            ],
-          }],
-          generationConfig: { temperature: 1.0, maxOutputTokens: 1500 },
-        }),
+      const { data, error } = await supabase.functions.invoke("palm-reading", {
+        body: {
+          image_base64: base64,
+          language: "en",
+        },
       });
 
-      const data = await response.json();
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[0]);
-        clearInterval(interval);
-        setScanProgress(100);
-        setTimeout(() => {
-          setReading(parsed);
-          setPhase("results");
-        }, 600);
-      } else {
-        throw new Error("Could not parse reading");
-      }
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      if (!data?.content) throw new Error("No reading returned");
+
+      clearInterval(interval);
+      setScanProgress(100);
+      setTimeout(() => {
+        setReading(normalizePalmReading(data.content));
+        setPhase("results");
+      }, 600);
     } catch (err) {
       clearInterval(interval);
       console.error("Analysis error:", err);
-      setReading(FALLBACK_READING);
+      setReading(normalizePalmReading(FALLBACK_READING));
       setPhase("results");
     }
   }, []);
