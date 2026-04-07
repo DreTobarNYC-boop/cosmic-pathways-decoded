@@ -20,12 +20,315 @@ export const SOLFEGGIO_FREQUENCIES: FrequencyPreset[] = [
 ];
 
 /* ══════════════════════════════════════════════════════════
+   GENRE PROFILES — each frequency gets a unique musical personality
+   ══════════════════════════════════════════════════════════ */
+
+interface GenreProfile {
+  bpm: number;
+  genre: string;
+  // Kick pattern (16 steps, 0 = silent)
+  kick: number[];
+  // Percussion patterns
+  rim: number[];
+  hat: number[];
+  shaker: number[];
+  // Synth character
+  bassType: OscillatorType;
+  bassFilterFreq: number;
+  bassOctaves: number;
+  padType: string;
+  padFilterFreq: number;
+  padSpread: number;
+  arpType: OscillatorType;
+  arpFilterFreq: number;
+  // FX
+  reverbDecay: number;
+  reverbWet: number;
+  delayTime: string;
+  delayFeedback: number;
+  filterLfoMin: number;
+  filterLfoMax: number;
+  filterLfoRate: number;
+  // Volumes
+  kickVol: number;
+  rimVol: number;
+  hatVol: number;
+  shakerVol: number;
+  bassVol: number;
+  padVol: number;
+  pluckVol: number;
+  arpVol: number;
+  // Hat noise type
+  hatNoiseType: "white" | "pink" | "brown";
+  hatDecay: number;
+  hatFilterFreq: number;
+}
+
+const GENRE_PROFILES: Record<number, GenreProfile> = {
+  // 396 Hz — Deep Organic House (grounding, earthy, deep kick, warm bass)
+  396: {
+    bpm: 118,
+    genre: "deep organic house",
+    kick: [1, 0, 0, 0, 0.3, 0, 0, 0, 1, 0, 0, 0, 0.3, 0, 0, 0],
+    rim:  [0, 0, 0, 0, 1, 0, 0.3, 0, 0, 0, 0, 0, 1, 0, 0, 0.4],
+    hat:  [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0],
+    shaker: [0.4, 0.2, 0.6, 0.2, 0.4, 0.2, 0.6, 0.3, 0.4, 0.2, 0.6, 0.2, 0.4, 0.2, 0.7, 0.3],
+    bassType: "sawtooth",
+    bassFilterFreq: 350,
+    bassOctaves: 2,
+    padType: "fatsawtooth",
+    padFilterFreq: 800,
+    padSpread: 40,
+    arpType: "sine",
+    arpFilterFreq: 1800,
+    reverbDecay: 6,
+    reverbWet: 0.4,
+    delayTime: "8n.",
+    delayFeedback: 0.2,
+    filterLfoMin: 1200,
+    filterLfoMax: 3500,
+    filterLfoRate: 0.04,
+    kickVol: 0.85,
+    rimVol: 0.07,
+    hatVol: 0.14,
+    shakerVol: 0.05,
+    bassVol: 0.4,
+    padVol: 0.14,
+    pluckVol: 0.12,
+    arpVol: 0.06,
+    hatNoiseType: "brown",
+    hatDecay: 0.06,
+    hatFilterFreq: 6000,
+  },
+
+  // 417 Hz — Afro House / Tribal (percussive, rhythmic, raw energy)
+  417: {
+    bpm: 122,
+    genre: "afro tribal house",
+    kick: [1, 0, 0, 0.4, 0, 0, 0.6, 0, 1, 0, 0, 0.3, 0, 0, 0.5, 0],
+    rim:  [0, 0, 0.6, 0, 0, 0.8, 0, 0.4, 0, 0, 0.6, 0, 0.9, 0, 0, 0.5],
+    hat:  [0.6, 0.3, 0.8, 0.3, 0.6, 0.3, 0.9, 0.4, 0.6, 0.3, 0.8, 0.3, 0.6, 0.3, 1, 0.5],
+    shaker: [0.7, 0.5, 0.9, 0.4, 0.7, 0.5, 0.9, 0.6, 0.7, 0.5, 0.9, 0.4, 0.7, 0.5, 1, 0.6],
+    bassType: "triangle",
+    bassFilterFreq: 600,
+    bassOctaves: 1.5,
+    padType: "fatsawtooth",
+    padFilterFreq: 1000,
+    padSpread: 20,
+    arpType: "triangle",
+    arpFilterFreq: 2200,
+    reverbDecay: 3.5,
+    reverbWet: 0.3,
+    delayTime: "16n",
+    delayFeedback: 0.15,
+    filterLfoMin: 2000,
+    filterLfoMax: 6000,
+    filterLfoRate: 0.08,
+    kickVol: 0.9,
+    rimVol: 0.12,
+    hatVol: 0.2,
+    shakerVol: 0.1,
+    bassVol: 0.35,
+    padVol: 0.08,
+    pluckVol: 0.18,
+    arpVol: 0.09,
+    hatNoiseType: "white",
+    hatDecay: 0.03,
+    hatFilterFreq: 8000,
+  },
+
+  // 528 Hz — Melodic House (lush, warm, euphoric, the love frequency)
+  528: {
+    bpm: 124,
+    genre: "melodic house",
+    kick: [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+    rim:  [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+    hat:  [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5],
+    shaker: [0.3, 0.2, 0.5, 0.2, 0.3, 0.2, 0.5, 0.3, 0.3, 0.2, 0.5, 0.2, 0.3, 0.2, 0.6, 0.3],
+    bassType: "sawtooth",
+    bassFilterFreq: 500,
+    bassOctaves: 2.5,
+    padType: "fatsawtooth",
+    padFilterFreq: 1400,
+    padSpread: 35,
+    arpType: "triangle",
+    arpFilterFreq: 3000,
+    reverbDecay: 5,
+    reverbWet: 0.4,
+    delayTime: "8n.",
+    delayFeedback: 0.3,
+    filterLfoMin: 1800,
+    filterLfoMax: 5000,
+    filterLfoRate: 0.05,
+    kickVol: 0.8,
+    rimVol: 0.08,
+    hatVol: 0.16,
+    shakerVol: 0.05,
+    bassVol: 0.38,
+    padVol: 0.16,
+    pluckVol: 0.2,
+    arpVol: 0.13,
+    hatNoiseType: "white",
+    hatDecay: 0.04,
+    hatFilterFreq: 9000,
+  },
+
+  // 639 Hz — Light Jazz / Lo-fi House (warm, soulful, jazzy chords)
+  639: {
+    bpm: 108,
+    genre: "jazzy lo-fi house",
+    kick: [1, 0, 0, 0, 0, 0, 0.5, 0, 0, 0, 1, 0, 0, 0, 0, 0.3],
+    rim:  [0, 0, 0, 0.4, 1, 0, 0, 0, 0, 0.3, 0, 0, 1, 0, 0, 0],
+    hat:  [0.5, 0, 0.7, 0, 0.5, 0, 0.8, 0.3, 0.5, 0, 0.7, 0, 0.5, 0.3, 0.8, 0],
+    shaker: [0.2, 0.1, 0.3, 0.1, 0.2, 0.1, 0.3, 0.2, 0.2, 0.1, 0.3, 0.1, 0.2, 0.1, 0.4, 0.2],
+    bassType: "sine",
+    bassFilterFreq: 800,
+    bassOctaves: 1,
+    padType: "sine",
+    padFilterFreq: 2000,
+    padSpread: 15,
+    arpType: "sine",
+    arpFilterFreq: 2500,
+    reverbDecay: 4,
+    reverbWet: 0.45,
+    delayTime: "4n",
+    delayFeedback: 0.2,
+    filterLfoMin: 1500,
+    filterLfoMax: 4000,
+    filterLfoRate: 0.03,
+    kickVol: 0.65,
+    rimVol: 0.06,
+    hatVol: 0.12,
+    shakerVol: 0.04,
+    bassVol: 0.3,
+    padVol: 0.18,
+    pluckVol: 0.22,
+    arpVol: 0.15,
+    hatNoiseType: "pink",
+    hatDecay: 0.05,
+    hatFilterFreq: 7000,
+  },
+
+  // 741 Hz — Progressive Techno (driving, hypnotic, relentless)
+  741: {
+    bpm: 130,
+    genre: "progressive techno",
+    kick: [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+    rim:  [0, 0, 0, 0, 0, 0, 0.6, 0, 0, 0, 0, 0.4, 0, 0, 0.8, 0],
+    hat:  [1, 0.4, 0.8, 0.4, 1, 0.4, 0.8, 0.5, 1, 0.4, 0.8, 0.4, 1, 0.4, 0.9, 0.5],
+    shaker: [0.6, 0.4, 0.8, 0.4, 0.6, 0.4, 0.8, 0.5, 0.6, 0.4, 0.8, 0.4, 0.6, 0.4, 0.9, 0.5],
+    bassType: "square",
+    bassFilterFreq: 400,
+    bassOctaves: 3,
+    padType: "fatsquare",
+    padFilterFreq: 900,
+    padSpread: 25,
+    arpType: "sawtooth",
+    arpFilterFreq: 2000,
+    reverbDecay: 3,
+    reverbWet: 0.25,
+    delayTime: "16n.",
+    delayFeedback: 0.35,
+    filterLfoMin: 800,
+    filterLfoMax: 4500,
+    filterLfoRate: 0.07,
+    kickVol: 0.95,
+    rimVol: 0.1,
+    hatVol: 0.22,
+    shakerVol: 0.08,
+    bassVol: 0.42,
+    padVol: 0.1,
+    pluckVol: 0.1,
+    arpVol: 0.14,
+    hatNoiseType: "white",
+    hatDecay: 0.025,
+    hatFilterFreq: 10000,
+  },
+
+  // 852 Hz — Ambient Electronica / Downtempo (ethereal, spacious, third eye)
+  852: {
+    bpm: 98,
+    genre: "ambient electronica",
+    kick: [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+    rim:  [0, 0, 0, 0, 0, 0, 0, 0.3, 0, 0, 0, 0, 0, 0, 0, 0.2],
+    hat:  [0, 0, 0.4, 0, 0, 0, 0.3, 0, 0, 0, 0.5, 0, 0, 0, 0.3, 0],
+    shaker: [0.2, 0.1, 0.2, 0.1, 0.3, 0.1, 0.2, 0.1, 0.2, 0.1, 0.2, 0.1, 0.3, 0.1, 0.2, 0.1],
+    bassType: "sine",
+    bassFilterFreq: 300,
+    bassOctaves: 1,
+    padType: "fatsawtooth",
+    padFilterFreq: 1800,
+    padSpread: 50,
+    arpType: "sine",
+    arpFilterFreq: 3500,
+    reverbDecay: 8,
+    reverbWet: 0.55,
+    delayTime: "4n.",
+    delayFeedback: 0.4,
+    filterLfoMin: 1000,
+    filterLfoMax: 3000,
+    filterLfoRate: 0.02,
+    kickVol: 0.5,
+    rimVol: 0.04,
+    hatVol: 0.08,
+    shakerVol: 0.03,
+    bassVol: 0.25,
+    padVol: 0.22,
+    pluckVol: 0.18,
+    arpVol: 0.12,
+    hatNoiseType: "pink",
+    hatDecay: 0.08,
+    hatFilterFreq: 5000,
+  },
+
+  // 963 Hz — Cosmic Trance / Celestial (transcendent, ethereal, crown chakra)
+  963: {
+    bpm: 136,
+    genre: "cosmic trance",
+    kick: [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0.4],
+    rim:  [0, 0, 0, 0, 1, 0, 0, 0.3, 0, 0, 0, 0, 1, 0, 0, 0],
+    hat:  [0.7, 0, 0.9, 0, 0.7, 0, 0.9, 0, 0.7, 0, 0.9, 0, 0.7, 0, 1, 0.4],
+    shaker: [0.5, 0.3, 0.7, 0.3, 0.5, 0.3, 0.7, 0.4, 0.5, 0.3, 0.7, 0.3, 0.5, 0.3, 0.8, 0.4],
+    bassType: "sawtooth",
+    bassFilterFreq: 450,
+    bassOctaves: 2,
+    padType: "fatsawtooth",
+    padFilterFreq: 1600,
+    padSpread: 45,
+    arpType: "triangle",
+    arpFilterFreq: 4000,
+    reverbDecay: 7,
+    reverbWet: 0.5,
+    delayTime: "8n",
+    delayFeedback: 0.35,
+    filterLfoMin: 1500,
+    filterLfoMax: 6000,
+    filterLfoRate: 0.06,
+    kickVol: 0.75,
+    rimVol: 0.07,
+    hatVol: 0.18,
+    shakerVol: 0.06,
+    bassVol: 0.35,
+    padVol: 0.2,
+    pluckVol: 0.15,
+    arpVol: 0.16,
+    hatNoiseType: "white",
+    hatDecay: 0.035,
+    hatFilterFreq: 9500,
+  },
+};
+
+function getProfile(hz: number): GenreProfile {
+  return GENRE_PROFILES[hz] || GENRE_PROFILES[528];
+}
+
+/* ══════════════════════════════════════════════════════════
    STATE
    ══════════════════════════════════════════════════════════ */
 let initialized = false;
 let isPlaying = false;
 let currentHz = 528;
-const BPM = 121;
+let currentProfile: GenreProfile = getProfile(528);
 
 /* ── Master chain ────────────────────────────────────────── */
 let masterGain: Tone.Gain | null = null;
@@ -37,27 +340,38 @@ let filterLFO: Tone.LFO | null = null;
 
 /* ── Drums ───────────────────────────────────────────────── */
 let kickSynth: Tone.MembraneSynth | null = null;
+let kickGain: Tone.Gain | null = null;
 let kickSeq: Tone.Sequence | null = null;
 let rimSynth: Tone.MetalSynth | null = null;
+let rimGain: Tone.Gain | null = null;
 let rimSeq: Tone.Sequence | null = null;
 let hatSynth: Tone.NoiseSynth | null = null;
+let hatGain: Tone.Gain | null = null;
+let hatFilter: Tone.Filter | null = null;
 let hatSeq: Tone.Sequence | null = null;
 let shakerSynth: Tone.NoiseSynth | null = null;
+let shakerGain: Tone.Gain | null = null;
 let shakerSeq: Tone.Sequence | null = null;
 
 /* ── Bass ────────────────────────────────────────────────── */
 let bassSynth: Tone.MonoSynth | null = null;
+let bassGain: Tone.Gain | null = null;
 let bassSeq: Tone.Sequence | null = null;
 
 /* ── Melodic / Harmonic ──────────────────────────────────── */
 let padSynth: Tone.PolySynth | null = null;
+let padGain: Tone.Gain | null = null;
+let padFilter: Tone.Filter | null = null;
 let padLoop: Tone.Loop | null = null;
 let pluckSynth: Tone.PluckSynth | null = null;
+let pluckGain: Tone.Gain | null = null;
 let pluckSeq: Tone.Sequence | null = null;
 let arpSynth: Tone.Synth | null = null;
+let arpGain: Tone.Gain | null = null;
+let arpFilter: Tone.Filter | null = null;
 let arpSeq: Tone.Sequence | null = null;
 
-/* ── Solfeggio layer (subtle) ────────────────────────────── */
+/* ── Solfeggio layer ─────────────────────────────────────── */
 let solfeggioSynth: Tone.Synth | null = null;
 let binauralOsc: Tone.Oscillator | null = null;
 
@@ -68,64 +382,189 @@ export async function startAudio() {
   await Tone.start();
 }
 
-/** Build a minor chord from the solfeggio root (lowered to musical range) */
-function getChord(hz: number): string[] {
-  // Bring to ~200-400 Hz range
+/** Build a chord from the solfeggio root — genre-aware intervals */
+function getChord(hz: number, profile: GenreProfile): string[] {
   let root = hz;
   while (root > 400) root /= 2;
   while (root < 130) root *= 2;
-  const minor3 = root * 1.189; // minor third
-  const fifth = root * 1.498;  // perfect fifth
+
+  // Jazz uses maj7/9 extensions; others use minor
+  if (profile.genre.includes("jazz")) {
+    const maj3 = root * 1.26;   // major third
+    const fifth = root * 1.498;
+    const maj7 = root * 1.888;  // major seventh
+    const ninth = root * 2.245; // ninth
+    return [root, maj3, fifth, maj7, ninth].map(f => Tone.Frequency(f, "hz").toNote());
+  }
+
+  // Trance uses suspended/open voicings
+  if (profile.genre.includes("trance")) {
+    const sus4 = root * 1.335;
+    const fifth = root * 1.498;
+    const oct = root * 2;
+    const sus4up = root * 2.67;
+    return [root, sus4, fifth, oct, sus4up].map(f => Tone.Frequency(f, "hz").toNote());
+  }
+
+  // Default minor
+  const minor3 = root * 1.189;
+  const fifth = root * 1.498;
   const oct = root * 2;
-  return [root, minor3, fifth, oct].map((f) => Tone.Frequency(f, "hz").toNote());
+  return [root, minor3, fifth, oct].map(f => Tone.Frequency(f, "hz").toNote());
 }
 
-/** Bass notes — groovy pattern rooted on the solfeggio */
-function getBassPattern(hz: number): (string | null)[] {
+/** Bass notes — pattern varies by genre */
+function getBassPattern(hz: number, profile: GenreProfile): (string | null)[] {
   let root = hz;
   while (root > 200) root /= 2;
   while (root < 60) root *= 2;
   const r = Tone.Frequency(root, "hz").toNote();
   const fifth = Tone.Frequency(root * 1.498, "hz").toNote();
   const octUp = Tone.Frequency(root * 2, "hz").toNote();
-  // Syncopated organic house bass — 2 bars of 16ths
+  const fourth = Tone.Frequency(root * 1.335, "hz").toNote();
+
+  if (profile.genre.includes("techno")) {
+    // Driving, repetitive, hypnotic
+    return [
+      r, null, r, null, r, null, r, null,
+      r, null, r, null, fifth, null, r, null,
+      r, null, r, null, r, null, r, null,
+      fourth, null, r, null, r, null, null, null,
+    ];
+  }
+
+  if (profile.genre.includes("jazz")) {
+    // Walking bass feel
+    return [
+      r, null, null, null, fifth, null, null, null,
+      fourth, null, null, r, null, null, null, null,
+      r, null, null, null, null, fifth, null, null,
+      null, null, fourth, null, null, null, r, null,
+    ];
+  }
+
+  if (profile.genre.includes("tribal")) {
+    // Syncopated, percussive
+    return [
+      r, null, null, r, null, null, fifth, null,
+      null, r, null, null, null, fourth, null, null,
+      r, null, null, null, r, null, null, fifth,
+      null, null, r, null, fourth, null, null, null,
+    ];
+  }
+
+  if (profile.genre.includes("ambient") || profile.genre.includes("trance")) {
+    // Sparse, sustained
+    return [
+      r, null, null, null, null, null, null, null,
+      null, null, null, null, null, null, null, null,
+      fifth, null, null, null, null, null, null, null,
+      null, null, null, null, null, null, null, null,
+    ];
+  }
+
+  // Default organic house
   return [
-    r,    null, null, r,    null, null, null, fifth,
-    null, r,    null, null, octUp,null, null, null,
-    r,    null, null, null, fifth,null, r,    null,
-    null, null, r,    null, null, fifth,null, null,
+    r, null, null, r, null, null, null, fifth,
+    null, r, null, null, octUp, null, null, null,
+    r, null, null, null, fifth, null, r, null,
+    null, null, r, null, null, fifth, null, null,
   ];
 }
 
-/** Arp melody notes derived from solfeggio */
-function getArpPattern(hz: number): (string | null)[] {
+/** Arp melody — genre-specific patterns */
+function getArpPattern(hz: number, profile: GenreProfile): (string | null)[] {
   let root = hz;
   while (root > 600) root /= 2;
   while (root < 300) root *= 2;
-  const notes = [
-    root,
-    root * 1.189,  // min 3rd
-    root * 1.498,  // 5th
-    root * 1.782,  // min 7th
-    root * 2,      // octave
-  ].map((f) => Tone.Frequency(f, "hz").toNote());
-  // Sparse, dreamy pattern
+
+  const intervals = profile.genre.includes("jazz")
+    ? [1, 1.26, 1.498, 1.888, 2]      // maj7 arp
+    : profile.genre.includes("trance")
+    ? [1, 1.335, 1.498, 2, 2.67]       // sus4 arp
+    : [1, 1.189, 1.498, 1.782, 2];     // minor arp
+
+  const notes = intervals.map(i => Tone.Frequency(root * i, "hz").toNote());
+
+  if (profile.genre.includes("techno")) {
+    // Fast, relentless 16th note arp
+    return [
+      notes[0], notes[1], notes[2], notes[3], notes[4], notes[3], notes[2], notes[1],
+      notes[0], notes[1], notes[2], notes[4], notes[3], notes[2], notes[1], notes[0],
+      notes[2], notes[3], notes[4], notes[3], notes[2], notes[1], notes[0], notes[1],
+      notes[2], notes[4], notes[3], notes[1], notes[0], null, null, null,
+    ];
+  }
+
+  if (profile.genre.includes("trance")) {
+    // Classic trance gate pattern
+    return [
+      notes[0], null, notes[2], null, notes[4], null, notes[2], null,
+      notes[0], null, notes[3], null, notes[4], null, null, null,
+      notes[0], null, notes[2], null, notes[4], null, notes[3], null,
+      notes[2], null, notes[1], null, notes[0], null, null, null,
+    ];
+  }
+
+  if (profile.genre.includes("jazz")) {
+    // Sparse, expressive
+    return [
+      notes[4], null, null, null, null, null, notes[2], null,
+      null, null, null, null, notes[3], null, null, null,
+      null, null, notes[1], null, null, null, null, null,
+      notes[0], null, null, null, null, null, null, null,
+    ];
+  }
+
+  if (profile.genre.includes("ambient")) {
+    // Very sparse, ethereal
+    return [
+      notes[4], null, null, null, null, null, null, null,
+      null, null, null, null, null, null, notes[2], null,
+      null, null, null, null, null, null, null, null,
+      null, null, null, null, notes[0], null, null, null,
+    ];
+  }
+
+  // Default melodic house — dreamy
   return [
     notes[0], null, null, null, notes[2], null, null, null,
-    null,     null, notes[4], null, null, notes[3], null, null,
+    null, null, notes[4], null, null, notes[3], null, null,
     notes[1], null, null, null, null, null, notes[0], null,
-    null,     notes[2], null, null, null, null, null, null,
+    null, notes[2], null, null, null, null, null, null,
   ];
 }
 
-/** Pluck pattern — sporadic organic hits */
-function getPluckPattern(hz: number): (string | null)[] {
+/** Pluck pattern */
+function getPluckPattern(hz: number, profile: GenreProfile): (string | null)[] {
   let root = hz;
   while (root > 500) root /= 2;
   while (root < 250) root *= 2;
-  const n = [root, root * 1.189, root * 1.498, root * 2].map((f) =>
+  const n = [root, root * 1.189, root * 1.498, root * 2].map(f =>
     Tone.Frequency(f, "hz").toNote()
   );
+
+  if (profile.genre.includes("jazz")) {
+    // Jazzy Rhodes-like hits
+    return [
+      null, null, n[2], null, null, null, null, n[0],
+      null, null, null, null, n[3], null, null, null,
+      null, n[1], null, null, null, null, null, null,
+      n[0], null, null, null, null, null, n[2], null,
+    ];
+  }
+
+  if (profile.genre.includes("techno")) {
+    // Almost no pluck — let the arp dominate
+    return [
+      null, null, null, null, null, null, null, null,
+      null, null, null, null, n[0], null, null, null,
+      null, null, null, null, null, null, null, null,
+      null, null, null, null, null, null, null, null,
+    ];
+  }
+
+  // Default
   return [
     null, null, n[0], null, null, null, null, null,
     n[2], null, null, null, null, null, n[1], null,
@@ -135,195 +574,222 @@ function getPluckPattern(hz: number): (string | null)[] {
 }
 
 /* ══════════════════════════════════════════════════════════
-   INIT — build the entire signal graph once
+   INIT — teardown everything and rebuild for a new profile
    ══════════════════════════════════════════════════════════ */
-export function initEngine() {
-  if (initialized) return;
+function buildEngine(profile: GenreProfile) {
+  // Full cleanup if previously built
+  if (initialized) {
+    disposeAll();
+  }
 
   const transport = Tone.getTransport();
-  transport.bpm.value = BPM;
+  transport.bpm.value = profile.bpm;
 
   // ── Master chain ──
-  reverb = new Tone.Reverb({ decay: 5, wet: 0.35 }).toDestination();
-  delay = new Tone.FeedbackDelay({ delayTime: "8n.", feedback: 0.25, wet: 0.2 }).connect(reverb);
+  reverb = new Tone.Reverb({ decay: profile.reverbDecay, wet: profile.reverbWet }).toDestination();
+  delay = new Tone.FeedbackDelay({
+    delayTime: profile.delayTime as any,
+    feedback: profile.delayFeedback,
+    wet: 0.2,
+  }).connect(reverb);
   compressor = new Tone.Compressor({ threshold: -14, ratio: 3, attack: 0.005, release: 0.15 }).connect(reverb);
   masterFilter = new Tone.Filter({ frequency: 3000, type: "lowpass", rolloff: -12 }).connect(compressor);
   masterGain = new Tone.Gain(0).connect(masterFilter);
 
-  // Slow filter sweep for organic movement
-  filterLFO = new Tone.LFO({ frequency: 0.05, min: 1800, max: 5000 }).connect(masterFilter.frequency);
+  filterLFO = new Tone.LFO({
+    frequency: profile.filterLfoRate,
+    min: profile.filterLfoMin,
+    max: profile.filterLfoMax,
+  }).connect(masterFilter.frequency);
 
-  // ── KICK — warm, deep, punchy ──
+  // ── KICK ──
+  const kickPitch = profile.genre.includes("techno") ? 0.08 : 0.06;
+  kickGain = new Tone.Gain(profile.kickVol).connect(compressor);
   kickSynth = new Tone.MembraneSynth({
-    pitchDecay: 0.06,
-    octaves: 5,
+    pitchDecay: kickPitch,
+    octaves: profile.genre.includes("techno") ? 6 : 5,
     oscillator: { type: "sine" },
-    envelope: { attack: 0.002, decay: 0.4, sustain: 0, release: 0.5 },
-  }).connect(new Tone.Gain(0.8).connect(compressor));
+    envelope: {
+      attack: 0.002,
+      decay: profile.genre.includes("techno") ? 0.3 : 0.4,
+      sustain: 0,
+      release: profile.genre.includes("techno") ? 0.3 : 0.5,
+    },
+  }).connect(kickGain);
 
   kickSeq = new Tone.Sequence(
     (time, vel) => {
       if (vel > 0) kickSynth!.triggerAttackRelease("C1", "8n", time, vel);
     },
-    // Solid 4-on-the-floor + ghost on the "and" of 2 and 4
-    [1, 0, 0, 0, 0.3, 0, 0, 0, 1, 0, 0, 0, 0.3, 0, 0, 0],
+    profile.kick,
     "16n"
   );
 
-  // ── RIM / CLAP — organic perc on beats 2 and 4 ──
+  // ── RIM / CLAP ──
+  rimGain = new Tone.Gain(profile.rimVol).connect(masterGain);
   rimSynth = new Tone.MetalSynth({
     envelope: { attack: 0.001, decay: 0.12, release: 0.05 },
-    harmonicity: 0.1,
-    modulationIndex: 8,
+    harmonicity: profile.genre.includes("tribal") ? 0.3 : 0.1,
+    modulationIndex: profile.genre.includes("tribal") ? 12 : 8,
     resonance: 2000,
     octaves: 0.5,
-  } as any).connect(new Tone.Gain(0.08).connect(masterGain));
+  } as any).connect(rimGain);
 
   rimSeq = new Tone.Sequence(
     (time, vel) => {
       if (vel > 0) rimSynth!.triggerAttackRelease("16n", time, vel);
     },
-    [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0.4],
+    profile.rim,
     "16n"
   );
 
-  // ── HI-HATS — crisp, offbeat ──
+  // ── HI-HATS ──
+  hatFilter = new Tone.Filter({
+    frequency: profile.hatFilterFreq,
+    type: "highpass",
+  });
+  hatGain = new Tone.Gain(profile.hatVol).connect(masterGain);
+  hatFilter.connect(hatGain);
   hatSynth = new Tone.NoiseSynth({
-    noise: { type: "white" },
-    envelope: { attack: 0.001, decay: 0.04, sustain: 0, release: 0.02 },
-  }).connect(
-    new Tone.Filter({ frequency: 9000, type: "highpass" }).connect(
-      new Tone.Gain(0.18).connect(masterGain)
-    )
-  );
+    noise: { type: profile.hatNoiseType },
+    envelope: { attack: 0.001, decay: profile.hatDecay, sustain: 0, release: 0.02 },
+  }).connect(hatFilter);
 
   hatSeq = new Tone.Sequence(
     (time, vel) => {
       if (vel > 0) hatSynth!.triggerAttackRelease("32n", time);
     },
-    // Classic offbeat hats
-    [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0],
+    profile.hat,
     "16n"
   );
 
-  // ── SHAKER — 16th note groove ──
+  // ── SHAKER ──
+  shakerGain = new Tone.Gain(profile.shakerVol).connect(masterGain);
   shakerSynth = new Tone.NoiseSynth({
     noise: { type: "pink" },
     envelope: { attack: 0.001, decay: 0.025, sustain: 0, release: 0.015 },
   }).connect(
-    new Tone.Filter({ frequency: 6000, type: "bandpass", Q: 2 }).connect(
-      new Tone.Gain(0.06).connect(masterGain)
-    )
+    new Tone.Filter({ frequency: 6000, type: "bandpass", Q: 2 }).connect(shakerGain)
   );
 
   shakerSeq = new Tone.Sequence(
     (time, vel) => {
-      if (vel > 0) {
-        // Humanize velocity slightly
-        const v = vel * (0.85 + Math.random() * 0.3);
-        shakerSynth!.triggerAttackRelease("32n", time);
-      }
+      if (vel > 0) shakerSynth!.triggerAttackRelease("32n", time);
     },
-    [0.5, 0.3, 0.7, 0.3, 0.5, 0.3, 0.7, 0.4, 0.5, 0.3, 0.7, 0.3, 0.5, 0.3, 0.8, 0.4],
+    profile.shaker,
     "16n"
   );
 
-  // ── BASS — warm filtered saw ──
+  // ── BASS ──
+  bassGain = new Tone.Gain(profile.bassVol).connect(masterGain);
   bassSynth = new Tone.MonoSynth({
-    oscillator: { type: "sawtooth" },
-    filter: { Q: 3, frequency: 500, type: "lowpass", rolloff: -24 },
+    oscillator: { type: profile.bassType },
+    filter: { Q: 3, frequency: profile.bassFilterFreq, type: "lowpass", rolloff: -24 },
     envelope: { attack: 0.01, decay: 0.15, sustain: 0.7, release: 0.2 },
     filterEnvelope: {
       attack: 0.04, decay: 0.15, sustain: 0.2, release: 0.15,
-      baseFrequency: 150, octaves: 2.5,
+      baseFrequency: 150, octaves: profile.bassOctaves,
     },
-  }).connect(new Tone.Gain(0.35).connect(masterGain));
+  }).connect(bassGain);
 
   bassSeq = new Tone.Sequence(
     (time, note) => {
       if (note) bassSynth!.triggerAttackRelease(note, "16n", time, 0.8);
     },
-    getBassPattern(currentHz),
+    getBassPattern(currentHz, profile),
     "16n"
   );
 
-  // ── PAD — lush evolving chord ──
+  // ── PAD ──
+  padFilter = new Tone.Filter({
+    frequency: profile.padFilterFreq,
+    type: "lowpass",
+    rolloff: -24,
+  });
+  padGain = new Tone.Gain(profile.padVol).connect(delay!);
+  padFilter.connect(padGain);
   padSynth = new Tone.PolySynth(Tone.Synth, {
-    oscillator: { type: "fatsawtooth", spread: 30, count: 3 } as any,
+    oscillator: { type: profile.padType as any, spread: profile.padSpread, count: 3 } as any,
     envelope: { attack: 2.5, decay: 3, sustain: 0.4, release: 5 },
-  } as any).connect(
-    new Tone.Filter({ frequency: 1200, type: "lowpass", rolloff: -24 }).connect(
-      new Tone.Gain(0.12).connect(delay!)
-    )
-  );
+  } as any).connect(padFilter);
 
   padLoop = new Tone.Loop((time) => {
-    const chord = getChord(currentHz);
+    const chord = getChord(currentHz, profile);
     padSynth!.triggerAttackRelease(chord, "2m", time, 0.25);
   }, "2m");
 
-  // ── PLUCK — sporadic organic melodic hits ──
+  // ── PLUCK ──
+  pluckGain = new Tone.Gain(profile.pluckVol).connect(delay!);
   pluckSynth = new Tone.PluckSynth({
-    attackNoise: 1.5,
-    dampening: 3000,
+    attackNoise: profile.genre.includes("jazz") ? 2 : 1.5,
+    dampening: profile.genre.includes("jazz") ? 4000 : 3000,
     resonance: 0.92,
-  }).connect(new Tone.Gain(0.2).connect(delay!));
+  }).connect(pluckGain);
 
   pluckSeq = new Tone.Sequence(
     (time, note) => {
       if (note) pluckSynth!.triggerAttack(note, time);
     },
-    getPluckPattern(currentHz),
+    getPluckPattern(currentHz, profile),
     "16n"
   );
 
-  // ── ARP — dreamy synth melody ──
+  // ── ARP ──
+  arpFilter = new Tone.Filter({
+    frequency: profile.arpFilterFreq,
+    type: "lowpass",
+  });
+  arpGain = new Tone.Gain(profile.arpVol).connect(delay!);
+  arpFilter.connect(arpGain);
   arpSynth = new Tone.Synth({
-    oscillator: { type: "triangle" },
-    envelope: { attack: 0.02, decay: 0.3, sustain: 0.1, release: 0.8 },
-  }).connect(
-    new Tone.Filter({ frequency: 2500, type: "lowpass" }).connect(
-      new Tone.Gain(0.1).connect(delay!)
-    )
-  );
+    oscillator: { type: profile.arpType },
+    envelope: {
+      attack: profile.genre.includes("trance") ? 0.005 : 0.02,
+      decay: profile.genre.includes("trance") ? 0.2 : 0.3,
+      sustain: 0.1,
+      release: profile.genre.includes("ambient") ? 1.5 : 0.8,
+    },
+  }).connect(arpFilter);
 
   arpSeq = new Tone.Sequence(
     (time, note) => {
       if (note) arpSynth!.triggerAttackRelease(note, "8n", time, 0.6);
     },
-    getArpPattern(currentHz),
+    getArpPattern(currentHz, profile),
     "16n"
   );
 
-  // ── SOLFEGGIO — very subtle underlying sine ──
+  // ── SOLFEGGIO — subtle sine undertone ──
   solfeggioSynth = new Tone.Synth({
     oscillator: { type: "sine" },
     envelope: { attack: 5, decay: 0, sustain: 1, release: 6 },
   }).connect(new Tone.Gain(0.06).connect(masterGain));
 
   initialized = true;
+  currentProfile = profile;
 }
 
 /* ══════════════════════════════════════════════════════════
    PLAY
    ══════════════════════════════════════════════════════════ */
 export function play(hz: number, binauralOffset = 4) {
-  if (!initialized) initEngine();
   currentHz = hz;
+  const profile = getProfile(hz);
+
+  // Always rebuild when frequency changes — completely different instrument
+  buildEngine(profile);
 
   const transport = Tone.getTransport();
-
-  // Stop transport cleanly first if it was running
   transport.stop();
   transport.cancel();
 
-  // Rebuild melodic sequences for the new frequency
+  // Rebuild melodic sequences with correct hz
   bassSeq?.dispose();
   bassSeq = new Tone.Sequence(
     (time, note) => {
       if (note) bassSynth!.triggerAttackRelease(note, "16n", time, 0.8);
     },
-    getBassPattern(hz),
+    getBassPattern(hz, profile),
     "16n"
   );
 
@@ -332,7 +798,7 @@ export function play(hz: number, binauralOffset = 4) {
     (time, note) => {
       if (note) pluckSynth!.triggerAttack(note, time);
     },
-    getPluckPattern(hz),
+    getPluckPattern(hz, profile),
     "16n"
   );
 
@@ -341,7 +807,7 @@ export function play(hz: number, binauralOffset = 4) {
     (time, note) => {
       if (note) arpSynth!.triggerAttackRelease(note, "8n", time, 0.6);
     },
-    getArpPattern(hz),
+    getArpPattern(hz, profile),
     "16n"
   );
 
@@ -353,7 +819,7 @@ export function play(hz: number, binauralOffset = 4) {
   // Solfeggio undertone
   solfeggioSynth!.triggerAttack(hz);
 
-  // Binaural beat — very subtle
+  // Binaural beat
   if (binauralOsc) {
     binauralOsc.stop();
     binauralOsc.dispose();
@@ -381,7 +847,7 @@ export function play(hz: number, binauralOffset = 4) {
 }
 
 /* ══════════════════════════════════════════════════════════
-   STOP — immediate, no lingering audio
+   STOP
    ══════════════════════════════════════════════════════════ */
 export function stop() {
   if (!isPlaying) return;
@@ -389,22 +855,18 @@ export function stop() {
 
   const transport = Tone.getTransport();
 
-  // Kill master volume immediately (short fade to avoid click)
   masterGain?.gain.cancelScheduledValues(Tone.now());
   masterGain?.gain.rampTo(0, 0.15);
 
-  // Release held notes
   solfeggioSynth?.triggerRelease();
   padSynth?.releaseAll();
 
-  // Stop binaural immediately
   if (binauralOsc) {
     binauralOsc.stop();
     binauralOsc.dispose();
     binauralOsc = null;
   }
 
-  // Stop transport and all sequences immediately
   transport.stop();
   transport.cancel();
   kickSeq?.stop();
@@ -429,32 +891,50 @@ export function getIsPlaying() {
   return isPlaying;
 }
 
+/* ── initEngine (backward compat) ──────────────────────── */
+export function initEngine() {
+  if (!initialized) {
+    buildEngine(getProfile(528));
+  }
+}
+
 /* ── Full cleanup ──────────────────────────────────────── */
-export function dispose() {
-  stop();
+function disposeAll() {
+  const transport = Tone.getTransport();
+  transport.stop();
+  transport.cancel();
 
   const nodes = [
     solfeggioSynth, binauralOsc,
-    kickSynth, kickSeq, rimSynth, rimSeq,
-    hatSynth, hatSeq, shakerSynth, shakerSeq,
-    bassSynth, bassSeq,
-    padSynth, padLoop,
-    pluckSynth, pluckSeq,
-    arpSynth, arpSeq,
+    kickSynth, kickSeq, kickGain,
+    rimSynth, rimSeq, rimGain,
+    hatSynth, hatSeq, hatGain, hatFilter,
+    shakerSynth, shakerSeq, shakerGain,
+    bassSynth, bassSeq, bassGain,
+    padSynth, padLoop, padGain, padFilter,
+    pluckSynth, pluckSeq, pluckGain,
+    arpSynth, arpSeq, arpGain, arpFilter,
     reverb, delay, compressor, masterFilter, filterLFO, masterGain,
   ];
-  nodes.forEach((n) => { try { n?.dispose(); } catch {} });
+  nodes.forEach(n => { try { n?.dispose(); } catch {} });
 
   solfeggioSynth = null; binauralOsc = null;
-  kickSynth = null; kickSeq = null; rimSynth = null; rimSeq = null;
-  hatSynth = null; hatSeq = null; shakerSynth = null; shakerSeq = null;
-  bassSynth = null; bassSeq = null;
-  padSynth = null; padLoop = null;
-  pluckSynth = null; pluckSeq = null;
-  arpSynth = null; arpSeq = null;
-  reverb = null; delay = null; compressor = null; masterFilter = null;
-  filterLFO = null; masterGain = null;
+  kickSynth = null; kickSeq = null; kickGain = null;
+  rimSynth = null; rimSeq = null; rimGain = null;
+  hatSynth = null; hatSeq = null; hatGain = null; hatFilter = null;
+  shakerSynth = null; shakerSeq = null; shakerGain = null;
+  bassSynth = null; bassSeq = null; bassGain = null;
+  padSynth = null; padLoop = null; padGain = null; padFilter = null;
+  pluckSynth = null; pluckSeq = null; pluckGain = null;
+  arpSynth = null; arpSeq = null; arpGain = null; arpFilter = null;
+  reverb = null; delay = null; compressor = null;
+  masterFilter = null; filterLFO = null; masterGain = null;
 
   initialized = false;
   isPlaying = false;
+}
+
+export function dispose() {
+  stop();
+  disposeAll();
 }
