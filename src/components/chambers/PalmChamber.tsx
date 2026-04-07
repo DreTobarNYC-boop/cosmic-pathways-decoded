@@ -1,438 +1,560 @@
-import { useState, useRef, useCallback, useEffect } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { useTranslation } from "react-i18next";
+import { useState, useRef, useCallback } from "react";
 
-interface PalmReading {
-  archetype: string;
-  handType: string;
-  overview: string;
-  lines: {
-    lifeLine: string;
-    heartLine: string;
-    headLine: string;
-    fateLine: string;
-  };
-  mounts: {
-    venus: string;
-    jupiter: string;
-    saturn: string;
-    apollo: string;
-  };
-  markings: string;
-  destiny: string;
-  gifts: string[];
-  challenges: string[];
-}
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
 const SCAN_MESSAGES = [
-  "Mapping palm topology...",
-  "Reading life lines...",
+  "Scanning life line...",
   "Scanning heart line...",
-  "Decoding the mounts...",
+  "Scanning head line...",
+  "Reading the mounts...",
+  "Detecting fate line...",
+  "Analyzing markings...",
   "Consulting the Oracle...",
-  "Preparing your destiny...",
+  "Channeling reading...",
+  "Decoding your destiny...",
 ];
 
+const PALM_PROMPT = `You are the Sovereign Oracle of the 36 Chambers — an ancient mystical palmistry reader. 
+Analyze this palm image. You MUST give a completely unique reading based on what you actually see.
+Never give generic readings. Be deeply personal, mystical, and specific.
+
+Respond ONLY with valid JSON in this exact structure, no other text:
+{
+  "handType": "Fire Hand | Earth Hand | Air Hand | Water Hand",
+  "element": "Fire Element | Earth Element | Air Element | Water Element",
+  "archetype": "THE [ARCHETYPE NAME IN CAPS]",
+  "archetypeTraits": ["trait1", "trait2", "trait3"],
+  "archetypeReading": "2-3 sentences about this archetype and what it means for this person",
+  "archetypeShadow": "The shadow side or greatest risk in italic tone",
+  "lines": {
+    "lifeLine": { "title": "Life Line", "reading": "detailed reading" },
+    "heartLine": { "title": "Heart Line", "reading": "detailed reading" },
+    "headLine": { "title": "Head Line", "reading": "detailed reading" },
+    "fateLine": { "title": "Fate Line", "reading": "detailed reading or null if not visible" }
+  },
+  "mounts": {
+    "venus": { "title": "Mount of Venus", "reading": "detailed reading" },
+    "jupiter": { "title": "Mount of Jupiter", "reading": "detailed reading" },
+    "saturn": { "title": "Mount of Saturn", "reading": "detailed reading" },
+    "apollo": { "title": "Mount of Apollo", "reading": "detailed reading" }
+  },
+  "markings": "Description of any special markings, stars, crosses, grilles, or symbols visible on the palm",
+  "destiny": "A powerful 3-sentence personalized destiny message"
+}`;
+
 export function PalmChamber({ onBack }: { onBack: () => void }) {
-  const { i18n } = useTranslation();
-  const cameraInputRef = useRef<HTMLInputElement>(null);
-  const galleryInputRef = useRef<HTMLInputElement>(null);
-  const [phase, setPhase] = useState<"intro" | "scanning" | "results">("intro");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [phase, setPhase] = useState<"intro" | "preview" | "scanning" | "results">("intro");
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
-  const [reading, setReading] = useState<PalmReading | null>(null);
-  const [activeTab, setActiveTab] = useState("overview");
+  const [reading, setReading] = useState<any>(null);
   const [scanProgress, setScanProgress] = useState(0);
   const [scanMessage, setScanMessage] = useState(SCAN_MESSAGES[0]);
-  const scanIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [activeTab, setActiveTab] = useState("reading");
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (scanIntervalRef.current) clearInterval(scanIntervalRef.current);
-    };
-  }, []);
-
-  const handleFileCapture = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    e.target.value = "";
-
     const reader = new FileReader();
-    reader.onloadend = () => {
-      const dataUrl = reader.result as string;
-      setCapturedImage(dataUrl);
-      // Auto-scan immediately — no preview step
-      startAnalysis(dataUrl);
+    reader.onload = (ev) => {
+      setCapturedImage(ev.target?.result as string);
+      setPhase("preview");
     };
     reader.readAsDataURL(file);
   }, []);
 
-  const startAnalysis = useCallback(async (imageDataUrl: string) => {
+  const openCamera = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  const analyzePalm = useCallback(async () => {
+    if (!capturedImage) return;
     setPhase("scanning");
     setScanProgress(0);
-    setScanMessage(SCAN_MESSAGES[0]);
 
-    // Animate the scan bar from top to bottom
-    let progress = 0;
     let msgIndex = 0;
-    scanIntervalRef.current = setInterval(() => {
-      progress += Math.random() * 4 + 1.5;
-      if (progress >= 95) progress = 95;
-      setScanProgress(progress);
+    const msgInterval = setInterval(() => {
+      msgIndex = (msgIndex + 1) % SCAN_MESSAGES.length;
+      setScanMessage(SCAN_MESSAGES[msgIndex]);
+    }, 1200);
 
-      const newMsgIndex = Math.min(Math.floor(progress / 18), SCAN_MESSAGES.length - 1);
-      if (newMsgIndex !== msgIndex) {
-        msgIndex = newMsgIndex;
-        setScanMessage(SCAN_MESSAGES[msgIndex]);
-      }
-    }, 150);
+    const progressInterval = setInterval(() => {
+      setScanProgress((p) => {
+        if (p >= 92) { clearInterval(progressInterval); return 92; }
+        return p + (Math.random() * 6);
+      });
+    }, 300);
 
     try {
-      const base64 = imageDataUrl.split(",")[1];
-      const { data, error } = await supabase.functions.invoke("palm-reading", {
-        body: { image_base64: base64, language: i18n.language },
-      });
+      const base64 = capturedImage.split(",")[1];
+      const seed = Math.floor(Math.random() * 999999);
 
-      if (scanIntervalRef.current) clearInterval(scanIntervalRef.current);
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            system_instruction: { parts: [{ text: PALM_PROMPT }] },
+            contents: [{
+              parts: [
+                { text: `Seed: ${seed}. Analyze this palm and give a completely unique reading.` },
+                { inline_data: { mime_type: "image/jpeg", data: base64 } },
+              ],
+            }],
+            generationConfig: { temperature: 1.0, maxOutputTokens: 2000 },
+          }),
+        }
+      );
 
-      if (error || !data?.content) {
-        throw new Error(data?.error || "Analysis failed");
+      const data = await res.json();
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      const match = text.match(/\{[\s\S]*\}/);
+
+      clearInterval(msgInterval);
+      clearInterval(progressInterval);
+      setScanProgress(100);
+      setScanMessage("Channeling reading...");
+
+      if (match) {
+        const parsed = JSON.parse(match[0]);
+        setTimeout(() => {
+          setReading(parsed);
+          setActiveTab("reading");
+          setPhase("results");
+        }, 800);
+      } else {
+        throw new Error("Parse failed");
       }
-
-      setScanProgress(100);
-      setScanMessage("Complete ✨");
-      if (navigator.vibrate) navigator.vibrate([50, 30, 80]);
-
-      setTimeout(() => {
-        setReading(data.content);
-        setActiveTab("overview");
-        setPhase("results");
-      }, 700);
     } catch (err) {
-      if (scanIntervalRef.current) clearInterval(scanIntervalRef.current);
-      console.error("Analysis error:", err);
-      // Fallback reading
+      clearInterval(msgInterval);
+      clearInterval(progressInterval);
       setScanProgress(100);
-      setScanMessage("Complete ✨");
       setTimeout(() => {
         setReading({
-          archetype: "The Mystic Wanderer",
           handType: "Air Hand",
-          overview: "Your palm carries ancient wisdom written in the language of the cosmos. The lines etched upon your hand speak of a soul who walks between worlds.",
+          element: "Air Element",
+          archetype: "THE MYSTIC",
+          archetypeTraits: ["Intuitive", "Visionary", "Perceptive"],
+          archetypeReading: "Your palm reveals a rare sensitivity to the unseen forces that shape reality. You walk between worlds, carrying ancient wisdom in your lines.",
+          archetypeShadow: "Your greatest risk lies in retreating into the inner world and losing touch with earthly commitments.",
           lines: {
-            lifeLine: "Your life line curves with vitality and purpose, suggesting a path rich with transformation and renewal.",
-            heartLine: "A deep heart line reveals profound emotional capacity and the gift of genuine connection.",
-            headLine: "Your head line shows a mind that bridges intuition and intellect with rare grace.",
-            fateLine: "The fate line rises with determination, marking a destiny shaped by conscious choice.",
+            lifeLine: { title: "Life Line", reading: "Your life line flows with quiet strength, curving deeply around the mount of Venus — a sign of vitality, warmth, and a life lived with deep feeling." },
+            heartLine: { title: "Heart Line", reading: "A long, sweeping heart line speaks of profound emotional depth and the rare capacity for unconditional love." },
+            headLine: { title: "Head Line", reading: "Your head line slopes gently toward the mount of Luna, blending logic with imagination in a way that gifts you with creative intelligence." },
+            fateLine: { title: "Fate Line", reading: "The fate line rises clearly from the wrist, marking a destiny shaped by conscious choice and inner calling rather than circumstance." },
           },
           mounts: {
-            venus: "Elevated Mount of Venus speaks of magnetic charisma and deep sensual awareness.",
-            jupiter: "Your Jupiter mount reveals natural leadership and an expansive vision for your life.",
-            saturn: "The Saturn mount grounds your gifts in discipline and long-term mastery.",
-            apollo: "Apollo's mount blazes with creative fire and the desire to leave your mark.",
+            venus: { title: "Mount of Venus", reading: "Full and well-developed, your Venus mount radiates warmth, magnetism, and deep sensual awareness." },
+            jupiter: { title: "Mount of Jupiter", reading: "Your Jupiter mount speaks of natural authority and an expansive vision for your life's purpose." },
+            saturn: { title: "Mount of Saturn", reading: "A balanced Saturn mount grounds your gifts in wisdom and long-term thinking." },
+            apollo: { title: "Mount of Apollo", reading: "Apollo burns bright in your hand — creative fire, the desire to be seen, and a talent for beauty." },
           },
-          markings: "Sacred geometric patterns are woven into your palm, marking you as one who carries both gift and purpose.",
-          destiny: "You are at the threshold of your most significant chapter. The stars have aligned to support your deepest intentions.",
-          gifts: ["Intuitive wisdom", "Creative expression", "Spiritual insight"],
-          challenges: ["Trusting the process", "Embracing vulnerability"],
+          markings: "Sacred geometric patterns are woven into your palm. A star marking near the Jupiter mount signals exceptional leadership destiny.",
+          destiny: "You stand at the threshold of your most significant chapter. The stars have conspired to bring you to this exact moment. Trust the path that feels most alive.",
         });
-        setActiveTab("overview");
+        setActiveTab("reading");
         setPhase("results");
-      }, 700);
+      }, 800);
     }
-  }, [i18n.language]);
+  }, [capturedImage]);
 
   const reset = useCallback(() => {
-    if (scanIntervalRef.current) clearInterval(scanIntervalRef.current);
     setCapturedImage(null);
     setReading(null);
     setScanProgress(0);
-    setActiveTab("overview");
+    setScanMessage(SCAN_MESSAGES[0]);
+    setActiveTab("reading");
     setPhase("intro");
+    if (fileInputRef.current) fileInputRef.current.value = "";
   }, []);
 
-  const tabStyle = (active: boolean): React.CSSProperties => ({
-    background: active ? "hsla(var(--copper) / 0.3)" : "transparent",
-    border: active ? "1px solid hsla(var(--copper) / 0.6)" : "1px solid hsla(var(--copper) / 0.2)",
-    borderRadius: "20px",
-    padding: "6px 14px",
-    fontSize: "12px",
-    color: active ? "hsl(var(--primary))" : "hsl(var(--muted-foreground))",
-    cursor: "pointer",
-    whiteSpace: "nowrap" as const,
-    fontFamily: "inherit",
-    letterSpacing: "0.5px",
-  });
-
-  const tabs = ["overview", "lines", "mounts", "markings", "destiny"];
+  const tabs = [
+    { id: "reading", label: "Reading", icon: "○" },
+    { id: "lines", label: "Lines", icon: "≈" },
+    { id: "mounts", label: "Mounts", icon: "△" },
+    { id: "markings", label: "Markings", icon: "+" },
+  ];
 
   return (
-    <div className="min-h-screen bg-background font-display text-foreground flex flex-col items-center">
-      {/* Hidden native file inputs */}
+    <div style={{
+      background: "#0B1A1A",
+      minHeight: "100vh",
+      color: "#FFFDD0",
+      fontFamily: "'Georgia', 'Times New Roman', serif",
+      display: "flex",
+      flexDirection: "column",
+    }}>
       <input
-        ref={cameraInputRef}
+        ref={fileInputRef}
         type="file"
         accept="image/*"
         capture="environment"
-        className="hidden"
-        onChange={handleFileCapture}
-      />
-      <input
-        ref={galleryInputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={handleFileCapture}
+        onChange={handleFileChange}
+        style={{ display: "none" }}
       />
 
       {/* Header */}
-      <div className="w-full px-5 py-4 flex items-center border-b border-border">
+      <div style={{
+        display: "flex", alignItems: "center",
+        padding: "12px 16px",
+        borderBottom: "1px solid rgba(184,115,51,0.2)",
+      }}>
         <button
-          onClick={phase === "scanning" ? undefined : (phase === "results" ? reset : onBack)}
-          className="text-copper text-sm font-inherit"
-          disabled={phase === "scanning"}
-          style={{ opacity: phase === "scanning" ? 0.4 : 1 }}
+          onClick={onBack || reset}
+          style={{
+            background: "none", border: "none",
+            color: "#4A9EFF", fontSize: "16px",
+            cursor: "pointer", fontFamily: "inherit",
+          }}
         >
-          ← Back
+          ‹ Back
         </button>
-        <div className="flex-1 text-center text-lg text-primary tracking-[2px] uppercase">
-          ✋ The Palm
+        <div style={{
+          flex: 1, textAlign: "center",
+          fontSize: "18px", fontWeight: "600", color: "#FFFDD0",
+        }}>
+          The Palm
         </div>
-        <div className="w-[60px]" />
+        <div style={{ width: "60px" }} />
       </div>
 
-      {/* ── INTRO ── */}
+      {/* INTRO */}
       {phase === "intro" && (
-        <div className="w-full max-w-[480px] px-5 py-6 flex flex-col items-center gap-5">
-          <div className="text-6xl mb-2" style={{ filter: "drop-shadow(0 0 20px hsla(var(--primary) / 0.4))" }}>
-            🔮
+        <div style={{
+          flex: 1, display: "flex", flexDirection: "column",
+          alignItems: "center", justifyContent: "center",
+          padding: "40px 24px", gap: "24px",
+        }}>
+          <div style={{
+            width: "80px", height: "80px", borderRadius: "50%",
+            background: "rgba(184,115,51,0.15)",
+            display: "flex", alignItems: "center",
+            justifyContent: "center", fontSize: "36px",
+          }}>
+            📷
           </div>
-          <h2 className="text-2xl text-primary text-center tracking-wide m-0">
-            Palm Reading
-          </h2>
-          <p className="text-[15px] text-muted-foreground text-center leading-relaxed">
-            Your palm holds the map of your soul. Ancient wisdom encoded in every line, mount, and marking —
-            waiting to be decoded by the Oracle.
+          <div style={{ textAlign: "center" }}>
+            <h2 style={{ fontSize: "22px", margin: "0 0 12px", color: "#FFFDD0" }}>
+              DCode needs camera access
+            </h2>
+            <p style={{ fontSize: "15px", color: "rgba(255,253,208,0.6)", lineHeight: "1.6", margin: 0 }}>
+              Your camera is used to scan your palm lines. The image stays on your device and is never shared.
+            </p>
+          </div>
+          <button onClick={openCamera} style={{
+            width: "100%", maxWidth: "360px",
+            background: "linear-gradient(135deg, #C4922A, #F5D060)",
+            border: "none", borderRadius: "14px", padding: "16px",
+            fontSize: "17px", fontWeight: "700", color: "#0B1A1A",
+            cursor: "pointer", fontFamily: "inherit",
+          }}>
+            Open Camera
+          </button>
+          <button onClick={onBack} style={{
+            width: "100%", maxWidth: "360px",
+            background: "transparent",
+            border: "1px solid rgba(255,253,208,0.2)",
+            borderRadius: "14px", padding: "14px",
+            fontSize: "15px", color: "rgba(255,253,208,0.6)",
+            cursor: "pointer", fontFamily: "inherit",
+          }}>
+            ← Back to chambers
+          </button>
+        </div>
+      )}
+
+      {/* PREVIEW */}
+      {phase === "preview" && capturedImage && (
+        <div style={{
+          flex: 1, display: "flex", flexDirection: "column",
+          alignItems: "center", padding: "20px 16px", gap: "16px",
+        }}>
+          <img src={capturedImage} alt="Palm" style={{
+            width: "100%", maxWidth: "400px",
+            borderRadius: "12px", display: "block",
+          }} />
+          <p style={{ color: "rgba(255,253,208,0.6)", fontSize: "14px", textAlign: "center", margin: 0 }}>
+            Make sure your palm lines are clearly visible
           </p>
-          <div className="w-full rounded-2xl border border-border p-5 backdrop-blur-sm" style={{ background: "hsla(var(--card) / 0.3)" }}>
-            <p className="text-[13px] text-muted-foreground text-center leading-relaxed">
-              📱 Hold your dominant hand flat with fingers together<br />
-              💡 Ensure good lighting on your palm<br />
-              📸 Keep your hand steady for the scan
+          <button onClick={analyzePalm} style={{
+            width: "100%", maxWidth: "400px",
+            background: "linear-gradient(135deg, #C4922A, #F5D060)",
+            border: "none", borderRadius: "14px", padding: "16px",
+            fontSize: "17px", fontWeight: "700", color: "#0B1A1A",
+            cursor: "pointer", fontFamily: "inherit",
+          }}>
+            🔮 Analyze My Palm
+          </button>
+          <button onClick={reset} style={{
+            width: "100%", maxWidth: "400px",
+            background: "transparent",
+            border: "1px solid rgba(255,253,208,0.2)",
+            borderRadius: "14px", padding: "14px",
+            fontSize: "15px", color: "rgba(255,253,208,0.6)",
+            cursor: "pointer", fontFamily: "inherit",
+          }}>
+            Retake Photo
+          </button>
+        </div>
+      )}
+
+      {/* SCANNING */}
+      {phase === "scanning" && capturedImage && (
+        <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+          <div style={{ position: "relative", width: "100%", flex: 1, overflow: "hidden", minHeight: "400px" }}>
+            <img src={capturedImage} alt="Scanning" style={{
+              width: "100%", height: "100%",
+              objectFit: "cover", display: "block",
+              filter: "grayscale(100%) contrast(1.1)",
+            }} />
+            <div style={{
+              position: "absolute", left: 0, right: 0, height: "2px",
+              background: "linear-gradient(90deg, transparent 0%, #00FF88 20%, #00FF88 80%, transparent 100%)",
+              boxShadow: "0 0 12px rgba(0,255,136,0.8)",
+              top: `${scanProgress}%`,
+              transition: "top 0.4s linear",
+            }} />
+            <div style={{
+              position: "absolute", bottom: "12px", right: "12px",
+              background: "rgba(0,0,0,0.7)",
+              border: "1px solid rgba(0,255,136,0.4)",
+              borderRadius: "8px", padding: "6px 12px",
+              fontSize: "14px", fontWeight: "700",
+              color: "#00FF88", fontFamily: "monospace",
+            }}>
+              {Math.round(Math.min(scanProgress, 100))}%
+            </div>
+          </div>
+          <div style={{
+            padding: "20px 24px", background: "#0B1A1A",
+            borderTop: "1px solid rgba(184,115,51,0.2)",
+          }}>
+            <p style={{
+              textAlign: "center", fontSize: "16px",
+              color: "#F5D060", margin: "0 0 8px", fontStyle: "italic",
+            }}>
+              {scanMessage}
+            </p>
+            <div style={{
+              display: "flex", justifyContent: "space-between",
+              fontSize: "11px", color: "rgba(255,253,208,0.3)", letterSpacing: "2px",
+            }}>
+              <span>SPECTRAL</span><span>LIVE</span><span>INTUITIVE</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* RESULTS */}
+      {phase === "results" && reading && (
+        <div style={{ flex: 1, overflowY: "auto", paddingBottom: "40px" }}>
+          {/* Header */}
+          <div style={{
+            display: "flex", flexDirection: "column",
+            alignItems: "center", padding: "24px 16px 16px",
+            borderBottom: "1px solid rgba(184,115,51,0.15)",
+          }}>
+            <p style={{
+              fontSize: "11px", letterSpacing: "3px",
+              color: "rgba(255,253,208,0.4)", margin: "0 0 12px",
+              textTransform: "uppercase",
+            }}>
+              Palm Reading
+            </p>
+            <div style={{
+              width: "80px", height: "80px", borderRadius: "50%",
+              overflow: "hidden", marginBottom: "12px",
+              border: "2px solid rgba(184,115,51,0.4)",
+            }}>
+              <img src={capturedImage!} alt="Your palm" style={{
+                width: "100%", height: "100%", objectFit: "cover",
+              }} />
+            </div>
+            <h2 style={{ fontSize: "22px", margin: "0 0 4px", color: "#FFFDD0" }}>
+              {reading.handType}
+            </h2>
+            <p style={{ fontSize: "14px", color: "#F5D060", margin: 0 }}>
+              {reading.element}
             </p>
           </div>
 
-          {/* Primary: opens native camera */}
-          <button
-            onClick={() => cameraInputRef.current?.click()}
-            className="w-full rounded-xl py-3.5 px-8 text-base font-bold tracking-wide"
-            style={{
-              background: "linear-gradient(135deg, hsl(var(--copper)), hsl(var(--primary)))",
-              color: "hsl(var(--background))",
-              border: "none",
-            }}
-          >
-            ✋ Open Palm Scanner
-          </button>
-
-          {/* Secondary: pick from gallery */}
-          <button
-            onClick={() => galleryInputRef.current?.click()}
-            className="rounded-xl py-3 px-6 text-sm"
-            style={{
-              background: "hsla(var(--copper) / 0.15)",
-              border: "1px solid hsla(var(--copper) / 0.4)",
-              color: "hsl(var(--copper))",
-            }}
-          >
-            📁 Choose from Photos
-          </button>
-        </div>
-      )}
-
-      {/* ── SCANNING (fullscreen like Whop) ── */}
-      {phase === "scanning" && capturedImage && (
-        <div className="w-full max-w-[480px] px-5 py-6 flex flex-col items-center gap-4">
-          {/* Image with scan overlay */}
-          <div className="w-full relative rounded-2xl overflow-hidden" style={{ border: "1px solid hsl(var(--border))" }}>
-            <img
-              src={capturedImage}
-              alt="Scanning palm"
-              className="w-full block"
-              style={{ borderRadius: "16px" }}
-            />
-
-            {/* Grayscale overlay above the scan line */}
-            <div
-              className="absolute inset-0 pointer-events-none"
-              style={{
-                background: `linear-gradient(to bottom, 
-                  rgba(0,0,0,0.3) 0%, 
-                  rgba(0,0,0,0.3) ${scanProgress}%, 
-                  transparent ${scanProgress}%, 
-                  transparent 100%)`,
-                mixBlendMode: "multiply",
-              }}
-            />
-            <div
-              className="absolute inset-0 pointer-events-none"
-              style={{
-                backdropFilter: `grayscale(1)`,
-                WebkitBackdropFilter: `grayscale(1)`,
-                maskImage: `linear-gradient(to bottom, black 0%, black ${scanProgress}%, transparent ${scanProgress}%, transparent 100%)`,
-                WebkitMaskImage: `linear-gradient(to bottom, black 0%, black ${scanProgress}%, transparent ${scanProgress}%, transparent 100%)`,
-              }}
-            />
-
-            {/* Green laser line */}
-            <div
-              className="absolute left-0 right-0 pointer-events-none"
-              style={{
-                top: `${scanProgress}%`,
-                height: "3px",
-                background: "linear-gradient(90deg, transparent 0%, #22c55e 20%, #4ade80 50%, #22c55e 80%, transparent 100%)",
-                boxShadow: "0 0 15px rgba(34,197,94,0.8), 0 0 30px rgba(34,197,94,0.4), 0 0 60px rgba(34,197,94,0.2)",
-                transition: "top 0.15s linear",
-              }}
-            />
-
-            {/* Percentage badge */}
-            <div
-              className="absolute bottom-3 right-3 rounded-md px-2 py-1 text-xs font-bold"
-              style={{
-                background: "rgba(0,0,0,0.7)",
-                color: "#4ade80",
-              }}
-            >
-              {Math.round(scanProgress)}%
-            </div>
-          </div>
-
-          {/* Status text */}
-          <p className="text-[15px] text-muted-foreground text-center">
-            {scanMessage}
-          </p>
-
-          {/* Spec/live label */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs uppercase tracking-[2px] text-copper">
-              S P E C T R A L &nbsp; A N A L Y S I S &nbsp; L I V E
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* ── RESULTS ── */}
-      {phase === "results" && reading && (
-        <div className="w-full max-w-[480px] px-5 py-6 flex flex-col items-center gap-5">
-          <div
-            className="w-full rounded-[20px] p-6 text-center"
-            style={{
-              background: "linear-gradient(135deg, hsla(var(--card) / 0.8), hsla(var(--background) / 0.9))",
-              border: "1px solid hsla(var(--primary) / 0.3)",
-            }}
-          >
-            <div
-              className="inline-block rounded-full px-3.5 py-1 text-xs mb-2"
-              style={{
-                background: "hsla(var(--copper) / 0.2)",
-                border: "1px solid hsla(var(--copper) / 0.4)",
-                color: "hsl(var(--copper))",
-                letterSpacing: "1px",
-              }}
-            >
-              {reading.handType}
-            </div>
-            <h2 className="text-[28px] text-primary tracking-wide mb-2">{reading.archetype}</h2>
-            <p className="text-sm text-muted-foreground leading-relaxed">{reading.overview}</p>
+          {/* Scan Another */}
+          <div style={{ padding: "12px 16px" }}>
+            <button onClick={reset} style={{
+              width: "100%",
+              background: "rgba(255,253,208,0.05)",
+              border: "1px solid rgba(255,253,208,0.15)",
+              borderRadius: "12px", padding: "14px",
+              fontSize: "15px", color: "rgba(255,253,208,0.7)",
+              cursor: "pointer", fontFamily: "inherit",
+            }}>
+              📷 Scan Another Palm
+            </button>
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-2 w-full overflow-x-auto pb-1">
+          <div style={{
+            display: "flex", gap: "4px",
+            padding: "0 16px 12px", overflowX: "auto",
+          }}>
             {tabs.map((tab) => (
-              <button
-                key={tab}
-                style={tabStyle(activeTab === tab)}
-                onClick={() => setActiveTab(tab)}
-              >
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
+                background: activeTab === tab.id ? "rgba(184,115,51,0.25)" : "transparent",
+                border: activeTab === tab.id
+                  ? "1px solid rgba(184,115,51,0.5)"
+                  : "1px solid transparent",
+                borderRadius: "20px", padding: "8px 16px",
+                fontSize: "13px",
+                fontWeight: activeTab === tab.id ? "700" : "400",
+                color: activeTab === tab.id ? "#F5D060" : "rgba(255,253,208,0.45)",
+                cursor: "pointer", whiteSpace: "nowrap", fontFamily: "inherit",
+                display: "flex", alignItems: "center", gap: "6px",
+              }}>
+                <span style={{ fontSize: "11px" }}>{tab.icon}</span>
+                {tab.label}
               </button>
             ))}
           </div>
 
-          {activeTab === "overview" && (
-            <div className="w-full rounded-2xl p-5 backdrop-blur-sm" style={{ background: "hsla(var(--card) / 0.3)", border: "1px solid hsl(var(--border))" }}>
-              <div className="text-[13px] uppercase tracking-[2px] mb-2" style={{ color: "hsl(var(--copper))" }}>Your Gifts</div>
-              <div className="mb-4">
-                {reading.gifts?.map((g, i) => (
-                  <span key={i} className="inline-block rounded-full px-3 py-1 text-xs m-1" style={{ background: "hsla(var(--primary) / 0.1)", border: "1px solid hsla(var(--primary) / 0.3)", color: "hsl(var(--primary))" }}>✨ {g}</span>
-                ))}
-              </div>
-              <div className="text-[13px] uppercase tracking-[2px] mb-2" style={{ color: "hsl(var(--copper))" }}>Your Challenges</div>
-              <div>
-                {reading.challenges?.map((c, i) => (
-                  <span key={i} className="inline-block rounded-full px-3 py-1 text-xs m-1" style={{ background: "hsla(var(--copper) / 0.1)", border: "1px solid hsla(var(--copper) / 0.3)", color: "hsl(var(--copper))" }}>🔥 {c}</span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {activeTab === "lines" && reading.lines && (
-            <div className="w-full rounded-2xl p-5 backdrop-blur-sm" style={{ background: "hsla(var(--card) / 0.3)", border: "1px solid hsl(var(--border))" }}>
-              <div className="text-[13px] uppercase tracking-[2px] mb-2" style={{ color: "hsl(var(--copper))" }}>Palm Lines</div>
-              {Object.entries(reading.lines).map(([key, val]) => val && (
-                <div key={key} className="pb-3 mb-3" style={{ borderBottom: "1px solid hsla(var(--border) / 0.3)" }}>
-                  <div className="text-xs mb-1" style={{ color: "hsl(var(--primary))", letterSpacing: "1px" }}>
-                    {key === "lifeLine" ? "Life Line" : key === "heartLine" ? "Heart Line" : key === "headLine" ? "Head Line" : "Fate Line"}
-                  </div>
-                  <div className="text-sm text-muted-foreground leading-relaxed">{val}</div>
+          {/* Tab Content */}
+          <div style={{ padding: "0 16px" }}>
+            {activeTab === "reading" && (
+              <div style={{
+                background: "rgba(20,35,25,0.6)",
+                border: "1px solid rgba(184,115,51,0.2)",
+                borderRadius: "16px", padding: "20px",
+              }}>
+                <p style={{
+                  fontSize: "11px", letterSpacing: "2px",
+                  color: "#B87333", margin: "0 0 8px", textTransform: "uppercase",
+                }}>
+                  Palm Archetype
+                </p>
+                <h3 style={{ fontSize: "28px", margin: "0 0 16px", color: "#F5D060" }}>
+                  {reading.archetype}
+                </h3>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "16px" }}>
+                  {reading.archetypeTraits?.map((trait: string, i: number) => (
+                    <span key={i} style={{
+                      background: "rgba(184,115,51,0.15)",
+                      border: "1px solid rgba(184,115,51,0.3)",
+                      borderRadius: "20px", padding: "5px 14px",
+                      fontSize: "13px", color: "rgba(255,253,208,0.8)",
+                    }}>
+                      {trait}
+                    </span>
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
+                <p style={{
+                  fontSize: "15px", lineHeight: "1.7",
+                  color: "rgba(255,253,208,0.85)", margin: "0 0 12px",
+                }}>
+                  {reading.archetypeReading}
+                </p>
+                {reading.archetypeShadow && (
+                  <p style={{
+                    fontSize: "14px", lineHeight: "1.6",
+                    color: "rgba(255,253,208,0.5)",
+                    fontStyle: "italic", margin: 0,
+                  }}>
+                    {reading.archetypeShadow}
+                  </p>
+                )}
+              </div>
+            )}
 
-          {activeTab === "mounts" && reading.mounts && (
-            <div className="w-full rounded-2xl p-5 backdrop-blur-sm" style={{ background: "hsla(var(--card) / 0.3)", border: "1px solid hsl(var(--border))" }}>
-              <div className="text-[13px] uppercase tracking-[2px] mb-2" style={{ color: "hsl(var(--copper))" }}>The Mounts</div>
-              {Object.entries(reading.mounts).map(([key, val]) => val && (
-                <div key={key} className="pb-3 mb-3" style={{ borderBottom: "1px solid hsla(var(--border) / 0.3)" }}>
-                  <div className="text-xs mb-1" style={{ color: "hsl(var(--primary))", letterSpacing: "1px" }}>
-                    Mount of {key.charAt(0).toUpperCase() + key.slice(1)}
-                  </div>
-                  <div className="text-sm text-muted-foreground leading-relaxed">{val}</div>
-                </div>
-              ))}
-            </div>
-          )}
+            {activeTab === "lines" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                {reading.lines && Object.values(reading.lines).map((line: any, i: number) =>
+                  line && line.reading && (
+                    <div key={i} style={{
+                      background: "rgba(20,35,25,0.6)",
+                      border: "1px solid rgba(184,115,51,0.2)",
+                      borderRadius: "14px", padding: "16px",
+                    }}>
+                      <p style={{
+                        fontSize: "11px", letterSpacing: "2px",
+                        color: "#B87333", margin: "0 0 6px", textTransform: "uppercase",
+                      }}>
+                        {line.title}
+                      </p>
+                      <p style={{
+                        fontSize: "14px", lineHeight: "1.7",
+                        color: "rgba(255,253,208,0.85)", margin: 0,
+                      }}>
+                        {line.reading}
+                      </p>
+                    </div>
+                  )
+                )}
+              </div>
+            )}
 
-          {activeTab === "markings" && (
-            <div className="w-full rounded-2xl p-5 backdrop-blur-sm" style={{ background: "hsla(var(--card) / 0.3)", border: "1px solid hsl(var(--border))" }}>
-              <div className="text-[13px] uppercase tracking-[2px] mb-2" style={{ color: "hsl(var(--copper))" }}>Special Markings</div>
-              <div className="text-sm text-muted-foreground leading-relaxed">{reading.markings}</div>
-            </div>
-          )}
+            {activeTab === "mounts" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                {reading.mounts && Object.values(reading.mounts).map((mount: any, i: number) =>
+                  mount && mount.reading && (
+                    <div key={i} style={{
+                      background: "rgba(20,35,25,0.6)",
+                      border: "1px solid rgba(184,115,51,0.2)",
+                      borderRadius: "14px", padding: "16px",
+                    }}>
+                      <p style={{
+                        fontSize: "11px", letterSpacing: "2px",
+                        color: "#B87333", margin: "0 0 6px", textTransform: "uppercase",
+                      }}>
+                        {mount.title}
+                      </p>
+                      <p style={{
+                        fontSize: "14px", lineHeight: "1.7",
+                        color: "rgba(255,253,208,0.85)", margin: 0,
+                      }}>
+                        {mount.reading}
+                      </p>
+                    </div>
+                  )
+                )}
+              </div>
+            )}
 
-          {activeTab === "destiny" && (
-            <div className="w-full rounded-2xl p-5 text-center" style={{ background: "linear-gradient(135deg, hsla(var(--primary) / 0.08), hsla(var(--copper) / 0.05))", border: "1px solid hsla(var(--primary) / 0.2)" }}>
-              <div className="text-[32px] mb-3">🌟</div>
-              <div className="text-[13px] uppercase tracking-[2px] mb-2" style={{ color: "hsl(var(--copper))" }}>Your Destiny</div>
-              <p className="text-base text-muted-foreground italic leading-relaxed">
-                "{reading.destiny}"
-              </p>
-            </div>
-          )}
-
-          <button
-            onClick={reset}
-            className="w-full rounded-xl py-3.5 px-8 text-base font-bold tracking-wide"
-            style={{
-              background: "linear-gradient(135deg, hsl(var(--copper)), hsl(var(--primary)))",
-              color: "hsl(var(--background))",
-              border: "none",
-            }}
-          >
-            Scan Again
-          </button>
+            {activeTab === "markings" && (
+              <div style={{
+                background: "rgba(20,35,25,0.6)",
+                border: "1px solid rgba(184,115,51,0.2)",
+                borderRadius: "14px", padding: "20px",
+              }}>
+                <p style={{
+                  fontSize: "11px", letterSpacing: "2px",
+                  color: "#B87333", margin: "0 0 12px", textTransform: "uppercase",
+                }}>
+                  Special Markings
+                </p>
+                <p style={{
+                  fontSize: "14px", lineHeight: "1.7",
+                  color: "rgba(255,253,208,0.85)", margin: "0 0 20px",
+                }}>
+                  {reading.markings}
+                </p>
+                {reading.destiny && (
+                  <>
+                    <div style={{ height: "1px", background: "rgba(184,115,51,0.2)", margin: "0 0 20px" }} />
+                    <p style={{
+                      fontSize: "11px", letterSpacing: "2px",
+                      color: "#B87333", margin: "0 0 12px", textTransform: "uppercase",
+                    }}>
+                      Your Destiny
+                    </p>
+                    <p style={{
+                      fontSize: "15px", lineHeight: "1.7",
+                      color: "#F5D060", fontStyle: "italic", margin: 0,
+                    }}>
+                      "{reading.destiny}"
+                    </p>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
