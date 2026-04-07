@@ -5,6 +5,7 @@ import { Camera, RotateCcw, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { startScanSound, stopScanSound } from "@/lib/scan-sound";
 
 type Phase = "permission" | "camera" | "preview" | "scanning" | "result";
 type ResultTab = "reading" | "lines" | "mounts" | "markings";
@@ -59,6 +60,8 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [scanProgress, setScanProgress] = useState(0);
+  const scanAnimRef = useRef<number | null>(null);
 
   const stopCamera = useCallback(() => {
     streamRef.current?.getTracks().forEach((track) => track.stop());
@@ -112,8 +115,25 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
     if (!imageData) return;
     setPhase("scanning");
     setScanStep(0);
+    setScanProgress(0);
 
-    // Animate scan steps
+    // Start scanning sound
+    startScanSound();
+
+    // Smooth laser animation from 0 to ~95% over the scan duration
+    const scanDuration = SCAN_PHASES.length * 1800; // total ms
+    const startTime = performance.now();
+    const animateLaser = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min((elapsed / scanDuration) * 95, 95);
+      setScanProgress(progress);
+      if (progress < 95) {
+        scanAnimRef.current = requestAnimationFrame(animateLaser);
+      }
+    };
+    scanAnimRef.current = requestAnimationFrame(animateLaser);
+
+    // Animate scan step labels
     const stepInterval = setInterval(() => {
       setScanStep((prev) => {
         if (prev >= SCAN_PHASES.length - 1) {
@@ -131,19 +151,24 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
       });
 
       clearInterval(stepInterval);
+      if (scanAnimRef.current) cancelAnimationFrame(scanAnimRef.current);
 
       if (error) throw new Error(error.message);
       if (!data?.content) throw new Error("No reading returned");
 
-      // Ensure we're at 100% before showing results
+      // Animate to 100%
       setScanStep(SCAN_PHASES.length - 1);
+      setScanProgress(100);
       await new Promise((r) => setTimeout(r, 800));
 
+      stopScanSound();
       setReading(data.content);
       setActiveTab("reading");
       setPhase("result");
     } catch (err) {
       clearInterval(stepInterval);
+      if (scanAnimRef.current) cancelAnimationFrame(scanAnimRef.current);
+      stopScanSound();
       const msg = err instanceof Error ? err.message : "Analysis failed";
       toast.error(msg);
       setPhase("preview");
@@ -155,10 +180,12 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
     setImageData(null);
     setReading(null);
     setScanStep(0);
+    setScanProgress(0);
+    stopScanSound();
   }, []);
 
-  // Cleanup camera on unmount
-  useEffect(() => () => stopCamera(), [stopCamera]);
+  // Cleanup camera and sound on unmount
+  useEffect(() => () => { stopCamera(); stopScanSound(); if (scanAnimRef.current) cancelAnimationFrame(scanAnimRef.current); }, [stopCamera]);
 
   const currentScan = SCAN_PHASES[scanStep] || SCAN_PHASES[0];
 
@@ -284,9 +311,9 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
 
             {/* PRIMARY LASER LINE — bright green, tall glow */}
             <div
-              className="absolute left-0 right-0 transition-all duration-[1600ms] ease-in-out"
+              className="absolute left-0 right-0"
               style={{
-                top: `${currentScan.pct}%`,
+                top: `${scanProgress}%`,
                 height: "3px",
                 background: "linear-gradient(90deg, transparent 0%, hsl(145, 100%, 60%) 15%, hsl(145, 100%, 75%) 50%, hsl(145, 100%, 60%) 85%, transparent 100%)",
                 boxShadow: `
@@ -300,9 +327,9 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
 
             {/* Secondary trailing glow below laser */}
             <div
-              className="absolute left-0 right-0 transition-all duration-[1600ms] ease-in-out pointer-events-none"
+              className="absolute left-0 right-0 pointer-events-none"
               style={{
-                top: `${Math.min(currentScan.pct + 1, 100)}%`,
+                top: `${Math.min(scanProgress + 1, 100)}%`,
                 height: "40px",
                 background: "linear-gradient(180deg, hsl(145, 100%, 55%, 0.2) 0%, transparent 100%)",
               }}
@@ -322,7 +349,7 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
 
             {/* Progress badge */}
             <div className="absolute bottom-3 right-3 bg-background/80 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-primary/20">
-              <span className="text-sm font-display font-bold" style={{ color: "hsl(145, 80%, 55%)" }}>{currentScan.pct}%</span>
+              <span className="text-sm font-display font-bold" style={{ color: "hsl(145, 80%, 55%)" }}>{Math.round(scanProgress)}%</span>
             </div>
 
             {/* Scan type badge */}
@@ -341,9 +368,9 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
             {/* Mini progress bar */}
             <div className="w-48 h-1 mx-auto rounded-full overflow-hidden" style={{ backgroundColor: "hsl(160, 20%, 15%)" }}>
               <div
-                className="h-full rounded-full transition-all duration-[1600ms] ease-in-out"
+                className="h-full rounded-full"
                 style={{
-                  width: `${currentScan.pct}%`,
+                  width: `${scanProgress}%`,
                   background: "linear-gradient(90deg, hsl(145, 80%, 40%), hsl(145, 100%, 55%))",
                   boxShadow: "0 0 8px hsl(145, 100%, 55%, 0.5)",
                 }}
