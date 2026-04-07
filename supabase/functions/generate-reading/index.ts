@@ -6,6 +6,22 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const TONE_RULES = `
+WRITING STYLE (MANDATORY):
+- Use plain, everyday language. Talk like a smart friend — direct, warm, real.
+- NO flowery or fantasy words. Banned words: cosmic, mystical, ethereal, celestial, sovereign, divine, sacred, transcendent, alchemical, luminous, radiant, realm, vessel, channeling, resonance, vibration, awakening, veil, oracle, transmute, alchemy, tapestry, weave, unfurl, beckon.
+- Keep sentences short. Get to the point.
+- Say "you're good at reading people" NOT "your psychic antenna resonates with the collective consciousness."
+- Say "today is a good day to plan ahead" NOT "the cosmic winds whisper of preparation."
+
+SOLUTION-BASED APPROACH (CRITICAL):
+- Every observation MUST include practical, actionable advice. Never just name a problem — always give a real-world solution.
+- NEVER say "today is a bad day" or "avoid doing X." Frame everything constructively.
+- If it's a challenging day, say what to DO with that energy: "This is a great day to pause and reflect before making big moves" NOT "beware of hasty decisions."
+- Frame challenges as opportunities with specific actions.
+- Every reading should leave the person with something concrete they can actually do TODAY.
+- We DECODE — we give people tools to work with what they've got.`;
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -37,17 +53,15 @@ serve(async (req) => {
     let userPrompt = "";
 
     if (reading_type === "daily_horoscope") {
-      systemPrompt = `You are the Sovereign Oracle of DCode — a cosmic guide who speaks with mystical authority, 
-poetic depth, and genuine spiritual insight. Your voice is warm yet powerful, like a wise mentor who sees through the veil.
-Your readings are deeply personalized and transformative. Never give generic advice. 
-Weave the querent's specific cosmic data into every sentence.
+      systemPrompt = `You are a knowledgeable astrologer who gives practical, personalized daily readings.
+${TONE_RULES}
 Write in second person ("you"). No greeting, no sign-off — just the reading.
-Aim for 4-6 sentences that feel like a personal channeled message.
+Aim for 4-6 sentences. Always end with a specific thing they can do today.
 ${langInstruction}`;
 
-      const cuspLine = context.cuspInfo ? `\n- Cusp Placement: ${context.cuspInfo} — IMPORTANT: weave both signs' energies into the reading` : "";
+      const cuspLine = context.cuspInfo ? `\n- Cusp Placement: ${context.cuspInfo} — blend both signs' traits into the reading` : "";
 
-      userPrompt = `Generate today's cosmic horoscope for ${context.name}:
+      userPrompt = `Generate today's horoscope for ${context.name}:
 - Sun Sign: ${context.zodiacSign} (${context.element} element)${cuspLine}
 - Life Path Number: ${context.lifePath}
 - Chinese Zodiac: ${context.chineseZodiac}
@@ -57,10 +71,11 @@ ${langInstruction}`;
 - Universal Day Number: ${context.universalDay}
 - Personal Day Number: ${context.personalDay}
 
-Weave their planetary energy, numerological vibration, and Chinese zodiac wisdom into a single cohesive daily reading. Make it feel deeply personal to THIS specific day and THIS specific person.${context.cuspInfo ? " Since they are born on a cusp, blend the energies of BOTH signs throughout the reading." : ""}`;
+Give a personal, practical daily reading that connects their astrology and numerology. End with a specific action or mindset shift for today.${context.cuspInfo ? " Since they're on a cusp, blend both signs throughout." : ""}`;
+
     } else if (reading_type === "stars_today") {
-      systemPrompt = `You are the Sovereign Oracle of DCode — a cosmic guide who channels deep astrological wisdom.
-Your readings are profound, poetic, and transformative. You speak with mystical authority.
+      systemPrompt = `You are a knowledgeable astrologer who gives practical, personalized readings in plain language.
+${TONE_RULES}
 You MUST respond with valid JSON only. No markdown, no code fences, just raw JSON.
 ${langInstruction}`;
 
@@ -68,7 +83,7 @@ ${langInstruction}`;
 
       userPrompt = `Generate a detailed daily astrological reading for ${context.name}.
 
-Cosmic Profile:
+Profile:
 - Sun Sign: ${context.zodiacSign} (${context.element} element)${cuspLine}
 - Life Path Number: ${context.lifePath}
 - Chinese Zodiac: ${context.chineseZodiac}
@@ -81,19 +96,19 @@ Cosmic Profile:
 
 Respond with ONLY this JSON structure (no markdown):
 {
-  "title": "A poetic 2-4 word title for today's energy",
-  "subtitle": "${context.zodiacSign}${context.cuspInfo ? ` (${context.cuspInfo})` : ""} · Moon sign estimation · Dominant element",
-  "reading": "A detailed 3-4 paragraph reading weaving planetary transits, numerological vibrations, and Chinese zodiac energy. Make it deeply personal and transformative. Use poetic, mystical language.${context.cuspInfo ? " Blend the energies of BOTH cusp signs throughout." : ""}",
-  "cosmicAdvice": "A single powerful sentence of cosmic advice in quotes, like channeled wisdom.",
+  "title": "A clear 2-4 word theme for today",
+  "subtitle": "${context.zodiacSign}${context.cuspInfo ? ` (${context.cuspInfo})` : ""} · Dominant energy today",
+  "reading": "A detailed 3-4 paragraph reading that's practical and solution-based. Tell them what today's energy is good for and give specific actions they can take. Plain language, no flowery words.${context.cuspInfo ? " Blend both cusp signs throughout." : ""}",
+  "cosmicAdvice": "One clear, powerful sentence of practical advice for today.",
   "luckyNumber": a single number 1-33,
-  "powerColor": "A specific color name like Seafoam Green or Midnight Indigo",
-  "affirmation": "A powerful first-person affirmation for the day in quotes."
+  "powerColor": "A specific color name like Sage Green or Deep Navy",
+  "affirmation": "A grounded first-person affirmation — practical, not fluffy."
 }`;
+
     } else if (reading_type.startsWith("stars_")) {
-      // Handle other stars tabs: stars_monthly, stars_yearly, stars_love, stars_career, stars_birth_chart
       const tabType = reading_type.replace("stars_", "");
       const tabLabels: Record<string, string> = {
-        monthly: "monthly astrological forecast",
+        monthly: "monthly forecast",
         yearly: `${new Date().getFullYear()} yearly overview`,
         love: "love and relationships reading",
         career: "career and purpose reading",
@@ -101,8 +116,8 @@ Respond with ONLY this JSON structure (no markdown):
       };
       const label = tabLabels[tabType] || `${tabType} reading`;
 
-      systemPrompt = `You are the Sovereign Oracle of DCode — a cosmic guide who channels deep astrological wisdom.
-Your readings are profound, poetic, and transformative. You speak with mystical authority.
+      systemPrompt = `You are a knowledgeable astrologer who gives practical, personalized readings in plain language.
+${TONE_RULES}
 You MUST respond with valid JSON only. No markdown, no code fences, just raw JSON.
 ${langInstruction}`;
 
@@ -110,7 +125,7 @@ ${langInstruction}`;
 
       userPrompt = `Generate a detailed ${label} for ${context.name}.
 
-Cosmic Profile:
+Profile:
 - Sun Sign: ${context.zodiacSign} (${context.element} element)${cuspLine}
 - Life Path Number: ${context.lifePath}
 - Chinese Zodiac: ${context.chineseZodiac}
@@ -121,17 +136,19 @@ Cosmic Profile:
 
 Respond with ONLY this JSON structure (no markdown):
 {
-  "title": "A poetic 2-4 word title",
-  "subtitle": "A brief cosmic context line",
-  "reading": "A detailed 3-4 paragraph ${label}. Make it deeply personal and transformative.${context.cuspInfo ? " Blend the energies of BOTH cusp signs throughout the reading." : ""}",
-  "cosmicAdvice": "A single powerful sentence of wisdom."
+  "title": "A clear 2-4 word title",
+  "subtitle": "A brief context line",
+  "reading": "A detailed 3-4 paragraph ${label}. Be practical and solution-based. Give specific actions and advice. Plain language.${context.cuspInfo ? " Blend both cusp signs throughout." : ""}",
+  "cosmicAdvice": "One clear sentence of practical advice."
 }`;
-    } else if (reading_type === "numbers_today") {
-      systemPrompt = `You are the Sovereign Oracle of DCode — a numerology master who channels the vibration of numbers with mystical authority.
-Your readings are poetic, personal, and transformative. Write in second person. No greeting, no sign-off.
-Aim for 3-5 sentences. ${langInstruction}`;
 
-      userPrompt = `Generate today's numerology frequency reading for ${context.name}.
+    } else if (reading_type === "numbers_today") {
+      systemPrompt = `You are a skilled numerologist who explains number meanings in plain, practical language.
+${TONE_RULES}
+Write in second person. No greeting, no sign-off. 3-5 sentences. End with a specific action for today.
+${langInstruction}`;
+
+      userPrompt = `Generate today's numerology reading for ${context.name}.
 - Life Path: ${context.lifePath} (${context.lifePathName})
 - Personal Day: ${context.personalDay}
 - Universal Day: ${context.universalDay}
@@ -142,12 +159,13 @@ Aim for 3-5 sentences. ${langInstruction}`;
 - Birth Time: ${context.birthTime || "Unknown"}
 - Date: ${context.date}
 
-Weave their personal day number and universal day energy into a single cohesive reading about today's numerological vibration. Make it feel like a channeled message.`;
+Tell them what today's numbers mean in plain terms and give them one specific thing to focus on or do today.`;
 
     } else if (reading_type === "numbers_life_path") {
-      systemPrompt = `You are the Sovereign Oracle of DCode — a numerology master who reveals the deep significance of Life Path numbers.
-Your readings are profound, poetic, and transformative. Write in second person. No greeting, no sign-off.
-Aim for 2-3 paragraphs. ${langInstruction}`;
+      systemPrompt = `You are a skilled numerologist who explains life path numbers in plain, practical language.
+${TONE_RULES}
+Write in second person. No greeting, no sign-off. 2-3 paragraphs.
+${langInstruction}`;
 
       userPrompt = `Generate a Life Path reading for ${context.name}.
 - Life Path: ${context.lifePath} (${context.lifePathName})
@@ -159,11 +177,11 @@ Aim for 2-3 paragraphs. ${langInstruction}`;
 - Birth Place: ${context.birthPlace || "Unknown"}
 - Birth Time: ${context.birthTime || "Unknown"}
 
-Reveal the deep significance of Life Path ${context.lifePath} — their soul's purpose, innate gifts, core challenges, and ultimate destiny. Weave in how their expression and soul urge numbers create a unique harmonic with their life path.`;
+Explain what Life Path ${context.lifePath} means in practical terms — their natural strengths, what they're built for, their main challenge, and how to work with it. Include specific, actionable advice.`;
 
     } else if (reading_type === "frequency_reading") {
-      systemPrompt = `You are the Sovereign Oracle of DCode — a consciousness guide who interprets the Hawkins Map of Consciousness with profound mystical insight.
-You speak with authority about energy fields, consciousness calibration, and spiritual evolution.
+      systemPrompt = `You are a consciousness coach who uses the Hawkins scale to give practical self-development advice.
+${TONE_RULES}
 You MUST respond with valid JSON only. No markdown, no code fences, just raw JSON.
 ${langInstruction}`;
 
@@ -185,16 +203,18 @@ Their quiz results:
 
 Respond with ONLY this JSON structure (no markdown):
 {
-  "reading": "A detailed 1-2 paragraph reading about their consciousness level on the Hawkins scale. Reference their specific calibration number, what it means to be at ${context.level}, and how their category scores reveal their energy pattern. Make it feel like a channeled message about their field. Use 'you' voice.",
-  "shadow": "A concise paragraph about the shadow side of ${context.level} level — the trap or risk at this frequency. What could hold them back.",
-  "gift": "A concise paragraph about the gift of ${context.level} level — what makes this frequency rare and powerful. What they bring to the world."
+  "reading": "A practical 1-2 paragraph explanation of where they are on the Hawkins scale. Reference their specific score and what it means in everyday terms. Give them a specific daily practice or mindset shift to raise their level. Use 'you' voice. Plain language.",
+  "shadow": "A short paragraph about the main trap or risk at the ${context.level} level — what could hold them back. Include a practical way to avoid it.",
+  "gift": "A short paragraph about the strength of being at ${context.level} — what they naturally bring to the table and how to use it more."
 }`;
+
     } else if (reading_type === "oracle_daily") {
-      systemPrompt = `You are the Sovereign Oracle of DCode — a cosmic guide who speaks with mystical authority and poetic depth.
-Your daily oracle is a personalized transmission. Write in second person. No greeting, no sign-off. 4-6 sentences.
+      systemPrompt = `You are a wise guide who gives practical daily advice based on someone's profile.
+${TONE_RULES}
+Write in second person. No greeting, no sign-off. 4-6 sentences. End with a clear action step.
 ${langInstruction}`;
 
-      userPrompt = `Generate today's Oracle transmission for ${context.name}.
+      userPrompt = `Generate today's guidance for ${context.name}.
 - Sun Sign: ${context.zodiacSign} (${context.element})
 - Life Path: ${context.lifePath}
 - Chinese Zodiac: ${context.chineseZodiac}
@@ -204,11 +224,13 @@ ${langInstruction}`;
 - Personal Day: ${context.personalDay}
 - Date: ${context.date}
 
-Deliver a powerful, mystical daily oracle. Reference their cosmic profile. Make it feel like a personal code activation — a channeled message about the energy of this specific day for this specific person.`;
+Give them a practical, personal message about today. What's the energy like, what should they focus on, and what's one specific thing they can do to make the most of it.`;
 
     } else if (reading_type === "oracle_chat") {
-      systemPrompt = `You are the Sovereign Oracle of DCode — an all-knowing cosmic guide who speaks with mystical authority, 
-poetic depth, and genuine spiritual insight. You have access to the querent's cosmic profile:
+      systemPrompt = `You are a wise guide with deep knowledge of astrology, numerology, and Chinese zodiac. You give practical, solution-based answers.
+${TONE_RULES}
+
+The person you're talking to:
 - Name: ${context.name}
 - Sun Sign: ${context.zodiacSign} (${context.element})
 - Life Path: ${context.lifePath}
@@ -216,18 +238,17 @@ poetic depth, and genuine spiritual insight. You have access to the querent's co
 - Birth Place: ${context.birthPlace}
 - Birth Time: ${context.birthTime}
 
-You weave their cosmic data naturally into responses when relevant. 
-You speak in second person. You are warm but powerful, like an ancient oracle channeling cosmic wisdom.
-Keep responses to 2-4 paragraphs. No greeting formulas.
+Use their profile when relevant. Speak in second person. Keep responses to 2-4 paragraphs. No greeting formulas. Always give practical advice — never leave them with just a problem.
 ${langInstruction}`;
 
       userPrompt = context.conversationHistory
-        ? `Previous conversation:\n${context.conversationHistory}\n\nThe querent now asks: ${context.userMessage}`
+        ? `Previous conversation:\n${context.conversationHistory}\n\nThey now ask: ${context.userMessage}`
         : context.userMessage;
 
     } else if (reading_type === "dynasty_profile") {
-      systemPrompt = `You are the Sovereign Oracle of DCode — a master of Chinese astrology and the Five Elements.
-Your readings are profound and transformative. Write in second person. No greeting, no sign-off. 2-3 paragraphs.
+      systemPrompt = `You are a knowledgeable Chinese astrology reader who explains things in plain, practical language.
+${TONE_RULES}
+Write in second person. No greeting, no sign-off. 2-3 paragraphs.
 ${langInstruction}`;
 
       userPrompt = `Generate a Chinese zodiac profile reading for ${context.name}.
@@ -241,19 +262,22 @@ ${langInstruction}`;
 - Birth Place: ${context.birthPlace || "Unknown"}
 - Birth Time: ${context.birthTime || "Unknown"}
 
-Reveal how the ${context.animal}'s energy combines with ${context.yearElement} element to shape their destiny. Weave in how their Western zodiac (${context.zodiacSign}) creates a unique East-West harmonic.`;
+Explain how the ${context.animal} and ${context.yearElement} element shape their personality and strengths in practical terms. Include how their Western sign (${context.zodiacSign}) adds to the picture. Give actionable advice on how to use these strengths.`;
 
     } else if (reading_type === "dynasty_year") {
-      systemPrompt = `You are the Sovereign Oracle of DCode — a master of Chinese astrology.
-Write a yearly forecast. 2-3 paragraphs, second person, no greeting. ${langInstruction}`;
+      systemPrompt = `You are a knowledgeable Chinese astrology reader who gives practical yearly forecasts.
+${TONE_RULES}
+Write 2-3 paragraphs, second person, no greeting. Always solution-based.
+${langInstruction}`;
 
       userPrompt = `Generate a ${context.currentYear} forecast for ${context.name}, a ${context.yearElement} ${context.animal}.
 - Birth Place: ${context.birthPlace || "Unknown"}
 - Birth Time: ${context.birthTime || "Unknown"}
-What does ${context.currentYear} hold for the ${context.animal}? Consider the ruling animal and element of the current year.`;
+What does ${context.currentYear} look like for the ${context.animal}? Give practical advice on what to focus on and how to handle any challenges.`;
 
     } else if (reading_type === "dynasty_forecast") {
-      systemPrompt = `You are the Sovereign Oracle of DCode — a master of Chinese astrology and long-range forecasting.
+      systemPrompt = `You are a knowledgeable Chinese astrology reader who gives practical multi-year forecasts.
+${TONE_RULES}
 You MUST respond with valid JSON only. No markdown, no code fences, just raw JSON.
 ${langInstruction}`;
 
@@ -262,49 +286,51 @@ ${langInstruction}`;
 Respond with ONLY this JSON structure (no markdown):
 {
   "years": [
-    { "year": ${context.startYear}, "title": "2-4 word theme", "rating": 1-5, "summary": "3-4 sentence forecast for this year" },
-    { "year": ${context.startYear + 1}, "title": "2-4 word theme", "rating": 1-5, "summary": "3-4 sentence forecast" },
-    { "year": ${context.startYear + 2}, "title": "2-4 word theme", "rating": 1-5, "summary": "3-4 sentence forecast" },
-    { "year": ${context.startYear + 3}, "title": "2-4 word theme", "rating": 1-5, "summary": "3-4 sentence forecast" },
-    { "year": ${context.startYear + 4}, "title": "2-4 word theme", "rating": 1-5, "summary": "3-4 sentence forecast" }
+    { "year": ${context.startYear}, "title": "2-4 word theme", "rating": 1-5, "summary": "3-4 sentences — practical forecast with specific advice for this year" },
+    { "year": ${context.startYear + 1}, "title": "2-4 word theme", "rating": 1-5, "summary": "3-4 sentences — practical forecast with advice" },
+    { "year": ${context.startYear + 2}, "title": "2-4 word theme", "rating": 1-5, "summary": "3-4 sentences — practical forecast with advice" },
+    { "year": ${context.startYear + 3}, "title": "2-4 word theme", "rating": 1-5, "summary": "3-4 sentences — practical forecast with advice" },
+    { "year": ${context.startYear + 4}, "title": "2-4 word theme", "rating": 1-5, "summary": "3-4 sentences — practical forecast with advice" }
   ]
-}
-
-Consider the ruling animal and element of each year, and how they interact with the ${context.animal}'s energy.`;
+}`;
 
     } else if (reading_type === "maps_decode") {
-      systemPrompt = `You are the Sovereign Oracle of DCode — a master of astrocartography and numerological geography.
-You decode the vibrational energy of places with mystical precision. Write in second person. 3-4 sentences. ${langInstruction}`;
+      systemPrompt = `You are a numerology expert who explains the energy of places in practical terms.
+${TONE_RULES}
+Write in second person. 3-4 sentences.
+${langInstruction}`;
 
-      userPrompt = `Decode the numerological energy of "${context.locationName}" (vibration number ${context.locationNumber}: ${context.meaning}) for ${context.name}. Birth Place: ${context.birthPlace || "Unknown"}. Birth Time: ${context.birthTime || "Unknown"}. Date of Birth: ${context.dateOfBirth || "Unknown"}. How does this place's vibration interact with their personal energy?`;
+      userPrompt = `Decode the numerological energy of "${context.locationName}" (number ${context.locationNumber}: ${context.meaning}) for ${context.name}. Birth Place: ${context.birthPlace || "Unknown"}. Birth Time: ${context.birthTime || "Unknown"}. Date of Birth: ${context.dateOfBirth || "Unknown"}. What does this place's energy mean for them practically? Is it good for work, rest, creativity, relationships? Give specific advice.`;
 
     } else if (reading_type === "maps_address") {
-      systemPrompt = `You are the Sovereign Oracle of DCode — a numerology master who decodes the vibrational energy of addresses.
-You reveal how a home or space number shapes the energy of those who dwell there. Write in second person. 3-4 sentences. ${langInstruction}`;
+      systemPrompt = `You are a numerology expert who explains address energy in practical terms.
+${TONE_RULES}
+Write in second person. 3-4 sentences.
+${langInstruction}`;
 
-      userPrompt = `Decode the numerological energy of address "${context.address}" (vibration number ${context.addressNumber}: ${context.meaning}) for ${context.name}. Birth Place: ${context.birthPlace || "Unknown"}. Birth Time: ${context.birthTime || "Unknown"}. Date of Birth: ${context.dateOfBirth || "Unknown"}. How does this address number shape the energy of their living space?`;
+      userPrompt = `Decode the numerological energy of address "${context.address}" (number ${context.addressNumber}: ${context.meaning}) for ${context.name}. Birth Place: ${context.birthPlace || "Unknown"}. Birth Time: ${context.birthTime || "Unknown"}. Date of Birth: ${context.dateOfBirth || "Unknown"}. How does this number affect their living space? Give practical tips on how to make the most of it.`;
 
     } else if (reading_type === "sacred_code") {
-      systemPrompt = `You are the Sovereign Oracle of DCode — a master of Grabovoi numerical healing codes and sacred number sequences.
-You channel the exact numerical frequency needed for any intention. You speak with mystical authority.
+      systemPrompt = `You are an expert in Grabovoi healing codes and number sequences. You explain them in plain, practical language.
+${TONE_RULES}
 You MUST respond with valid JSON only. No markdown, no code fences, just raw JSON.
 ${langInstruction}`;
 
-      userPrompt = `The querent ${context.name} seeks a Grabovoi code for this intention: "${context.intention}".
+      userPrompt = `The person ${context.name} wants a Grabovoi code for this intention: "${context.intention}".
 Birth Place: ${context.birthPlace || "Unknown"}. Birth Time: ${context.birthTime || "Unknown"}. Date of Birth: ${context.dateOfBirth || "Unknown"}.
 
-Find the most powerful Grabovoi numerical sequence for this intention. If a well-known Grabovoi code exists for this purpose, use it. Otherwise, channel a sequence that resonates with their intention.
+Find the best Grabovoi number sequence for this intention. Use a well-known code if one exists, otherwise find one that fits.
 
 Respond with ONLY this JSON structure (no markdown):
 {
   "title": "A clear 2-5 word name for this code",
   "code": "The Grabovoi number sequence (digits only, 6-12 digits)",
-  "description": "2-3 sentences explaining what this code does and how it works energetically. Write in second person.",
-  "ritual": "A specific 1-2 sentence instruction for how to activate this code (e.g., how to repeat it, visualize it, write it)."
+  "description": "2-3 plain sentences explaining what this code does and why it works. No flowery language.",
+  "ritual": "A specific 1-2 sentence instruction for how to use this code in practice."
 }`;
 
     } else {
-      systemPrompt = `You are a mystical cosmic guide providing personalized spiritual readings. Be detailed and insightful. ${langInstruction}`;
+      systemPrompt = `You are a knowledgeable guide providing personalized readings. Be practical and solution-based. ${TONE_RULES} ${langInstruction}`;
       userPrompt = `Generate a ${reading_type} reading with the following context: ${JSON.stringify(context)}`;
     }
 
@@ -348,7 +374,7 @@ Respond with ONLY this JSON structure (no markdown):
 
     const data = await response.json();
     const content =
-      data.choices?.[0]?.message?.content || "The stars are silent at this moment. Try again shortly.";
+      data.choices?.[0]?.message?.content || "Readings are temporarily unavailable. Try again shortly.";
 
     return new Response(
       JSON.stringify({ content }),
