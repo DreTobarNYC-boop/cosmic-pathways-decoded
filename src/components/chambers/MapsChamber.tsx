@@ -151,10 +151,12 @@ export function MapsChamber({ onBack }: { onBack: () => void }) {
   // Power Map: ranked cities
   const rankedCities = useMemo(() => {
     return WORLD_CITIES
-      .map(city => ({
-        city,
-        score: computeResonanceScore(city, lifePath, zodiacElement),
-        number: locationNumber(city),
+      .map(c => ({
+        city: c.name,
+        lat: c.lat,
+        lng: c.lng,
+        score: computeResonanceScore(c.name, lifePath, zodiacElement),
+        number: locationNumber(c.name),
       }))
       .sort((a, b) => b.score - a.score)
       .slice(0, 12);
