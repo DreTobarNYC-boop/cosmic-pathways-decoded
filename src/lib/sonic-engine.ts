@@ -17,6 +17,9 @@ export const SOLFEGGIO_FREQUENCIES: FrequencyPreset[] = [
   { id: "741", name: "Awakening", hz: 741, description: "Expand consciousness", color: "hsl(210, 70%, 55%)", chakra: "Throat" },
   { id: "852", name: "Intuition", hz: 852, description: "Return to spiritual order", color: "hsl(270, 60%, 55%)", chakra: "Third Eye" },
   { id: "963", name: "Divine", hz: 963, description: "Connect to higher self", color: "hsl(300, 50%, 60%)", chakra: "Crown" },
+  { id: "432", name: "Calm", hz: 432, description: "Deep relaxation & inner peace", color: "hsl(160, 50%, 45%)", chakra: "Heart" },
+  { id: "focus", name: "Focus", hz: 40, description: "Gamma binaural beats for concentration", color: "hsl(45, 85%, 55%)", chakra: "Third Eye" },
+  { id: "sleep", name: "Sleep", hz: 3, description: "Delta waves for deep restorative sleep", color: "hsl(230, 40%, 35%)", chakra: "Crown" },
 ];
 
 /* ══════════════════════════════════════════════════════════
