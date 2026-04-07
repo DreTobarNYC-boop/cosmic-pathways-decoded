@@ -79,16 +79,29 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
     const stream = streamRef.current;
     if (!video || !stream) return;
 
-    video.srcObject = stream;
+    if (video.srcObject !== stream) {
+      video.srcObject = stream;
+    }
+
     video.muted = true;
+    video.defaultMuted = true;
     video.setAttribute("playsinline", "true");
+    video.setAttribute("webkit-playsinline", "true");
     video.setAttribute("autoplay", "true");
 
-    try {
-      await video.play();
-    } catch (error) {
-      console.warn("Video play failed", error);
-    }
+    const tryPlay = async () => {
+      try {
+        await video.play();
+      } catch (error) {
+        console.warn("Video play failed", error);
+      }
+    };
+
+    video.onloadedmetadata = () => {
+      void tryPlay();
+    };
+
+    await tryPlay();
   }, []);
 
   const startCamera = useCallback(async () => {
