@@ -58,59 +58,165 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
   const [scanStep, setScanStep] = useState(0);
   const [scanProgress, setScanProgress] = useState(0);
   const [cameraLoading, setCameraLoading] = useState(false);
-  const [mediaStream, setMediaStream] = useState<MediaStream | null>(null);
-  const [videoReady, setVideoReady] = useState(false);
+  const [cameraReady, setCameraReady] = useState(false);
+  const [cameraSession, setCameraSession] = useState(0);
+  const [showNativeFallback, setShowNativeFallback] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const nativeCameraInputRef = useRef<HTMLInputElement>(null);
   const scanAnimRef = useRef<number | null>(null);
   const hapticIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const startRequestRef = useRef(0);
 
   const stopCamera = useCallback(() => {
-    streamRef.current?.getTracks().forEach((t) => t.stop());
+    const video = videoRef.current;
+
+    if (video) {
+      video.onloadedmetadata = null;
+      video.oncanplay = null;
+      video.onplaying = null;
+      video.pause();
+      video.srcObject = null;
+    }
+
+    streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
-    setMediaStream(null);
-    setVideoReady(false);
+    setCameraReady(false);
     setCameraLoading(false);
+    setShowNativeFallback(false);
+  }, []);
+
+  const requestCameraStream = useCallback(async () => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      throw new Error("Camera unavailable");
+    }
+
+    const constraints: MediaStreamConstraints[] = [
+      {
+        video: {
+          facingMode: { ideal: "environment" },
+          width: { ideal: 1080 },
+          height: { ideal: 1920 },
+        },
+        audio: false,
+      },
+      {
+        video: { facingMode: "environment" },
+        audio: false,
+      },
+      {
+        video: true,
+        audio: false,
+      },
+    ];
+
+    let lastError: unknown = null;
+
+    for (const constraint of constraints) {
+      try {
+        return await navigator.mediaDevices.getUserMedia(constraint);
+      } catch (error) {
+        lastError = error;
+      }
+    }
+
+    throw lastError ?? new Error("Camera unavailable");
   }, []);
 
   const startCamera = useCallback(async () => {
-    try {
-      setVideoReady(false);
-      setCameraLoading(true);
-      setPhase("camera");
+    const requestId = Date.now();
+    startRequestRef.current = requestId;
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
-        audio: false,
-      });
+    try {
+      stopCamera();
+      setPhase("camera");
+      setCameraLoading(true);
+      setCameraReady(false);
+      setShowNativeFallback(false);
+
+      const stream = await requestCameraStream();
+      if (startRequestRef.current !== requestId) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
 
       streamRef.current = stream;
-      setMediaStream(stream);
+      setCameraSession((prev) => prev + 1);
     } catch {
+      if (startRequestRef.current !== requestId) return;
       setCameraLoading(false);
       setPhase("permission");
       toast.error(t("palm.cameraError"));
     }
-  }, [t]);
+  }, [requestCameraStream, stopCamera, t]);
 
-  // Attach stream to video whenever both exist
   useEffect(() => {
-    const video = videoRef.current;
-    if (!video || !mediaStream) return;
+    if (phase !== "camera" || !streamRef.current) return;
 
-    video.srcObject = mediaStream;
-    video.play().then(() => {
-      setVideoReady(true);
+    const video = videoRef.current;
+    if (!video) return;
+
+    let mounted = true;
+
+    const markReady = () => {
+      if (!mounted) return;
+      setCameraReady(true);
       setCameraLoading(false);
-    }).catch(() => undefined);
-  }, [mediaStream]);
+      setShowNativeFallback(false);
+    };
+
+    video.muted = true;
+    video.defaultMuted = true;
+    video.autoplay = true;
+    video.playsInline = true;
+    video.srcObject = streamRef.current;
+
+    const tryPlay = async () => {
+      try {
+        await video.play();
+        if (video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) {
+          markReady();
+        }
+      } catch {
+        // wait for media events
+      }
+    };
+
+    video.onloadedmetadata = () => {
+      void tryPlay();
+    };
+    video.oncanplay = () => {
+      void tryPlay();
+    };
+    video.onplaying = markReady;
+
+    void tryPlay();
+
+    const fallbackTimer = window.setTimeout(() => {
+      if (!mounted && !cameraReady) return;
+      const hasFrame = video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0;
+      if (!hasFrame) {
+        setCameraLoading(false);
+        setShowNativeFallback(true);
+      }
+    }, 1800);
+
+    return () => {
+      mounted = false;
+      window.clearTimeout(fallbackTimer);
+      video.onloadedmetadata = null;
+      video.oncanplay = null;
+      video.onplaying = null;
+    };
+  }, [cameraReady, cameraSession, phase]);
 
   const capturePhoto = useCallback(() => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    if (!video || !canvas || !video.videoWidth || !video.videoHeight) {
+
+    if (!video || !canvas || video.videoWidth === 0 || video.videoHeight === 0) {
       toast.error(t("palm.cameraError"));
       return;
     }
@@ -120,15 +226,15 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    ctx.drawImage(video, 0, 0);
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
+
+    stopCamera();
     setImageData(dataUrl);
     setPhase("preview");
-    stopCamera();
   }, [stopCamera, t]);
 
-  const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handleImageSelection = useCallback((file?: File | null) => {
     if (!file) return;
 
     const reader = new FileReader();
@@ -139,6 +245,11 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
     };
     reader.readAsDataURL(file);
   }, [stopCamera]);
+
+  const handleFileUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    handleImageSelection(e.target.files?.[0] ?? null);
+    e.target.value = "";
+  }, [handleImageSelection]);
 
   const analyzePalm = useCallback(async () => {
     if (!imageData) return;
@@ -196,9 +307,10 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
 
       if (error) {
         const errBody = typeof error === "object" && error !== null ? error : {};
-        const message = (errBody as Record<string, unknown>).message as string || "Analysis failed";
+        const message = ((errBody as Record<string, unknown>).message as string) || "Analysis failed";
         throw new Error(message);
       }
+
       if (!data?.content) {
         if (data?.error) throw new Error(data.error);
         throw new Error("No reading returned");
@@ -212,7 +324,7 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
       if (navigator.vibrate) navigator.vibrate([50, 30, 80]);
       playCompletionChime();
 
-      await new Promise((r) => setTimeout(r, 350));
+      await new Promise((resolve) => setTimeout(resolve, 350));
       setReading(data.content);
       setActiveTab("reading");
       setPhase("result");
@@ -221,8 +333,8 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
       if (scanAnimRef.current) cancelAnimationFrame(scanAnimRef.current);
       if (hapticIntervalRef.current) clearInterval(hapticIntervalRef.current);
       stopScanSound();
-      const msg = err instanceof Error ? err.message : "Analysis failed";
-      toast.error(msg);
+      const message = err instanceof Error ? err.message : "Analysis failed";
+      toast.error(message);
       setPhase("preview");
     }
   }, [imageData, i18n.language]);
@@ -238,6 +350,8 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
     setScanStep(0);
     setScanProgress(0);
     setCameraLoading(false);
+    setCameraReady(false);
+    setShowNativeFallback(false);
   }, [stopCamera]);
 
   useEffect(() => {
@@ -254,15 +368,15 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
   if (phase === "camera") {
     return (
       <div className="fixed inset-0 z-50 bg-background">
-        {/* Camera loading overlay */}
         {cameraLoading && (
-          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-background">
-            <div className="h-12 w-12 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-background/92">
+            <div className="h-12 w-12 animate-spin rounded-full border-2 border-primary border-t-transparent" />
             <p className="mt-4 font-display text-sm text-muted-foreground">{t("palm.activatingCamera")}</p>
           </div>
         )}
 
         <video
+          key={cameraSession}
           ref={videoRef}
           autoPlay
           playsInline
@@ -270,12 +384,14 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
           className="absolute inset-0 h-full w-full object-cover"
         />
 
-        <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-transparent to-background/80 pointer-events-none" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-background/70 via-transparent to-background/80" />
 
-        {/* Top bar */}
         <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between px-4 pt-6">
           <button
-            onClick={() => { stopCamera(); setPhase("permission"); }}
+            onClick={() => {
+              stopCamera();
+              setPhase("permission");
+            }}
             className="flex h-11 w-11 items-center justify-center rounded-full border border-border bg-background/70 text-foreground backdrop-blur-sm"
           >
             <ArrowLeft className="h-5 w-5" />
@@ -287,23 +403,31 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
           <div className="h-11 w-11" />
         </div>
 
-        {/* Palm guide frame */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
           <div className="relative" style={{ width: "75%", height: "60%" }}>
-            {/* Corner brackets */}
-            <div className="absolute top-0 left-0 w-10 h-10 border-t-2 border-l-2 rounded-tl-lg" style={{ borderColor: "hsl(145 80% 55% / 0.7)" }} />
-            <div className="absolute top-0 right-0 w-10 h-10 border-t-2 border-r-2 rounded-tr-lg" style={{ borderColor: "hsl(145 80% 55% / 0.7)" }} />
-            <div className="absolute bottom-0 left-0 w-10 h-10 border-b-2 border-l-2 rounded-bl-lg" style={{ borderColor: "hsl(145 80% 55% / 0.7)" }} />
-            <div className="absolute bottom-0 right-0 w-10 h-10 border-b-2 border-r-2 rounded-br-lg" style={{ borderColor: "hsl(145 80% 55% / 0.7)" }} />
-            {/* Center crosshair */}
-            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6">
+            <div className="absolute left-0 top-0 h-10 w-10 rounded-tl-lg border-l-2 border-t-2" style={{ borderColor: "hsl(145 80% 55% / 0.7)" }} />
+            <div className="absolute right-0 top-0 h-10 w-10 rounded-tr-lg border-r-2 border-t-2" style={{ borderColor: "hsl(145 80% 55% / 0.7)" }} />
+            <div className="absolute bottom-0 left-0 h-10 w-10 rounded-bl-lg border-b-2 border-l-2" style={{ borderColor: "hsl(145 80% 55% / 0.7)" }} />
+            <div className="absolute bottom-0 right-0 h-10 w-10 rounded-br-lg border-b-2 border-r-2" style={{ borderColor: "hsl(145 80% 55% / 0.7)" }} />
+            <div className="absolute left-1/2 top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2">
               <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2" style={{ background: "hsl(145 80% 55% / 0.4)" }} />
               <div className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2" style={{ background: "hsl(145 80% 55% / 0.4)" }} />
             </div>
           </div>
         </div>
 
-        {/* Bottom controls */}
+        {showNativeFallback && (
+          <div className="absolute inset-x-4 bottom-32 z-20 mx-auto max-w-sm rounded-2xl border border-border bg-background/85 p-4 text-center backdrop-blur-md">
+            <p className="text-sm text-foreground">Live preview didn’t come through.</p>
+            <button
+              onClick={() => nativeCameraInputRef.current?.click()}
+              className="mt-2 text-sm font-display text-primary underline underline-offset-4"
+            >
+              Use your device camera instead
+            </button>
+          </div>
+        )}
+
         <div className="absolute inset-x-0 bottom-0 z-20 px-4 pb-8 pt-10">
           <div className="mx-auto flex max-w-sm items-center justify-between gap-4">
             <Button
@@ -316,7 +440,8 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
 
             <button
               onClick={capturePhoto}
-              className="flex h-[72px] w-[72px] items-center justify-center rounded-full border-[3px] shadow-lg"
+              disabled={!cameraReady}
+              className="flex h-[72px] w-[72px] items-center justify-center rounded-full border-[3px] shadow-lg disabled:opacity-50"
               style={{
                 borderColor: "hsl(145 80% 55%)",
                 boxShadow: "0 0 20px hsl(145 80% 55% / 0.3), inset 0 0 20px hsl(145 80% 55% / 0.1)",
@@ -326,7 +451,7 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
             </button>
 
             <Button
-              onClick={() => { stopCamera(); startCamera(); }}
+              onClick={() => void startCamera()}
               variant="ghost"
               className="h-14 min-w-14 rounded-full border border-border bg-background/60 px-0 text-foreground backdrop-blur-sm"
             >
@@ -337,6 +462,7 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
 
         <canvas ref={canvasRef} className="hidden" />
         <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
+        <input ref={nativeCameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileUpload} />
       </div>
     );
   }
@@ -365,7 +491,7 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
             <Button onClick={reset} variant="ghost" className="h-12 rounded-xl border border-border bg-background/60 font-display">
               <RotateCcw className="mr-2 h-4 w-4" /> {t("palm.retake")}
             </Button>
-            <Button onClick={analyzePalm} className="h-12 rounded-xl bg-primary text-primary-foreground font-display hover:bg-primary/90">
+            <Button onClick={analyzePalm} className="h-12 rounded-xl bg-primary font-display text-primary-foreground hover:bg-primary/90">
               {t("palm.analyze")}
             </Button>
           </div>
@@ -373,6 +499,7 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
 
         <canvas ref={canvasRef} className="hidden" />
         <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
+        <input ref={nativeCameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileUpload} />
       </div>
     );
   }
@@ -380,6 +507,7 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
   if (phase === "scanning" && imageData) {
     const laserPct = scanProgress;
     const scanComplete = scanProgress >= 100;
+
     return (
       <div className="fixed inset-0 z-50 overflow-hidden bg-background">
         <img
@@ -387,9 +515,7 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
           alt="Palm scan"
           className="absolute inset-0 h-full w-full object-cover"
           style={{
-            filter: scanComplete
-              ? "grayscale(1) brightness(0.72) contrast(1.18)"
-              : "brightness(0.88) contrast(1.08)",
+            filter: scanComplete ? "grayscale(1) brightness(0.72) contrast(1.18)" : "brightness(0.88) contrast(1.08)",
             transition: scanComplete ? "filter 0.18s linear" : "none",
           }}
         />
@@ -447,9 +573,7 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
                 }}
               />
             </div>
-            <p className="mt-3 text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-              {t("palm.speculative")}
-            </p>
+            <p className="mt-3 text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{t("palm.speculative")}</p>
           </div>
         </div>
       </div>
@@ -460,18 +584,15 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
     <ChamberLayout title={t("palm.title")} subtitle={t("palm.subtitle")} onBack={onBack}>
       <canvas ref={canvasRef} className="hidden" />
       <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
+      <input ref={nativeCameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileUpload} />
 
       {phase === "permission" && (
-        <div className="flex min-h-[60vh] flex-col items-center justify-center animate-fade-in px-4">
+        <div className="animate-fade-in flex min-h-[60vh] flex-col items-center justify-center px-4">
           <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-muted/40">
             <Camera className="h-10 w-10 text-primary" />
           </div>
-          <h2 className="mb-3 text-center font-display text-xl font-bold text-foreground">
-            {t("palm.needsAccess")}
-          </h2>
-          <p className="mb-8 max-w-xs text-center text-sm leading-relaxed text-muted-foreground">
-            {t("palm.privacyNote")}
-          </p>
+          <h2 className="mb-3 text-center font-display text-xl font-bold text-foreground">{t("palm.needsAccess")}</h2>
+          <p className="mb-8 max-w-xs text-center text-sm leading-relaxed text-muted-foreground">{t("palm.privacyNote")}</p>
           <Button
             onClick={() => void startCamera()}
             className="h-14 w-full max-w-xs rounded-2xl bg-primary font-display text-lg font-bold text-primary-foreground hover:bg-primary/90"
@@ -479,7 +600,7 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
             {t("palm.openCamera")}
           </Button>
           <button
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => nativeCameraInputRef.current?.click()}
             className="mt-4 flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
             <Upload className="h-4 w-4" /> {t("palm.uploadInstead")}
@@ -488,11 +609,9 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
       )}
 
       {phase === "result" && reading && (
-        <div className="mt-4 space-y-4 animate-fade-in">
+        <div className="mt-4 animate-fade-in space-y-4">
           <div className="space-y-3 text-center">
-            <p className="text-[11px] uppercase tracking-[0.2em] text-primary/70">
-              {t("palm.palmReading")}
-            </p>
+            <p className="text-[11px] uppercase tracking-[0.2em] text-primary/70">{t("palm.palmReading")}</p>
             {imageData && (
               <div className="mx-auto h-24 w-24 overflow-hidden rounded-full border-2 border-primary/30">
                 <img src={imageData} alt="Palm" className="h-full w-full object-cover" />
@@ -502,11 +621,7 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
             <p className="text-sm text-primary">{reading.element}</p>
           </div>
 
-          <Button
-            onClick={reset}
-            variant="ghost"
-            className="h-12 w-full rounded-xl border border-border bg-card font-display"
-          >
+          <Button onClick={reset} variant="ghost" className="h-12 w-full rounded-xl border border-border bg-card font-display">
             <Camera className="mr-2 h-4 w-4" /> {t("palm.newScan")}
           </Button>
 
@@ -516,9 +631,7 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-display transition-colors ${
-                  activeTab === tab
-                    ? "bg-primary/20 font-bold text-primary"
-                    : "text-muted-foreground hover:text-foreground"
+                  activeTab === tab ? "bg-primary/20 font-bold text-primary" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 {tab === "reading" && "◉ "}
@@ -534,12 +647,8 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
             {activeTab === "reading" && (
               <div className="space-y-4">
                 <div>
-                  <p className="mb-1 text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-                    {t("palm.palmArchetype")}
-                  </p>
-                  <h3 className="font-display text-xl font-bold text-primary">
-                    {reading.archetype.name}
-                  </h3>
+                  <p className="mb-1 text-[11px] uppercase tracking-[0.2em] text-muted-foreground">{t("palm.palmArchetype")}</p>
+                  <h3 className="font-display text-xl font-bold text-primary">{reading.archetype.name}</h3>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {reading.archetype.traits.map((trait) => (
@@ -548,17 +657,11 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
                     </span>
                   ))}
                 </div>
-                <p className="text-sm leading-relaxed text-foreground/90">
-                  {reading.archetype.summary}
-                </p>
-                <p className="text-sm italic leading-relaxed text-primary/60">
-                  {reading.archetype.shadow}
-                </p>
+                <p className="text-sm leading-relaxed text-foreground/90">{reading.archetype.summary}</p>
+                <p className="text-sm italic leading-relaxed text-primary/60">{reading.archetype.shadow}</p>
                 {reading.reading?.overview && (
                   <div className="border-t border-border pt-3">
-                    <p className="text-sm leading-relaxed text-foreground/85">
-                      {reading.reading.overview}
-                    </p>
+                    <p className="text-sm leading-relaxed text-foreground/85">{reading.reading.overview}</p>
                   </div>
                 )}
               </div>
@@ -569,18 +672,18 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
                 {Object.entries(reading.lines).map(([key, line]) => (
                   <div key={key}>
                     <div className="mb-1 flex items-center justify-between">
-                      <h4 className="font-display text-sm font-bold capitalize text-foreground">
-                        {t(`palm.line_${key}`)}
-                      </h4>
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] uppercase tracking-wider ${
-                        line.strength === "strong"
-                          ? "bg-primary/20 text-primary"
-                          : line.strength === "moderate"
-                            ? "bg-secondary text-secondary-foreground"
-                            : line.strength === "absent"
-                              ? "bg-muted text-muted-foreground"
-                              : "bg-accent text-accent-foreground"
-                      }`}>
+                      <h4 className="font-display text-sm font-bold capitalize text-foreground">{t(`palm.line_${key}`)}</h4>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[10px] uppercase tracking-wider ${
+                          line.strength === "strong"
+                            ? "bg-primary/20 text-primary"
+                            : line.strength === "moderate"
+                              ? "bg-secondary text-secondary-foreground"
+                              : line.strength === "absent"
+                                ? "bg-muted text-muted-foreground"
+                                : "bg-accent text-accent-foreground"
+                        }`}
+                      >
                         {line.strength}
                       </span>
                     </div>
@@ -595,16 +698,16 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
                 {Object.entries(reading.mounts).map(([key, mount]) => (
                   <div key={key}>
                     <div className="mb-1 flex items-center justify-between">
-                      <h4 className="font-display text-sm font-bold capitalize text-foreground">
-                        {t(`palm.mount_${key}`)}
-                      </h4>
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] uppercase tracking-wider ${
-                        mount.prominence === "high"
-                          ? "bg-primary/20 text-primary"
-                          : mount.prominence === "moderate"
-                            ? "bg-secondary text-secondary-foreground"
-                            : "bg-muted text-muted-foreground"
-                      }`}>
+                      <h4 className="font-display text-sm font-bold capitalize text-foreground">{t(`palm.mount_${key}`)}</h4>
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[10px] uppercase tracking-wider ${
+                          mount.prominence === "high"
+                            ? "bg-primary/20 text-primary"
+                            : mount.prominence === "moderate"
+                              ? "bg-secondary text-secondary-foreground"
+                              : "bg-muted text-muted-foreground"
+                        }`}
+                      >
                         {mount.prominence}
                       </span>
                     </div>
@@ -627,9 +730,7 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
                     </div>
                   ))
                 ) : (
-                  <p className="py-4 text-center text-sm text-muted-foreground">
-                    {t("palm.noMarkings")}
-                  </p>
+                  <p className="py-4 text-center text-sm text-muted-foreground">{t("palm.noMarkings")}</p>
                 )}
               </div>
             )}
