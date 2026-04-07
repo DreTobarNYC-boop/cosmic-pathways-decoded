@@ -1,18 +1,17 @@
 import * as Tone from "tone";
 
 let scanSynth: Tone.Synth | null = null;
-let scanLfo: Tone.LFO | null = null;
 let scanFilter: Tone.Filter | null = null;
 let scanNoise: Tone.Noise | null = null;
 let noiseGain: Tone.Gain | null = null;
-let filterLfo: Tone.LFO | null = null;
 let sweepLfo: Tone.LFO | null = null;
+let masterGain: Tone.Gain | null = null;
 let isPlaying = false;
 
 /**
- * Start the palm-scanning buzzing sound.
- * Multi-layer: low sine hum with pitch wobble, filtered noise with
- * sweeping bandpass, and a slow filter LFO for movement.
+ * Start the palm-scanning sound.
+ * Smooth rising sine tone + filtered pink noise sweep.
+ * No LFO on pitch — clean, continuous, sci-fi laser feel.
  */
 export async function startScanSound() {
   if (isPlaying) return;
@@ -20,32 +19,27 @@ export async function startScanSound() {
   try {
     await Tone.start();
 
-    // ── Core hum: sine with pitch wobble ──
-    scanFilter = new Tone.Filter(900, "lowpass").toDestination();
+    masterGain = new Tone.Gain(0.8).toDestination();
+
+    // ── Core tone: smooth sine, no wobble ──
+    scanFilter = new Tone.Filter(1800, "lowpass", -12).connect(masterGain);
+
     scanSynth = new Tone.Synth({
-      oscillator: { type: "sine" },
-      envelope: { attack: 0.5, decay: 0.1, sustain: 0.85, release: 0.8 },
-      volume: -16,
+      oscillator: { type: "triangle" },
+      envelope: { attack: 1.5, decay: 0, sustain: 1, release: 1.2 },
+      volume: -20,
     }).connect(scanFilter);
 
-    // Fast pitch wobble — the "buzz" character
-    scanLfo = new Tone.LFO("10hz", 50, 80).start();
-    scanLfo.connect(scanSynth.frequency);
+    scanSynth.triggerAttack(180);
 
-    // Slow filter sweep on the hum — gives motion
-    filterLfo = new Tone.LFO("0.4hz", 400, 1200).start();
-    filterLfo.connect(scanFilter.frequency);
-
-    scanSynth.triggerAttack(65);
-
-    // ── Noise layer: white noise through sweeping bandpass ──
-    noiseGain = new Tone.Gain(0.09).toDestination();
-    const noiseFilter = new Tone.Filter(1000, "bandpass", -12);
+    // ── Noise layer: pink noise through sweeping bandpass for texture ──
+    noiseGain = new Tone.Gain(0.04).connect(masterGain);
+    const noiseFilter = new Tone.Filter(1200, "bandpass", -24);
     scanNoise = new Tone.Noise("pink").connect(noiseFilter);
     noiseFilter.connect(noiseGain);
 
-    // Sweep the noise filter for that "scanning across frequencies" feel
-    sweepLfo = new Tone.LFO("0.25hz", 600, 2400).start();
+    // Slow sweep for subtle movement
+    sweepLfo = new Tone.LFO("0.15hz", 800, 3000).start();
     sweepLfo.connect(noiseFilter.frequency);
 
     scanNoise.start();
@@ -58,15 +52,27 @@ export async function startScanSound() {
 
 /**
  * Update the scan pitch based on progress (0–100).
- * Higher progress = higher pitch for rising tension.
+ * Smooth ramp from ~180 Hz to ~520 Hz — steady rising laser.
  */
 export function updateScanPitch(progress: number) {
   if (!scanSynth || !isPlaying) return;
-  const baseFreq = 55 + (progress / 100) * 45; // 55 Hz → 100 Hz
+  // Smooth exponential rise feels more natural
+  const t = progress / 100;
+  const freq = 180 + 340 * (t * t); // 180 Hz → 520 Hz
   try {
-    scanSynth.frequency.rampTo(baseFreq, 0.3);
+    scanSynth.frequency.rampTo(freq, 0.6);
   } catch {
     // ignore if disposed
+  }
+
+  // Brighten the filter as we progress
+  if (scanFilter) {
+    try {
+      const filterFreq = 1800 + 2200 * t;
+      scanFilter.frequency.rampTo(filterFreq, 0.6);
+    } catch {
+      // ignore
+    }
   }
 }
 
@@ -77,25 +83,26 @@ export function stopScanSound() {
   if (!isPlaying) return;
 
   try {
+    if (masterGain) {
+      masterGain.gain.rampTo(0, 0.6);
+    }
     scanSynth?.triggerRelease();
-    scanNoise?.stop();
+    scanNoise?.stop("+0.8");
 
     setTimeout(() => {
       scanSynth?.dispose();
-      scanLfo?.dispose();
       scanFilter?.dispose();
       scanNoise?.dispose();
       noiseGain?.dispose();
-      filterLfo?.dispose();
       sweepLfo?.dispose();
+      masterGain?.dispose();
       scanSynth = null;
-      scanLfo = null;
       scanFilter = null;
       scanNoise = null;
       noiseGain = null;
-      filterLfo = null;
       sweepLfo = null;
-    }, 900);
+      masterGain = null;
+    }, 1200);
   } catch (e) {
     console.warn("Could not stop scan sound:", e);
   }
