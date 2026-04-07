@@ -29,6 +29,7 @@ const FALLBACK_READING = {
 
 export default function PalmScanner() {
   const fileInputRef = useRef(null);
+  const capturedFileRef = useRef(null);
   const [phase, setPhase] = useState("intro");
   const [capturedImage, setCapturedImage] = useState(null);
   const [reading, setReading] = useState(null);
@@ -38,6 +39,7 @@ export default function PalmScanner() {
   const handleFileChange = useCallback((e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    capturedFileRef.current = file;
     setCapturedImage(URL.createObjectURL(file));
     setPhase("preview");
   }, []);
