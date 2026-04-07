@@ -105,6 +105,42 @@ Respond with ONLY this JSON structure (no markdown):
   "affirmation": "A grounded first-person affirmation — practical, not fluffy."
 }`;
 
+    } else if (reading_type === "stars_birth_chart") {
+      systemPrompt = `You are a professional astrologer who calculates and interprets birth charts. You explain placements in plain, practical language.
+${TONE_RULES}
+You MUST respond with valid JSON only. No markdown, no code fences, just raw JSON.
+${langInstruction}`;
+
+      const cuspLine = context.cuspInfo ? `\n- Cusp Placement: ${context.cuspInfo}` : "";
+
+      userPrompt = `Generate a complete birth chart for ${context.name}.
+
+Profile:
+- Date of Birth: ${context.dateOfBirth || "Unknown"}
+- Birth Place: ${context.birthPlace || "Unknown"}
+- Birth Time: ${context.birthTime || "Unknown"}
+- Sun Sign: ${context.zodiacSign} (${context.element} element)${cuspLine}
+
+Calculate the most likely planetary placements based on their birth data. If birth time is unknown, note that house placements and Ascendant are approximate.
+
+Respond with ONLY this JSON structure (no markdown):
+{
+  "placements": [
+    { "planet": "Ascendant", "symbol": "↑", "sign": "the zodiac sign", "house": null, "description": "2-3 sentences explaining what their Ascendant in this sign means practically — how they come across to others, first impressions." },
+    { "planet": "Sun", "symbol": "☉", "sign": "the zodiac sign", "house": number or null, "description": "2-3 sentences about their core identity and ego with this Sun placement. What drives them." },
+    { "planet": "Moon", "symbol": "☽", "sign": "the zodiac sign", "house": number or null, "description": "2-3 sentences about their emotional nature and inner self with this Moon placement." },
+    { "planet": "Mercury", "symbol": "☿", "sign": "the zodiac sign", "house": number or null, "description": "2-3 sentences about how they think and communicate." },
+    { "planet": "Venus", "symbol": "♀", "sign": "the zodiac sign", "house": number or null, "description": "2-3 sentences about love style and what they value." },
+    { "planet": "Mars", "symbol": "♂", "sign": "the zodiac sign", "house": number or null, "description": "2-3 sentences about their drive, energy, and how they take action." },
+    { "planet": "Jupiter", "symbol": "♃", "sign": "the zodiac sign", "house": number or null, "description": "2-3 sentences about where they find luck and growth." },
+    { "planet": "Saturn", "symbol": "♄", "sign": "the zodiac sign", "house": number or null, "description": "2-3 sentences about their challenges and life lessons." },
+    { "planet": "Uranus", "symbol": "♅", "sign": "the zodiac sign", "house": number or null, "description": "1-2 sentences about where they break from convention." },
+    { "planet": "Neptune", "symbol": "♆", "sign": "the zodiac sign", "house": number or null, "description": "1-2 sentences about their imagination and ideals." },
+    { "planet": "Pluto", "symbol": "♇", "sign": "the zodiac sign", "house": number or null, "description": "1-2 sentences about transformation and power." }
+  ],
+  "summary": "A 2-3 sentence overall summary of their chart — their biggest strengths and what to watch out for. Practical."
+}`;
+
     } else if (reading_type.startsWith("stars_")) {
       const tabType = reading_type.replace("stars_", "");
       const tabLabels: Record<string, string> = {
@@ -112,7 +148,6 @@ Respond with ONLY this JSON structure (no markdown):
         yearly: `${new Date().getFullYear()} yearly overview`,
         love: "love and relationships reading",
         career: "career and purpose reading",
-        birth_chart: "birth chart analysis",
       };
       const label = tabLabels[tabType] || `${tabType} reading`;
 
