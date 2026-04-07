@@ -339,7 +339,7 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
       }, 400);
     }
 
-    const scanDuration = SCAN_PHASES.length * 1800;
+    const scanDuration = 4500; // ~4.5 seconds like Whop reference
     const startTime = performance.now();
     let waitingForApi = false;
 
@@ -348,13 +348,12 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
 
       let progress: number;
       if (!waitingForApi) {
-        progress = Math.min((elapsed / scanDuration) * 95, 95);
-        if (progress >= 95) {
+        progress = Math.min((elapsed / scanDuration) * 100, 100);
+        if (progress >= 100) {
           waitingForApi = true;
         }
       } else {
-        const waitElapsed = elapsed - scanDuration;
-        progress = 95 + 4.5 * (1 - Math.exp(-waitElapsed / 12000));
+        progress = 100;
       }
 
       setScanProgress(progress);
@@ -366,7 +365,6 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
 
     const stepInterval = setInterval(() => {
       setScanStep((prev) => {
-        // Haptic bump on each phase change
         if (navigator.vibrate) navigator.vibrate(30);
         if (prev >= SCAN_PHASES.length - 1) {
           clearInterval(stepInterval);
@@ -374,7 +372,7 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
         }
         return prev + 1;
       });
-    }, 1800);
+    }, 900); // faster steps to match ~4.5s total
 
     try {
       const base64 = imageData.split(",")[1];
