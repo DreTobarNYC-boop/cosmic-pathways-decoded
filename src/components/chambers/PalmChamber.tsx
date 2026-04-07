@@ -29,6 +29,7 @@ const FALLBACK_READING = {
 
 export default function PalmScanner() {
   const fileInputRef = useRef(null);
+  const capturedFileRef = useRef(null);
   const [phase, setPhase] = useState("intro");
   const [capturedImage, setCapturedImage] = useState(null);
   const [reading, setReading] = useState(null);
@@ -38,12 +39,9 @@ export default function PalmScanner() {
   const handleFileChange = useCallback((e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setCapturedImage(ev.target.result);
-      setPhase("preview");
-    };
-    reader.readAsDataURL(file);
+    capturedFileRef.current = file;
+    setCapturedImage(URL.createObjectURL(file));
+    setPhase("preview");
   }, []);
 
   const openCamera = useCallback(() => {
@@ -51,7 +49,7 @@ export default function PalmScanner() {
   }, []);
 
   const analyzePalm = useCallback(async () => {
-    if (!capturedImage) return;
+    if (!capturedFileRef.current) return;
     setPhase("scanning");
     setScanProgress(0);
 
@@ -66,7 +64,11 @@ export default function PalmScanner() {
     }, 200);
 
     try {
-      const base64 = capturedImage.split(",")[1];
+      const base64 = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(",")[1]);
+        reader.readAsDataURL(capturedFileRef.current);
+      });
       const seed = Math.floor(Math.random() * 999999);
       const url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + GEMINI_API_KEY;
 
@@ -105,10 +107,11 @@ export default function PalmScanner() {
       setReading(FALLBACK_READING);
       setPhase("results");
     }
-  }, [capturedImage]);
+  }, []);
 
   const reset = useCallback(() => {
     setCapturedImage(null);
+    capturedFileRef.current = null;
     setReading(null);
     setScanProgress(0);
     setActiveTab("overview");
