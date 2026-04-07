@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import html2canvas from "html2canvas";
 import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
-import { startScanSound, stopScanSound, updateScanPitch, playCompletionChime } from "@/lib/scan-sound";
+// Sound disabled — kept silent for now
 
 interface PalmReading {
   archetype: string;
