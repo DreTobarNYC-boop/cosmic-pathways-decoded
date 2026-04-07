@@ -58,6 +58,9 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
   const [scanStep, setScanStep] = useState(0);
   const [scanProgress, setScanProgress] = useState(0);
   const [cameraLoading, setCameraLoading] = useState(false);
+  const [cameraReady, setCameraReady] = useState(false);
+  const [cameraSession, setCameraSession] = useState(0);
+  const [showNativeFallback, setShowNativeFallback] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -65,10 +68,19 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
   const nativeCameraInputRef = useRef<HTMLInputElement>(null);
   const scanAnimRef = useRef<number | null>(null);
   const hapticIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const fallbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearFallbackTimeout = useCallback(() => {
+    if (fallbackTimeoutRef.current) {
+      clearTimeout(fallbackTimeoutRef.current);
+      fallbackTimeoutRef.current = null;
+    }
+  }, []);
 
   const stopCamera = useCallback(() => {
-    const video = videoRef.current;
+    clearFallbackTimeout();
 
+    const video = videoRef.current;
     if (video) {
       video.onloadedmetadata = null;
       video.oncanplay = null;
@@ -84,17 +96,141 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
     setCameraLoading(false);
-  }, []);
+    setCameraReady(false);
+    setShowNativeFallback(false);
+  }, [clearFallbackTimeout]);
 
   const openNativeCamera = useCallback(() => {
-    setCameraLoading(false);
     stopCamera();
     nativeCameraInputRef.current?.click();
   }, [stopCamera]);
 
+  const requestCameraStream = useCallback(async () => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      throw new Error("Camera unavailable");
+    }
+
+    const constraints: MediaStreamConstraints[] = [
+      {
+        video: {
+          facingMode: { ideal: "environment" },
+          width: { ideal: 1080 },
+          height: { ideal: 1920 },
+          aspectRatio: { ideal: 9 / 16 },
+        },
+        audio: false,
+      },
+      {
+        video: { facingMode: "environment" },
+        audio: false,
+      },
+      {
+        video: true,
+        audio: false,
+      },
+    ];
+
+    let lastError: unknown = null;
+
+    for (const constraint of constraints) {
+      try {
+        return await navigator.mediaDevices.getUserMedia(constraint);
+      } catch (error) {
+        lastError = error;
+      }
+    }
+
+    throw lastError ?? new Error("Camera unavailable");
+  }, []);
+
   const startCamera = useCallback(async () => {
-    openNativeCamera();
-  }, [openNativeCamera]);
+    try {
+      stopCamera();
+      setPhase("camera");
+      setCameraLoading(true);
+      setCameraReady(false);
+      setShowNativeFallback(false);
+
+      const stream = await requestCameraStream();
+      streamRef.current = stream;
+      setCameraSession((prev) => prev + 1);
+    } catch {
+      setCameraLoading(false);
+      setPhase("permission");
+      toast.error(t("palm.cameraError"));
+    }
+  }, [requestCameraStream, stopCamera, t]);
+
+  useEffect(() => {
+    if (phase !== "camera" || !streamRef.current) return;
+
+    const video = videoRef.current;
+    if (!video) return;
+
+    let active = true;
+    const stream = streamRef.current;
+
+    const markReady = () => {
+      if (!active) return;
+      setCameraReady(true);
+      setCameraLoading(false);
+      setShowNativeFallback(false);
+      clearFallbackTimeout();
+    };
+
+    const tryPlay = async () => {
+      if (!active) return;
+
+      video.muted = true;
+      video.defaultMuted = true;
+      video.autoplay = true;
+      video.playsInline = true;
+      video.setAttribute("muted", "true");
+      video.setAttribute("autoplay", "true");
+      video.setAttribute("playsinline", "true");
+      video.setAttribute("webkit-playsinline", "true");
+      video.srcObject = stream;
+
+      try {
+        await video.play();
+        if (video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0) {
+          markReady();
+        }
+      } catch {
+        // wait for media events
+      }
+    };
+
+    video.onloadedmetadata = () => {
+      void tryPlay();
+    };
+    video.oncanplay = () => {
+      void tryPlay();
+    };
+    video.onplaying = markReady;
+
+    const raf = requestAnimationFrame(() => {
+      void tryPlay();
+    });
+
+    fallbackTimeoutRef.current = setTimeout(() => {
+      if (!active) return;
+      const hasFrame = video.readyState >= 2 && video.videoWidth > 0 && video.videoHeight > 0;
+      if (!hasFrame) {
+        setCameraLoading(false);
+        setShowNativeFallback(true);
+      }
+    }, 2200);
+
+    return () => {
+      active = false;
+      cancelAnimationFrame(raf);
+      clearFallbackTimeout();
+      video.onloadedmetadata = null;
+      video.oncanplay = null;
+      video.onplaying = null;
+    };
+  }, [cameraSession, clearFallbackTimeout, phase]);
 
   const capturePhoto = useCallback(() => {
     const video = videoRef.current;
@@ -250,7 +386,23 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
   if (phase === "camera") {
     return (
       <div className="fixed inset-0 z-50 bg-background">
-        <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/60 to-background/85" />
+        <video
+          key={cameraSession}
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-background/40 via-transparent to-background/70" />
+
+        {cameraLoading && (
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-background/55">
+            <div className="h-12 w-12 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            <p className="mt-4 font-display text-sm text-foreground">Activating camera...</p>
+          </div>
+        )}
 
         <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between px-4 pt-6">
           <button
@@ -264,41 +416,70 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
           </button>
           <div className="text-center">
             <h1 className="font-display text-xl font-bold text-foreground">{t("palm.scanYourPalm")}</h1>
-            <p className="text-xs text-foreground/60">Use your camera to take a clear photo of your palm</p>
+            <p className="text-xs text-foreground/70">Hold any hand palm-up</p>
           </div>
           <div className="h-11 w-11" />
         </div>
 
-        <div className="absolute inset-0 flex items-center justify-center px-4">
-          <div className="w-full max-w-sm rounded-[2rem] border border-border bg-card/70 p-6 text-center backdrop-blur-md">
-            <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-muted/50">
-              <Camera className="h-9 w-9 text-primary" />
-            </div>
-            <h2 className="font-display text-2xl text-foreground">Take a palm photo</h2>
-            <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-              Open your device camera, center your full palm, and take the clearest photo you can.
-            </p>
-
-            <div className="mt-6 space-y-3">
-              <Button
-                onClick={openNativeCamera}
-                className="h-14 w-full rounded-2xl bg-primary font-display text-lg font-bold text-primary-foreground hover:bg-primary/90"
-              >
-                Open Device Camera
-              </Button>
-              <Button
-                onClick={() => fileInputRef.current?.click()}
-                variant="ghost"
-                className="h-12 w-full rounded-2xl border border-border bg-background/60 font-display text-foreground"
-              >
-                <Upload className="mr-2 h-4 w-4" /> Choose Existing Photo
-              </Button>
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <div className="relative h-[60%] w-[75%]">
+            <div className="absolute left-0 top-0 h-10 w-10 rounded-tl-lg border-l-2 border-t-2" style={{ borderColor: "hsl(145 80% 55% / 0.7)" }} />
+            <div className="absolute right-0 top-0 h-10 w-10 rounded-tr-lg border-r-2 border-t-2" style={{ borderColor: "hsl(145 80% 55% / 0.7)" }} />
+            <div className="absolute bottom-0 left-0 h-10 w-10 rounded-bl-lg border-b-2 border-l-2" style={{ borderColor: "hsl(145 80% 55% / 0.7)" }} />
+            <div className="absolute bottom-0 right-0 h-10 w-10 rounded-br-lg border-b-2 border-r-2" style={{ borderColor: "hsl(145 80% 55% / 0.7)" }} />
+            <div className="absolute left-1/2 top-1/2 h-6 w-6 -translate-x-1/2 -translate-y-1/2">
+              <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2" style={{ background: "hsl(145 80% 55% / 0.4)" }} />
+              <div className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2" style={{ background: "hsl(145 80% 55% / 0.4)" }} />
             </div>
           </div>
         </div>
 
+        {showNativeFallback && (
+          <div className="absolute inset-x-4 bottom-36 z-20 mx-auto max-w-sm rounded-2xl border border-border bg-background/88 p-4 text-center backdrop-blur-md">
+            <p className="text-sm text-foreground">Live camera didn’t come through.</p>
+            <button
+              onClick={openNativeCamera}
+              className="mt-2 text-sm font-display text-primary underline underline-offset-4"
+            >
+              Use device camera instead
+            </button>
+          </div>
+        )}
+
+        <div className="absolute inset-x-0 bottom-0 z-20 px-4 pb-8 pt-10">
+          <div className="mx-auto flex max-w-sm items-center justify-between gap-4">
+            <Button
+              onClick={() => fileInputRef.current?.click()}
+              variant="ghost"
+              className="h-14 min-w-14 rounded-full border border-border bg-background/60 px-0 text-foreground backdrop-blur-sm"
+            >
+              <Upload className="h-5 w-5" />
+            </Button>
+
+            <button
+              onClick={capturePhoto}
+              disabled={!cameraReady}
+              className="flex h-[72px] w-[72px] items-center justify-center rounded-full border-[3px] shadow-lg disabled:opacity-50"
+              style={{
+                borderColor: "hsl(145 80% 55%)",
+                boxShadow: "0 0 20px hsl(145 80% 55% / 0.3), inset 0 0 20px hsl(145 80% 55% / 0.1)",
+              }}
+            >
+              <div className="h-[58px] w-[58px] rounded-full" style={{ background: "hsl(145 80% 55%)" }} />
+            </button>
+
+            <Button
+              onClick={() => void startCamera()}
+              variant="ghost"
+              className="h-14 min-w-14 rounded-full border border-border bg-background/60 px-0 text-foreground backdrop-blur-sm"
+            >
+              <RotateCcw className="h-5 w-5" />
+            </Button>
+          </div>
+          <p className="mt-3 text-center text-xs text-foreground/65">Fill the frame • Natural light works best</p>
+        </div>
+
         <canvas ref={canvasRef} className="hidden" />
-        <video ref={videoRef} className="hidden" />
         <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
         <input ref={nativeCameraInputRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileUpload} />
       </div>
@@ -432,7 +613,7 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
           <h2 className="mb-3 text-center font-display text-xl font-bold text-foreground">{t("palm.needsAccess")}</h2>
           <p className="mb-8 max-w-xs text-center text-sm leading-relaxed text-muted-foreground">{t("palm.privacyNote")}</p>
           <Button
-            onClick={openNativeCamera}
+            onClick={() => void startCamera()}
             className="h-14 w-full max-w-xs rounded-2xl bg-primary font-display text-lg font-bold text-primary-foreground hover:bg-primary/90"
           >
             {t("palm.openCamera")}
