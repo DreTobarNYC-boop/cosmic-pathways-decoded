@@ -287,7 +287,7 @@ export function MapsChamber({ onBack }: { onBack: () => void }) {
         body: {
           reading_type: "maps_decode",
           context: {
-            name,
+            name: fullName,
             locationName: locationName.trim(),
             locationNumber: num,
             meaning: LOCATION_MEANINGS[num]?.vibe,
