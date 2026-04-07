@@ -343,7 +343,6 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
             </Button>
           </div>
         </div>
-        </div>
 
         <canvas ref={canvasRef} className="hidden" />
         <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileUpload} />
