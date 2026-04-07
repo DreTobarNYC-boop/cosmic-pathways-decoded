@@ -58,12 +58,12 @@ export default function Index() {
   const GRID_CHAMBERS = [
     { id: "stars", title: t("chambers.theStars"), subtitle: t("chambers.astrology"), icon: Star, accent: "hsl(43, 90%, 67%)" },
     { id: "numbers", title: t("chambers.theNumbers"), subtitle: t("chambers.numerology"), icon: Hash, accent: "hsl(43, 90%, 67%)" },
-    { id: "palm", title: t("chambers.thePalm"), subtitle: t("chambers.palmReading"), icon: Hand, accent: "hsl(280, 40%, 55%)" },
-    { id: "dynasty", title: t("chambers.theDynasty"), subtitle: t("chambers.chineseZodiac"), icon: ScrollText, accent: "hsl(0, 60%, 50%)" },
-    { id: "vault", title: t("chambers.sonicAlchemy"), subtitle: t("chambers.sound"), icon: Music, accent: "hsl(25, 50%, 45%)" },
-    { id: "sacred-codes", title: t("chambers.theVault"), subtitle: t("chambers.sacredCodes"), icon: KeyRound, accent: "hsl(43, 70%, 55%)" },
+    { id: "palm", title: t("chambers.thePalm"), subtitle: t("chambers.palmReading"), icon: Fingerprint, accent: "hsl(280, 40%, 55%)" },
+    { id: "dynasty", title: t("chambers.theDynasty"), subtitle: t("chambers.chineseZodiac"), icon: Crown, accent: "hsl(0, 60%, 50%)" },
+    { id: "vault", title: t("chambers.sonicAlchemy"), subtitle: t("chambers.sound"), icon: AudioLines, accent: "hsl(25, 50%, 45%)" },
+    { id: "sacred-codes", title: t("chambers.theVault"), subtitle: t("chambers.sacredCodes"), icon: Shield, accent: "hsl(43, 70%, 55%)" },
     { id: "maps", title: t("chambers.theMaps"), subtitle: t("chambers.location"), icon: MapPin, accent: "hsl(160, 40%, 45%)" },
-    { id: "sanctum", title: t("chambers.theSanctum"), subtitle: t("chambers.journal"), icon: Lock, accent: "hsl(200, 30%, 50%)" },
+    { id: "sanctum", title: t("chambers.theSanctum"), subtitle: t("chambers.journal"), icon: BookOpen, accent: "hsl(200, 30%, 50%)" },
   ];
 
   if (isLoading) {
