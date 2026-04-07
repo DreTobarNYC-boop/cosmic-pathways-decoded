@@ -1,222 +1,198 @@
-import { useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Camera } from "lucide-react";
+import { useState, useRef } from "react";
+import { Camera, RotateCcw, Loader2, Fingerprint } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { base44 } from "@/api/base44Client";
+import { ChamberLayout } from "@/components/ChamberLayout";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 
-import CosmicBackground from "@/components/palm/CosmicBackground";
-import PalmIcon from "@/components/palm/PalmIcon";
-import ScanAnimation from "@/components/palm/ScanAnimation";
-import PalmReading from "@/components/palm/PalmReading";
-
-const PALM_ANALYSIS_PROMPT = `You are a mystical palm reader. Analyze the palm in this image with rich, evocative detail.
-
-Return your reading as JSON with this exact structure:
-{
-  "summary": "A one-paragraph mystical overview of this person's palm (2-3 sentences, poetic tone)",
-  "sections": [
-    {"title": "Heart Line", "description": "Detailed reading of the heart line..."},
-    {"title": "Head Line", "description": "Detailed reading of the head line..."},
-    {"title": "Life Line", "description": "Detailed reading of the life line..."},
-    {"title": "Fate Line", "description": "Detailed reading of the fate line..."},
-    {"title": "Career & Ambition", "description": "Overall career insights from the palm..."}
-  ]
+interface PalmChamberProps {
+  onBack: () => void;
 }
 
-Be mystical, positive, and specific. Reference what you see in the palm image. If the image is not a clear palm, still provide an entertaining reading based on what you can see.`;
+export function PalmChamber({ onBack }: PalmChamberProps) {
+  const [phase, setPhase] = useState<"idle" | "scanning" | "done">("idle");
+  const [reading, setReading] = useState<any>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
-export default function PalmScanner() {
-  const [imageUrl, setImageUrl] = useState(null);
-  const [scanning, setScanning] = useState(false);
-  const [scanDone, setScanDone] = useState(false);
-  const [reading, setReading] = useState(null);
-  const readingRef = useRef(null);
-  const fileInputRef = useRef(null);
+  const fileToBase64 = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = reader.result as string;
+        resolve(result.split(",")[1]);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
 
-  const handleFileChange = async (e) => {
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const localUrl = URL.createObjectURL(file);
-    setImageUrl(localUrl);
-    setScanning(true);
-    setScanDone(false);
+    setImagePreview(URL.createObjectURL(file));
+    setPhase("scanning");
     setReading(null);
-    readingRef.current = null;
 
-    // Upload + analyze in parallel while scan animation plays
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt: PALM_ANALYSIS_PROMPT,
-      file_urls: [file_url],
-      response_json_schema: {
-        type: "object",
-        properties: {
-          summary: { type: "string" },
-          sections: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                title: { type: "string" },
-                description: { type: "string" },
-              },
-            },
-          },
-        },
-      },
-    });
-    readingRef.current = result;
-    // If scan animation already finished, show reading immediately
-    setScanDone((prev) => {
-      if (prev) setReading(result);
-      return prev;
-    });
-  };
+    try {
+      const base64 = await fileToBase64(file);
+      const { data, error } = await supabase.functions.invoke("palm-reading", {
+        body: { image_base64: base64 },
+      });
 
-  // Called when scan animation reaches 100%
-  const handleScanComplete = () => {
-    if (readingRef.current) {
-      setReading(readingRef.current);
-      setScanning(false);
-    } else {
-      // AI not done yet — mark scan done and wait
-      setScanDone(true);
+      if (error) throw new Error(error.message || "Reading failed");
+      if (data?.error) throw new Error(data.error);
+
+      setReading(data.content);
+      setPhase("done");
+    } catch (err: any) {
+      console.error("Palm reading error:", err);
+      toast({ title: "Reading failed", description: err.message, variant: "destructive" });
+      setPhase("idle");
     }
   };
-
-  // When reading arrives after scan is already done
-  useEffect(() => {
-    if (scanDone && readingRef.current && !reading) {
-      setReading(readingRef.current);
-      setScanning(false);
-    }
-  }, [scanDone]);
 
   const handleReset = () => {
-    setImageUrl(null);
-    setScanning(false);
-    setScanDone(false);
+    setPhase("idle");
     setReading(null);
-    readingRef.current = null;
-    if (fileInputRef.current) fileInputRef.current.value = "";
+    setImagePreview(null);
+    if (fileRef.current) fileRef.current.value = "";
   };
 
-  const currentView = reading ? "reading" : scanning ? "scanning" : "landing";
-
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
-      <CosmicBackground />
-
-      {/* Hidden file input for native camera */}
+    <ChamberLayout title="The Palm" subtitle="Palm Reading" onBack={onBack}>
       <input
-        ref={fileInputRef}
+        ref={fileRef}
         type="file"
         accept="image/*"
         capture="environment"
-        onChange={handleFileChange}
+        onChange={handleFile}
         className="hidden"
       />
 
-      <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-6 py-12">
-        <AnimatePresence mode="wait">
-          {currentView === "landing" && (
-            <motion.div
-              key="landing"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="flex flex-col items-center text-center"
-            >
-              {/* Title */}
-              <motion.p
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="font-body text-sm tracking-[0.3em] uppercase text-muted-foreground mb-2"
-              >
-                Cosmic Divination
-              </motion.p>
-              <motion.h1
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="font-display text-4xl md:text-5xl text-primary mb-3"
-              >
-                Palm Oracle
-              </motion.h1>
-              <motion.div
-                initial={{ scaleX: 0 }}
-                animate={{ scaleX: 1 }}
-                transition={{ delay: 0.3, duration: 0.6 }}
-                className="w-24 h-px bg-gradient-to-r from-transparent via-primary/60 to-transparent mb-8"
-              />
+      {phase === "idle" && (
+        <div className="flex flex-col items-center text-center pt-12 space-y-8">
+          <div className="w-24 h-24 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center">
+            <Fingerprint className="w-12 h-12 text-primary" />
+          </div>
+          <div className="space-y-2 max-w-xs">
+            <h2 className="font-display text-xl text-foreground">Palm Oracle</h2>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Take a clear photo of your palm and let the cosmos reveal the secrets written in your hand.
+            </p>
+          </div>
+          <Button
+            onClick={() => fileRef.current?.click()}
+            size="lg"
+            className="rounded-full px-8"
+          >
+            <Camera className="w-5 h-5 mr-2" />
+            Open Camera
+          </Button>
+        </div>
+      )}
 
-              {/* Palm icon */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.3 }}
-                className="mb-10"
-              >
-                <PalmIcon />
-              </motion.div>
+      {phase === "scanning" && (
+        <div className="flex flex-col items-center text-center pt-12 space-y-6">
+          {imagePreview && (
+            <div className="w-48 h-48 rounded-2xl overflow-hidden border border-primary/30">
+              <img src={imagePreview} alt="Your palm" className="w-full h-full object-cover" />
+            </div>
+          )}
+          <div className="flex items-center gap-3 text-muted-foreground">
+            <Loader2 className="w-5 h-5 animate-spin text-primary" />
+            <span className="font-display text-sm">Reading your palm…</span>
+          </div>
+        </div>
+      )}
 
-              {/* Description */}
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.5 }}
-                className="font-body text-lg md:text-xl text-foreground/70 max-w-sm mb-10 leading-relaxed"
-              >
-                Place your palm before the lens and let the cosmos
-                reveal the secrets written in your hand.
-              </motion.p>
-
-              {/* Camera button */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6 }}
-              >
-                <Button
-                  onClick={() => fileInputRef.current?.click()}
-                  size="lg"
-                  className="bg-gradient-to-r from-primary via-primary to-secondary text-primary-foreground font-display text-base tracking-wider px-10 py-6 rounded-full shadow-lg shadow-primary/20 hover:shadow-primary/40 hover:opacity-95 transition-all"
-                >
-                  <Camera className="w-5 h-5 mr-3" />
-                  Open Camera
-                </Button>
-              </motion.div>
-            </motion.div>
+      {phase === "done" && reading && (
+        <div className="space-y-6 pb-6">
+          {/* Archetype header */}
+          {reading.archetype && (
+            <div className="text-center space-y-3 pt-4">
+              <div className="inline-flex items-center gap-2 bg-primary/10 border border-primary/30 rounded-full px-4 py-1.5">
+                <span className="text-xs text-muted-foreground">{reading.handType} · {reading.element}</span>
+              </div>
+              <h2 className="font-display text-2xl text-primary">{reading.archetype.name}</h2>
+              <div className="flex justify-center gap-2">
+                {reading.archetype.traits?.map((t: string) => (
+                  <span key={t} className="text-xs bg-muted/40 border border-border rounded-full px-3 py-1 text-foreground/80">{t}</span>
+                ))}
+              </div>
+              <p className="text-sm text-foreground/70 max-w-sm mx-auto leading-relaxed">{reading.archetype.summary}</p>
+              {reading.archetype.shadow && (
+                <p className="text-xs text-muted-foreground max-w-sm mx-auto italic">{reading.archetype.shadow}</p>
+              )}
+            </div>
           )}
 
-          {currentView === "scanning" && (
-            <motion.div
-              key="scanning"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="flex flex-col items-center"
-            >
-              <ScanAnimation imageUrl={imageUrl} onComplete={handleScanComplete} />
-            </motion.div>
+          {/* Overview */}
+          {reading.reading?.overview && (
+            <div className="bg-muted/20 border border-border rounded-2xl p-4">
+              <h3 className="font-display text-sm text-primary mb-2">Overview</h3>
+              <p className="text-sm text-foreground/80 leading-relaxed">{reading.reading.overview}</p>
+            </div>
           )}
 
-          {currentView === "reading" && (
-            <motion.div
-              key="reading"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="w-full"
-            >
-              <PalmReading reading={reading} onReset={handleReset} />
-            </motion.div>
+          {/* Lines */}
+          {reading.lines && (
+            <div className="space-y-3">
+              <h3 className="font-display text-sm text-primary">Lines</h3>
+              {Object.entries(reading.lines).map(([key, line]: [string, any]) => (
+                <div key={key} className="bg-muted/20 border border-border rounded-xl p-4">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-display text-sm text-foreground capitalize">{key} Line</span>
+                    <span className="text-xs text-muted-foreground capitalize">{line.strength}</span>
+                  </div>
+                  <p className="text-sm text-foreground/70 leading-relaxed">{line.description}</p>
+                </div>
+              ))}
+            </div>
           )}
-        </AnimatePresence>
-      </div>
-    </div>
+
+          {/* Mounts */}
+          {reading.mounts && (
+            <div className="space-y-3">
+              <h3 className="font-display text-sm text-primary">Mounts</h3>
+              <div className="grid grid-cols-2 gap-3">
+                {Object.entries(reading.mounts).map(([key, mount]: [string, any]) => (
+                  <div key={key} className="bg-muted/20 border border-border rounded-xl p-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-display text-xs text-foreground capitalize">{key}</span>
+                      <span className="text-[10px] text-muted-foreground capitalize">{mount.prominence}</span>
+                    </div>
+                    <p className="text-xs text-foreground/70 leading-relaxed">{mount.meaning}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Markings */}
+          {reading.markings && reading.markings.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="font-display text-sm text-primary">Markings</h3>
+              {reading.markings.map((m: any, i: number) => (
+                <div key={i} className="bg-muted/20 border border-border rounded-xl p-3">
+                  <span className="font-display text-xs text-foreground">{m.type} — {m.location}</span>
+                  <p className="text-xs text-foreground/70 mt-1">{m.meaning}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Reset */}
+          <div className="flex justify-center pt-2">
+            <Button variant="outline" onClick={handleReset} className="rounded-full">
+              <RotateCcw className="w-4 h-4 mr-2" />
+              Scan Another Palm
+            </Button>
+          </div>
+        </div>
+      )}
+    </ChamberLayout>
   );
 }
+
+export default PalmChamber;
