@@ -1,6 +1,12 @@
 // @ts-nocheck
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+
+/**
+ * DCode: THE PALM CHAMBER
+ * Logic: Native OS Camera Capture (File-based)
+ * No Live Video Stream / No MediaDevices / No Black Box
+ */
 
 const FALLBACK_READING = {
   handType: "Cosmic Hand",
@@ -68,8 +74,15 @@ export default function PalmScanner() {
   const [phase, setPhase] = useState("intro");
   const [capturedImage, setCapturedImage] = useState(null);
   const [reading, setReading] = useState(null);
-  const [activeTab, setActiveTab] = useState("overview");
   const [scanProgress, setScanProgress] = useState(0);
+
+  // Auto-Inject Manifest Link for PWA support
+  useEffect(() => {
+    const link = document.createElement('link');
+    link.rel = 'manifest';
+    link.href = '/manifest.json';
+    document.head.appendChild(link);
+  }, []);
 
   const handleFileChange = useCallback((e) => {
     const file = e.target.files?.[0];
@@ -125,56 +138,68 @@ export default function PalmScanner() {
   };
 
   const s = {
-    wrap: { background: "#0B1A1A", minHeight: "100vh", color: "#FFFDD0", display: "flex", flexDirection: "column", alignItems: "center" },
-    content: { width: "100%", maxWidth: "480px", padding: "40px 20px", display: "flex", flexDirection: "column", alignItems: "center", gap: "24px" },
-    h2: { fontSize: "28px", color: "#F5D060", textAlign: "center", letterSpacing: "3px", textTransform: "uppercase" },
-    p: { fontSize: "16px", color: "rgba(255,253,208,0.7)", textAlign: "center", lineHeight: "1.6" },
-    btn: { background: "linear-gradient(135deg, #B87333, #F5D060)", border: "none", borderRadius: "100px", padding: "18px 40px", fontSize: "16px", color: "#0B1A1A", fontWeight: "bold", cursor: "pointer", width: "100%", letterSpacing: "2px" },
-    card: { width: "100%", background: "rgba(184,115,51,0.05)", border: "1px solid rgba(184,115,51,0.2)", borderRadius: "20px", padding: "24px" },
-    scanBar: { position: "absolute", left: 0, right: 0, height: "4px", background: "#F5D060", boxShadow: "0 0 20px #F5D060", transition: "top 0.3s ease" }
+    wrap: { background: "#000000", minHeight: "100vh", color: "#FFFDD0", display: "flex", flexDirection: "column", alignItems: "center" },
+    content: { width: "100%", maxWidth: "480px", padding: "60px 20px", display: "flex", flexDirection: "column", alignItems: "center", gap: "32px" },
+    h2: { fontSize: "28px", color: "#C5A059", textAlign: "center", letterSpacing: "4px", textTransform: "uppercase", fontWeight: "300" },
+    p: { fontSize: "16px", color: "rgba(255,253,208,0.6)", textAlign: "center", lineHeight: "1.8", fontWeight: "300" },
+    btn: { background: "linear-gradient(135deg, #B87333, #C5A059)", border: "none", borderRadius: "100px", padding: "20px 40px", fontSize: "14px", color: "#000000", fontWeight: "bold", cursor: "pointer", width: "100%", letterSpacing: "3px", textTransform: "uppercase" },
+    card: { width: "100%", background: "rgba(197,160,89,0.03)", border: "1px solid rgba(197,160,89,0.15)", borderRadius: "24px", padding: "24px" },
+    scanBar: { position: "absolute", left: 0, right: 0, height: "2px", background: "#C5A059", boxShadow: "0 0 15px #C5A059", transition: "top 0.2s linear" }
   };
 
   return (
     <div style={s.wrap}>
-      <input ref={fileInputRef} type="file" accept="image/*" capture="environment" onChange={handleFileChange} className="hidden" />
+      {/* HIDDEN OS CAMERA TRIGGER */}
+      <input 
+        ref={fileInputRef} 
+        type="file" 
+        accept="image/*" 
+        capture="environment" 
+        onChange={handleFileChange} 
+        style={{ display: 'none' }} 
+      />
 
       {phase === "intro" && (
         <div style={s.content}>
-          <div className="text-6xl mb-4">✋</div>
-          <h2 style={s.h2}>The Palm Chamber</h2>
-          <p style={s.p}>Initiate the scan to decode your cosmic map. Align your hand for the Oracle.</p>
-          <button style={s.btn} onClick={openCamera}>BEGIN SCAN</button>
+          <div className="text-5xl mb-2 opacity-80" style={{ color: "#C5A059" }}>✦</div>
+          <h2 style={s.h2}>Palm Chamber</h2>
+          <p style={s.p}>Deploy the native scanner to interpret your cosmic geometry. Align for direct analysis.</p>
+          <button style={s.btn} onClick={openCamera}>INITIATE SCAN</button>
         </div>
       )}
 
       {phase === "preview" && (
         <div style={s.content}>
-          <img src={capturedImage} alt="Palm" className="w-full rounded-3xl border border-[#B87333]/30" />
-          <button style={s.btn} onClick={analyzePalm}>DECODE PALM</button>
-          <button className="text-[#B87333] font-bold" onClick={openCamera}>RETAKE</button>
+          <h2 style={s.h2}>Data Captured</h2>
+          <div className="relative w-full rounded-2xl overflow-hidden border border-[#C5A059]/30">
+            <img src={capturedImage} alt="Captured Hand" className="w-full" />
+          </div>
+          <button style={s.btn} onClick={analyzePalm}>DECODE SIGNATURE</button>
+          <button className="text-[#C5A059] text-xs tracking-widest uppercase font-bold mt-2" onClick={openCamera}>RE-CAPTURE</button>
         </div>
       )}
 
       {phase === "scanning" && (
         <div style={s.content}>
-          <h2 style={s.h2}>DECODING...</h2>
-          <div className="relative w-full aspect-[3/4] overflow-hidden rounded-3xl">
-            <img src={capturedImage} className="w-full h-full object-cover opacity-40" />
+          <h2 style={s.h2}>Processing...</h2>
+          <div className="relative w-full aspect-[3/4] overflow-hidden rounded-2xl bg-black border border-[#C5A059]/10">
+            <img src={capturedImage} className="w-full h-full object-cover opacity-20 grayscale" />
             <div style={{ ...s.scanBar, top: scanProgress + "%" }} />
           </div>
+          <p className="text-[#C5A059] text-xs tracking-widest animate-pulse">EXTRACTING FREQUENCY DATA</p>
         </div>
       )}
 
       {phase === "results" && reading && (
         <div style={s.content} className="pb-20">
-          <div className="text-center border-b border-[#B87333]/20 pb-6 w-full">
-             <div className="text-[#B87333] text-xs tracking-widest mb-2 uppercase">{reading.handType}</div>
+          <div className="text-center border-b border-[#C5A059]/10 pb-8 w-full">
+             <div className="text-[#B87333] text-[10px] tracking-[0.3em] mb-3 uppercase">{reading.handType}</div>
              <h2 style={s.h2}>{reading.archetype}</h2>
           </div>
           <div style={s.card}>
             <p style={s.p}>{reading.overview}</p>
           </div>
-          <button style={s.btn} onClick={reset}>NEW SCAN</button>
+          <button style={s.btn} onClick={reset}>RESET CHAMBER</button>
         </div>
       )}
     </div>
@@ -183,9 +208,12 @@ export default function PalmScanner() {
 
 export function PalmChamber({ onBack }: { onBack: () => void }) {
   return (
-    <div className="fixed inset-0 z-[9999] bg-[#0B1A1A] overflow-y-auto">
-      <button onClick={onBack} className="absolute top-8 left-8 z-[10000] text-[#B87333] font-bold tracking-widest">
-        ← BACK
+    <div className="fixed inset-0 z-[9999] bg-[#000000] overflow-y-auto">
+      <button 
+        onClick={onBack} 
+        className="absolute top-10 left-8 z-[10000] text-[#C5A059] text-[10px] font-bold tracking-[0.4em] uppercase"
+      >
+        ← EXIT
       </button>
       <PalmScanner />
     </div>
