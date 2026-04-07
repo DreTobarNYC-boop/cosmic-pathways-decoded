@@ -17,6 +17,9 @@ export const SOLFEGGIO_FREQUENCIES: FrequencyPreset[] = [
   { id: "741", name: "Awakening", hz: 741, description: "Expand consciousness", color: "hsl(210, 70%, 55%)", chakra: "Throat" },
   { id: "852", name: "Intuition", hz: 852, description: "Return to spiritual order", color: "hsl(270, 60%, 55%)", chakra: "Third Eye" },
   { id: "963", name: "Divine", hz: 963, description: "Connect to higher self", color: "hsl(300, 50%, 60%)", chakra: "Crown" },
+  { id: "432", name: "Calm", hz: 432, description: "Deep relaxation & inner peace", color: "hsl(160, 50%, 45%)", chakra: "Heart" },
+  { id: "focus", name: "Focus", hz: 40, description: "Gamma binaural beats for concentration", color: "hsl(45, 85%, 55%)", chakra: "Third Eye" },
+  { id: "sleep", name: "Sleep", hz: 3, description: "Delta waves for deep restorative sleep", color: "hsl(230, 40%, 35%)", chakra: "Crown" },
 ];
 
 /* ══════════════════════════════════════════════════════════
@@ -315,6 +318,114 @@ const GENRE_PROFILES: Record<number, GenreProfile> = {
     hatNoiseType: "white",
     hatDecay: 0.035,
     hatFilterFreq: 9500,
+  },
+
+  // 432 Hz — Calm / Healing Ambient (432 Hz tuning, gentle, flowing)
+  432: {
+    bpm: 72,
+    genre: "healing ambient",
+    kick: [0.5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.4, 0, 0, 0],
+    rim:  [0, 0, 0, 0, 0, 0, 0, 0.2, 0, 0, 0, 0, 0, 0, 0, 0],
+    hat:  [0, 0, 0.2, 0, 0, 0, 0, 0, 0, 0, 0.2, 0, 0, 0, 0, 0],
+    shaker: [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
+    bassType: "sine",
+    bassFilterFreq: 250,
+    bassOctaves: 0.5,
+    padType: "fatsawtooth",
+    padFilterFreq: 1200,
+    padSpread: 60,
+    arpType: "sine",
+    arpFilterFreq: 2000,
+    reverbDecay: 10,
+    reverbWet: 0.65,
+    delayTime: "4n.",
+    delayFeedback: 0.3,
+    filterLfoMin: 800,
+    filterLfoMax: 2000,
+    filterLfoRate: 0.015,
+    kickVol: 0.3,
+    rimVol: 0.03,
+    hatVol: 0.05,
+    shakerVol: 0.02,
+    bassVol: 0.2,
+    padVol: 0.25,
+    pluckVol: 0.15,
+    arpVol: 0.1,
+    hatNoiseType: "pink",
+    hatDecay: 0.1,
+    hatFilterFreq: 4000,
+  },
+
+  // 40 Hz — Focus / Gamma (binaural beats embedded, crisp, minimal, concentration)
+  40: {
+    bpm: 110,
+    genre: "minimal focus",
+    kick: [0.7, 0, 0, 0, 0, 0, 0, 0, 0.7, 0, 0, 0, 0, 0, 0, 0],
+    rim:  [0, 0, 0, 0, 0.5, 0, 0, 0, 0, 0, 0, 0, 0.5, 0, 0, 0],
+    hat:  [0, 0, 0.4, 0, 0, 0, 0.4, 0, 0, 0, 0.4, 0, 0, 0, 0.4, 0],
+    shaker: [0.2, 0.15, 0.25, 0.15, 0.2, 0.15, 0.25, 0.15, 0.2, 0.15, 0.25, 0.15, 0.2, 0.15, 0.25, 0.15],
+    bassType: "triangle",
+    bassFilterFreq: 400,
+    bassOctaves: 1,
+    padType: "sine",
+    padFilterFreq: 1500,
+    padSpread: 10,
+    arpType: "triangle",
+    arpFilterFreq: 3000,
+    reverbDecay: 3,
+    reverbWet: 0.2,
+    delayTime: "8n",
+    delayFeedback: 0.15,
+    filterLfoMin: 2000,
+    filterLfoMax: 5000,
+    filterLfoRate: 0.04,
+    kickVol: 0.5,
+    rimVol: 0.05,
+    hatVol: 0.1,
+    shakerVol: 0.04,
+    bassVol: 0.25,
+    padVol: 0.12,
+    pluckVol: 0.14,
+    arpVol: 0.1,
+    hatNoiseType: "white",
+    hatDecay: 0.03,
+    hatFilterFreq: 8000,
+  },
+
+  // 3 Hz — Sleep / Delta (ultra-slow, drone, barely any rhythm)
+  3: {
+    bpm: 60,
+    genre: "sleep drone",
+    kick: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    rim:  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    hat:  [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    shaker: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    bassType: "sine",
+    bassFilterFreq: 200,
+    bassOctaves: 0.5,
+    padType: "fatsawtooth",
+    padFilterFreq: 600,
+    padSpread: 70,
+    arpType: "sine",
+    arpFilterFreq: 1200,
+    reverbDecay: 12,
+    reverbWet: 0.75,
+    delayTime: "2n",
+    delayFeedback: 0.4,
+    filterLfoMin: 400,
+    filterLfoMax: 1200,
+    filterLfoRate: 0.008,
+    kickVol: 0,
+    rimVol: 0,
+    hatVol: 0,
+    shakerVol: 0,
+    bassVol: 0.15,
+    padVol: 0.3,
+    pluckVol: 0.08,
+    arpVol: 0.06,
+    hatNoiseType: "brown",
+    hatDecay: 0.1,
+    hatFilterFreq: 3000,
   },
 };
 
@@ -816,8 +927,14 @@ export function play(hz: number, binauralOffset = 4) {
   masterGain!.gain.setValueAtTime(0, Tone.now());
   masterGain!.gain.rampTo(0.5, 2);
 
-  // Solfeggio undertone
-  solfeggioSynth!.triggerAttack(hz);
+  // Solfeggio undertone — for very low hz (Focus/Sleep), use binaural method instead
+  // For Focus (40 Hz gamma): play 200 Hz + 240 Hz to create 40 Hz binaural beat
+  // For Sleep (3 Hz delta): play 150 Hz + 153 Hz to create 3 Hz binaural beat
+  // For solfeggio frequencies: play the actual hz as subtle undertone
+  const isLowHz = hz < 100;
+  const baseFreq = isLowHz ? (hz < 10 ? 150 : 200) : hz;
+
+  solfeggioSynth!.triggerAttack(baseFreq);
 
   // Binaural beat
   if (binauralOsc) {
@@ -825,10 +942,11 @@ export function play(hz: number, binauralOffset = 4) {
     binauralOsc.dispose();
     binauralOsc = null;
   }
+  const binauralFreq = isLowHz ? baseFreq + hz : hz + binauralOffset;
   binauralOsc = new Tone.Oscillator({
-    frequency: hz + binauralOffset,
+    frequency: binauralFreq,
     type: "sine",
-  }).connect(new Tone.Gain(0.04).connect(reverb!));
+  }).connect(new Tone.Gain(isLowHz ? 0.06 : 0.04).connect(reverb!));
   binauralOsc.start();
 
   // Start all sequences
