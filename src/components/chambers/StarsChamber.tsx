@@ -147,7 +147,11 @@ function StarsTabContent({
             <p className="text-[10px] uppercase tracking-[0.15em] text-primary/70 font-bold mb-1">
               {t("stars.sun")}
             </p>
-            <p className="text-2xl">{zodiac.symbol}</p>
+            {getZodiacImage(zodiac.sign) ? (
+              <img src={getZodiacImage(zodiac.sign)} alt={zodiac.sign} className="w-10 h-10 mx-auto object-contain" loading="lazy" />
+            ) : (
+              <p className="text-2xl">{zodiac.symbol}</p>
+            )}
           </div>
         </div>
       )}
