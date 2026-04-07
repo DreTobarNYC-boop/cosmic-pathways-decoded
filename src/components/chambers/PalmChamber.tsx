@@ -107,10 +107,11 @@ export default function PalmScanner() {
       setReading(FALLBACK_READING);
       setPhase("results");
     }
-  }, [capturedImage]);
+  }, []);
 
   const reset = useCallback(() => {
     setCapturedImage(null);
+    capturedFileRef.current = null;
     setReading(null);
     setScanProgress(0);
     setActiveTab("overview");
