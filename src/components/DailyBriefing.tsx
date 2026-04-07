@@ -6,6 +6,7 @@ import {
   getChineseZodiac,
   getUniversalDay,
   getPersonalDay,
+  getCuspInfo,
 } from "@/lib/daily";
 import { getFallbackHoroscope } from "@/lib/fallbacks";
 import { useCachedReading } from "@/hooks/use-cached-reading";
