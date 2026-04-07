@@ -253,25 +253,27 @@ export function MapsChamber({ onBack }: { onBack: () => void }) {
   const [isLoading, setIsLoading] = useState(false);
   const [isAddressLoading, setIsAddressLoading] = useState(false);
 
-  const name = profile?.fullName || "Seeker";
+  const fullName = profile?.fullName || "Seeker";
+  const birthPlace = profile?.birthPlace || "Unknown";
   const dob = useMemo(() => profile?.dateOfBirth ? new Date(profile.dateOfBirth + "T12:00:00") : null, [profile?.dateOfBirth]);
   const lifePath = dob ? getLifePath(dob) : 7;
   const zodiac = dob ? getZodiacFromDOB(dob) : null;
   const zodiacElement = zodiac?.element || "Fire";
+  const chineseAnimal = dob ? getChineseZodiac(dob.getFullYear()).animal : "Dragon";
 
-  // Power Map: ranked cities
+  // Power Map: ranked cities — unique per person
   const rankedCities = useMemo(() => {
     return WORLD_CITIES
       .map(c => ({
         city: c.name,
         lat: c.lat,
         lng: c.lng,
-        score: computeResonanceScore(c.name, lifePath, zodiacElement),
+        score: computeResonanceScore(c.name, lifePath, zodiacElement, fullName, dob, chineseAnimal, birthPlace),
         number: locationNumber(c.name),
       }))
       .sort((a, b) => b.score - a.score)
       .slice(0, 12);
-  }, [lifePath, zodiacElement]);
+  }, [lifePath, zodiacElement, fullName, dob, chineseAnimal, birthPlace]);
 
   const decodeLocation = useCallback(async (locationName: string) => {
     if (!locationName.trim()) return;
