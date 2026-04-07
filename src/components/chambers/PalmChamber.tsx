@@ -5,7 +5,7 @@ import { ArrowLeft, Camera, RotateCcw, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { startScanSound, stopScanSound } from "@/lib/scan-sound";
+import { startScanSound, stopScanSound, updateScanPitch, playCompletionChime } from "@/lib/scan-sound";
 
 type Phase = "permission" | "camera" | "preview" | "scanning" | "result";
 type ResultTab = "reading" | "lines" | "mounts" | "markings";
@@ -165,6 +165,7 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
       const elapsed = now - startTime;
       const progress = Math.min((elapsed / scanDuration) * 95, 95);
       setScanProgress(progress);
+      updateScanPitch(progress);
       if (progress < 95) {
         scanAnimRef.current = requestAnimationFrame(animateLaser);
       }
@@ -196,9 +197,10 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
 
       setScanStep(SCAN_PHASES.length - 1);
       setScanProgress(100);
-      await new Promise((r) => setTimeout(r, 800));
-
+      updateScanPitch(100);
       stopScanSound();
+      playCompletionChime();
+      await new Promise((r) => setTimeout(r, 1200));
       setReading(data.content);
       setActiveTab("reading");
       setPhase("result");
