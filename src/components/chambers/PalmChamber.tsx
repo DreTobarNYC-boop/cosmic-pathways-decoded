@@ -68,12 +68,25 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
   const hapticIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const cameraRetryRef = useRef(0);
   const cameraRetryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const permissionWarmupDoneRef = useRef(false);
+  const cameraStartTokenRef = useRef(0);
 
   const clearCameraRetryTimeout = useCallback(() => {
     if (cameraRetryTimeoutRef.current) {
       clearTimeout(cameraRetryTimeoutRef.current);
       cameraRetryTimeoutRef.current = null;
     }
+  }, []);
+
+  const cleanupVideoElement = useCallback(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    video.pause();
+    video.onloadedmetadata = null;
+    video.oncanplay = null;
+    video.onplaying = null;
+    video.srcObject = null;
   }, []);
 
   const stopCamera = useCallback(() => {
@@ -84,22 +97,17 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
     setVideoReady(false);
     setCameraLoading(false);
     cameraRetryRef.current = 0;
+    permissionWarmupDoneRef.current = false;
+    cameraStartTokenRef.current += 1;
+    cleanupVideoElement();
+  }, [cleanupVideoElement, clearCameraRetryTimeout]);
 
+  const attachStreamToVideo = useCallback(async (stream: MediaStream, token: number) => {
     const video = videoRef.current;
-    if (video) {
-      video.pause();
-      video.onloadedmetadata = null;
-      video.oncanplay = null;
-      video.onplaying = null;
-      video.srcObject = null;
-    }
-  }, [clearCameraRetryTimeout]);
-
-  const attachStreamToVideo = useCallback(async (stream: MediaStream) => {
-    const video = videoRef.current;
-    if (!video) return;
+    if (!video || token !== cameraStartTokenRef.current) return;
 
     const markReady = () => {
+      if (token !== cameraStartTokenRef.current) return;
       setVideoReady(true);
       setCameraLoading(false);
     };
@@ -118,51 +126,58 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
     video.setAttribute("webkit-playsinline", "true");
 
     video.onloadedmetadata = () => {
-      void video.play().then(markReady).catch((error) => {
-        console.warn("Video play on metadata failed", error);
-      });
+      void video.play().then(markReady).catch(() => undefined);
     };
-
     video.oncanplay = () => {
-      void video.play().then(markReady).catch((error) => {
-        console.warn("Video play on canplay failed", error);
-      });
+      void video.play().then(markReady).catch(() => undefined);
     };
-
     video.onplaying = markReady;
 
     try {
       await video.play();
       markReady();
-    } catch (error) {
-      console.warn("Video play failed", error);
+    } catch {
+      // wait for canplay/metadata fallback
     }
   }, []);
 
-  const requestCameraStream = useCallback(async () => {
+  const requestCameraStream = useCallback(async (preferExactEnvironment = false) => {
     if (!navigator.mediaDevices?.getUserMedia) {
       throw new Error("Camera API unavailable");
     }
 
-    const constraintSets: MediaStreamConstraints[] = [
-      {
-        video: {
-          facingMode: { ideal: "environment" },
-          width: { ideal: 1080 },
-          height: { ideal: 1920 },
-          aspectRatio: { ideal: 9 / 16 },
-        },
-        audio: false,
-      },
-      {
-        video: { facingMode: "environment" },
-        audio: false,
-      },
-      {
-        video: true,
-        audio: false,
-      },
-    ];
+    const constraintSets: MediaStreamConstraints[] = preferExactEnvironment
+      ? [
+          {
+            video: {
+              facingMode: { exact: "environment" },
+              width: { ideal: 1080 },
+              height: { ideal: 1920 },
+            },
+            audio: false,
+          },
+          {
+            video: { facingMode: { ideal: "environment" } },
+            audio: false,
+          },
+          { video: true, audio: false },
+        ]
+      : [
+          {
+            video: {
+              facingMode: { ideal: "environment" },
+              width: { ideal: 1080 },
+              height: { ideal: 1920 },
+              aspectRatio: { ideal: 9 / 16 },
+            },
+            audio: false,
+          },
+          {
+            video: { facingMode: "environment" },
+            audio: false,
+          },
+          { video: true, audio: false },
+        ];
 
     let lastError: unknown = null;
 
@@ -177,7 +192,22 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
     throw lastError ?? new Error("Unable to access camera");
   }, []);
 
+  const warmupCameraPermission = useCallback(async () => {
+    if (permissionWarmupDoneRef.current) return;
+
+    try {
+      const warmupStream = await requestCameraStream(true);
+      warmupStream.getTracks().forEach((track) => track.stop());
+      permissionWarmupDoneRef.current = true;
+    } catch {
+      permissionWarmupDoneRef.current = false;
+    }
+  }, [requestCameraStream]);
+
   const startCamera = useCallback(async (forceFreshStream = false) => {
+    const token = cameraStartTokenRef.current + 1;
+    cameraStartTokenRef.current = token;
+
     try {
       clearCameraRetryTimeout();
       setVideoReady(false);
@@ -188,15 +218,17 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
         streamRef.current?.getTracks().forEach((track) => track.stop());
         streamRef.current = null;
         setMediaStream(null);
-
-        if (videoRef.current) {
-          videoRef.current.pause();
-          videoRef.current.srcObject = null;
-        }
+        cleanupVideoElement();
       }
 
+      if (!permissionWarmupDoneRef.current) {
+        await warmupCameraPermission();
+      }
+
+      if (token !== cameraStartTokenRef.current) return;
+
       if (streamRef.current) {
-        void attachStreamToVideo(streamRef.current);
+        void attachStreamToVideo(streamRef.current, token);
         return;
       }
 
@@ -204,23 +236,31 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
         cameraRetryRef.current = 0;
       }
 
-      const stream = await requestCameraStream();
+      const stream = await requestCameraStream(true);
+      if (token !== cameraStartTokenRef.current) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
+
       streamRef.current = stream;
       setMediaStream(stream);
+      void attachStreamToVideo(stream, token);
     } catch {
+      if (token !== cameraStartTokenRef.current) return;
       setCameraLoading(false);
       setPhase("permission");
       toast.error(t("palm.cameraError"));
     }
-  }, [attachStreamToVideo, clearCameraRetryTimeout, requestCameraStream, t]);
+  }, [attachStreamToVideo, cleanupVideoElement, clearCameraRetryTimeout, requestCameraStream, t, warmupCameraPermission]);
 
   useEffect(() => {
     if (phase !== "camera" || !mediaStream || !videoRef.current) {
       return;
     }
 
+    const token = cameraStartTokenRef.current;
     const frame = requestAnimationFrame(() => {
-      void attachStreamToVideo(mediaStream);
+      void attachStreamToVideo(mediaStream, token);
     });
 
     clearCameraRetryTimeout();
@@ -236,13 +276,14 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
 
       if (cameraRetryRef.current < 1) {
         cameraRetryRef.current += 1;
+        permissionWarmupDoneRef.current = false;
         void startCamera(true);
         return;
       }
 
       setCameraLoading(false);
       toast.error(t("palm.cameraError"));
-    }, 2500);
+    }, 3000);
 
     return () => {
       cancelAnimationFrame(frame);
