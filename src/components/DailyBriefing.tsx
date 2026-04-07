@@ -6,6 +6,7 @@ import {
   getChineseZodiac,
   getUniversalDay,
   getPersonalDay,
+  getCuspInfo,
 } from "@/lib/daily";
 import { getFallbackHoroscope } from "@/lib/fallbacks";
 import { useCachedReading } from "@/hooks/use-cached-reading";
@@ -34,6 +35,7 @@ export function DailyBriefing({ dob, name, birthPlace, birthTime, onOpenStars }:
   const chineseZodiac = getChineseZodiac(dob.getFullYear());
   const universalDay = getUniversalDay(today);
   const personalDay = getPersonalDay(dob, today);
+  const cusp = getCuspInfo(dob.getMonth() + 1, dob.getDate());
   const dateKey = today.toISOString().split("T")[0];
 
   const lang = i18n.language;
@@ -52,6 +54,7 @@ export function DailyBriefing({ dob, name, birthPlace, birthTime, onOpenStars }:
       name,
       birthPlace: birthPlace || "Unknown",
       birthTime: birthTime || "Unknown",
+      cuspInfo: cusp.onCusp ? cusp.cuspDescription : null,
       language: lang,
     },
     fallback: getFallbackHoroscope(zodiac.element, today),
@@ -77,6 +80,9 @@ export function DailyBriefing({ dob, name, birthPlace, birthTime, onOpenStars }:
             <span className="text-xs font-display font-bold text-primary uppercase tracking-wider">
               {zodiac.sign}
             </span>
+            {cusp.onCusp && cusp.cuspSign && (
+              <span className="text-xs text-muted-foreground/70">/ {cusp.cuspSign}</span>
+            )}
           </div>
         </div>
 

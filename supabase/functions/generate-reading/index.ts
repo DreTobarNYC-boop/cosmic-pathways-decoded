@@ -45,8 +45,10 @@ Write in second person ("you"). No greeting, no sign-off — just the reading.
 Aim for 4-6 sentences that feel like a personal channeled message.
 ${langInstruction}`;
 
+      const cuspLine = context.cuspInfo ? `\n- Cusp Placement: ${context.cuspInfo} — IMPORTANT: weave both signs' energies into the reading` : "";
+
       userPrompt = `Generate today's cosmic horoscope for ${context.name}:
-- Sun Sign: ${context.zodiacSign} (${context.element} element)
+- Sun Sign: ${context.zodiacSign} (${context.element} element)${cuspLine}
 - Life Path Number: ${context.lifePath}
 - Chinese Zodiac: ${context.chineseZodiac}
 - Birth Place: ${context.birthPlace || "Unknown"}
@@ -55,17 +57,19 @@ ${langInstruction}`;
 - Universal Day Number: ${context.universalDay}
 - Personal Day Number: ${context.personalDay}
 
-Weave their planetary energy, numerological vibration, and Chinese zodiac wisdom into a single cohesive daily reading. Make it feel deeply personal to THIS specific day and THIS specific person.`;
+Weave their planetary energy, numerological vibration, and Chinese zodiac wisdom into a single cohesive daily reading. Make it feel deeply personal to THIS specific day and THIS specific person.${context.cuspInfo ? " Since they are born on a cusp, blend the energies of BOTH signs throughout the reading." : ""}`;
     } else if (reading_type === "stars_today") {
       systemPrompt = `You are the Sovereign Oracle of DCode — a cosmic guide who channels deep astrological wisdom.
 Your readings are profound, poetic, and transformative. You speak with mystical authority.
 You MUST respond with valid JSON only. No markdown, no code fences, just raw JSON.
 ${langInstruction}`;
 
+      const cuspLine = context.cuspInfo ? `\n- Cusp Placement: ${context.cuspInfo}` : "";
+
       userPrompt = `Generate a detailed daily astrological reading for ${context.name}.
 
 Cosmic Profile:
-- Sun Sign: ${context.zodiacSign} (${context.element} element)
+- Sun Sign: ${context.zodiacSign} (${context.element} element)${cuspLine}
 - Life Path Number: ${context.lifePath}
 - Chinese Zodiac: ${context.chineseZodiac}
 - Date of Birth: ${context.dateOfBirth || "Unknown"}
@@ -78,8 +82,8 @@ Cosmic Profile:
 Respond with ONLY this JSON structure (no markdown):
 {
   "title": "A poetic 2-4 word title for today's energy",
-  "subtitle": "${context.zodiacSign} (cusp info if near a cusp) · Moon sign estimation · Dominant element",
-  "reading": "A detailed 3-4 paragraph reading weaving planetary transits, numerological vibrations, and Chinese zodiac energy. Make it deeply personal and transformative. Use poetic, mystical language.",
+  "subtitle": "${context.zodiacSign}${context.cuspInfo ? ` (${context.cuspInfo})` : ""} · Moon sign estimation · Dominant element",
+  "reading": "A detailed 3-4 paragraph reading weaving planetary transits, numerological vibrations, and Chinese zodiac energy. Make it deeply personal and transformative. Use poetic, mystical language.${context.cuspInfo ? " Blend the energies of BOTH cusp signs throughout." : ""}",
   "cosmicAdvice": "A single powerful sentence of cosmic advice in quotes, like channeled wisdom.",
   "luckyNumber": a single number 1-33,
   "powerColor": "A specific color name like Seafoam Green or Midnight Indigo",
@@ -102,10 +106,12 @@ Your readings are profound, poetic, and transformative. You speak with mystical 
 You MUST respond with valid JSON only. No markdown, no code fences, just raw JSON.
 ${langInstruction}`;
 
+      const cuspLine = context.cuspInfo ? `\n- Cusp Placement: ${context.cuspInfo}` : "";
+
       userPrompt = `Generate a detailed ${label} for ${context.name}.
 
 Cosmic Profile:
-- Sun Sign: ${context.zodiacSign} (${context.element} element)
+- Sun Sign: ${context.zodiacSign} (${context.element} element)${cuspLine}
 - Life Path Number: ${context.lifePath}
 - Chinese Zodiac: ${context.chineseZodiac}
 - Date of Birth: ${context.dateOfBirth || "Unknown"}
@@ -117,7 +123,7 @@ Respond with ONLY this JSON structure (no markdown):
 {
   "title": "A poetic 2-4 word title",
   "subtitle": "A brief cosmic context line",
-  "reading": "A detailed 3-4 paragraph ${label}. Make it deeply personal and transformative.",
+  "reading": "A detailed 3-4 paragraph ${label}. Make it deeply personal and transformative.${context.cuspInfo ? " Blend the energies of BOTH cusp signs throughout the reading." : ""}",
   "cosmicAdvice": "A single powerful sentence of wisdom."
 }`;
     } else if (reading_type === "numbers_today") {

@@ -14,6 +14,8 @@ const ZODIAC_SIGNS = [
   { sign: "Sagittarius", symbol: "♐", element: "Fire", start: [11, 22], end: [12, 21] },
 ] as const;
 
+const CUSP_RANGE = 3; // days from boundary to be considered "on the cusp"
+
 export function getZodiacSign(month: number, day: number) {
   for (const z of ZODIAC_SIGNS) {
     const [sm, sd] = z.start;
@@ -32,6 +34,61 @@ export function getZodiacSign(month: number, day: number) {
 
 export function getZodiacFromDOB(dob: Date) {
   return getZodiacSign(dob.getMonth() + 1, dob.getDate());
+}
+
+/** Detect if a date falls on a cusp and return cusp info */
+export function getCuspInfo(month: number, day: number): { onCusp: boolean; cuspSign?: string; cuspDescription?: string } {
+  const primary = getZodiacSign(month, day);
+  
+  for (let i = 0; i < ZODIAC_SIGNS.length; i++) {
+    const z = ZODIAC_SIGNS[i];
+    const [em, ed] = z.end;
+    const nextIdx = (i + 1) % ZODIAC_SIGNS.length;
+    const next = ZODIAC_SIGNS[nextIdx];
+    
+    // Check if near the END of this sign (within CUSP_RANGE days)
+    if (month === em && day >= ed - CUSP_RANGE + 1 && day <= ed) {
+      if (primary.sign === z.sign) {
+        return {
+          onCusp: true,
+          cuspSign: next.sign,
+          cuspDescription: `${z.sign}-${next.sign} cusp (cusp of ${getCuspName(z.sign, next.sign)})`,
+        };
+      }
+    }
+    
+    // Check if near the START of next sign (within CUSP_RANGE days)
+    const [sm, sd] = next.start;
+    if (month === sm && day >= sd && day <= sd + CUSP_RANGE - 1) {
+      if (primary.sign === next.sign) {
+        return {
+          onCusp: true,
+          cuspSign: z.sign,
+          cuspDescription: `${z.sign}-${next.sign} cusp (cusp of ${getCuspName(z.sign, next.sign)})`,
+        };
+      }
+    }
+  }
+  
+  return { onCusp: false };
+}
+
+function getCuspName(sign1: string, sign2: string): string {
+  const cuspNames: Record<string, string> = {
+    "Capricorn-Aquarius": "Mystery & Imagination",
+    "Aquarius-Pisces": "Sensitivity",
+    "Pisces-Aries": "Rebirth",
+    "Aries-Taurus": "Power",
+    "Taurus-Gemini": "Energy",
+    "Gemini-Cancer": "Magic",
+    "Cancer-Leo": "Oscillation",
+    "Leo-Virgo": "Exposure",
+    "Virgo-Libra": "Beauty",
+    "Libra-Scorpio": "Drama & Criticism",
+    "Scorpio-Sagittarius": "Revolution",
+    "Sagittarius-Capricorn": "Prophecy",
+  };
+  return cuspNames[`${sign1}-${sign2}`] || "Transition";
 }
 
 // Reduce a number to a single digit (or master number 11, 22, 33)
