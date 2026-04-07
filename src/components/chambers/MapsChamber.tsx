@@ -39,11 +39,22 @@ const POPULAR_CITIES = ["Miami", "Medellín", "Bali", "Tokyo", "Barcelona", "Dub
 
 /* ─── Power Map scoring ─── */
 
-const WORLD_CITIES = [
-  "Melbourne", "Kyoto", "Sedona", "Reykjavik", "Cusco", "Lisbon", "Bali", "Cape Town",
-  "Barcelona", "Medellín", "Tulum", "Dubai", "New York", "London", "Paris", "Tokyo",
-  "Buenos Aires", "Amsterdam", "Bangkok", "Florence", "Singapore", "San Francisco",
-  "Istanbul", "Marrakech", "Havana", "Cartagena", "Oaxaca", "Chiang Mai", "Porto", "Nashville",
+const WORLD_CITIES: { name: string; lat: number; lng: number }[] = [
+  { name: "Melbourne", lat: -37.8, lng: 144.9 }, { name: "Kyoto", lat: 35.0, lng: 135.8 },
+  { name: "Sedona", lat: 34.9, lng: -111.8 }, { name: "Reykjavik", lat: 64.1, lng: -21.9 },
+  { name: "Cusco", lat: -13.5, lng: -72.0 }, { name: "Lisbon", lat: 38.7, lng: -9.1 },
+  { name: "Bali", lat: -8.3, lng: 115.1 }, { name: "Cape Town", lat: -33.9, lng: 18.4 },
+  { name: "Barcelona", lat: 41.4, lng: 2.2 }, { name: "Medellín", lat: 6.2, lng: -75.6 },
+  { name: "Tulum", lat: 20.2, lng: -87.5 }, { name: "Dubai", lat: 25.2, lng: 55.3 },
+  { name: "New York", lat: 40.7, lng: -74.0 }, { name: "London", lat: 51.5, lng: -0.1 },
+  { name: "Paris", lat: 48.9, lng: 2.3 }, { name: "Tokyo", lat: 35.7, lng: 139.7 },
+  { name: "Buenos Aires", lat: -34.6, lng: -58.4 }, { name: "Amsterdam", lat: 52.4, lng: 4.9 },
+  { name: "Bangkok", lat: 13.8, lng: 100.5 }, { name: "Florence", lat: 43.8, lng: 11.3 },
+  { name: "Singapore", lat: 1.4, lng: 103.8 }, { name: "San Francisco", lat: 37.8, lng: -122.4 },
+  { name: "Istanbul", lat: 41.0, lng: 29.0 }, { name: "Marrakech", lat: 31.6, lng: -8.0 },
+  { name: "Havana", lat: 23.1, lng: -82.4 }, { name: "Cartagena", lat: 10.4, lng: -75.5 },
+  { name: "Oaxaca", lat: 17.1, lng: -96.7 }, { name: "Chiang Mai", lat: 18.8, lng: 98.9 },
+  { name: "Porto", lat: 41.2, lng: -8.6 }, { name: "Nashville", lat: 36.2, lng: -86.8 },
 ];
 
 function computeResonanceScore(city: string, lifePath: number, zodiacElement: string): number {
