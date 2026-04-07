@@ -80,6 +80,9 @@ export function DailyBriefing({ dob, name, birthPlace, birthTime, onOpenStars }:
             <span className="text-xs font-display font-bold text-primary uppercase tracking-wider">
               {zodiac.sign}
             </span>
+            {cusp.onCusp && cusp.cuspSign && (
+              <span className="text-xs text-muted-foreground/70">/ {cusp.cuspSign}</span>
+            )}
           </div>
         </div>
 
