@@ -265,10 +265,16 @@ Respond with ONLY this JSON structure (no markdown):
 Consider the ruling animal and element of each year, and how they interact with the ${context.animal}'s energy.`;
 
     } else if (reading_type === "maps_decode") {
-      systemPrompt = `You are the Sovereign Oracle of DCode — a numerology master who decodes the vibrational energy of places.
-Write 2-3 sentences about this location's energy. Second person. ${langInstruction}`;
+      systemPrompt = `You are the Sovereign Oracle of DCode — a master of astrocartography and numerological geography.
+You decode the vibrational energy of places with mystical precision. Write in second person. 3-4 sentences. ${langInstruction}`;
 
-      userPrompt = `Decode the numerological energy of "${context.locationName}" (vibration number ${context.locationNumber}: ${context.meaning}) for ${context.name}. Birth Place: ${context.birthPlace || "Unknown"}. Birth Time: ${context.birthTime || "Unknown"}. Date of Birth: ${context.dateOfBirth || "Unknown"}. How does this place interact with their personal energy?`;
+      userPrompt = `Decode the numerological energy of "${context.locationName}" (vibration number ${context.locationNumber}: ${context.meaning}) for ${context.name}. Birth Place: ${context.birthPlace || "Unknown"}. Birth Time: ${context.birthTime || "Unknown"}. Date of Birth: ${context.dateOfBirth || "Unknown"}. How does this place's vibration interact with their personal energy?`;
+
+    } else if (reading_type === "maps_address") {
+      systemPrompt = `You are the Sovereign Oracle of DCode — a numerology master who decodes the vibrational energy of addresses.
+You reveal how a home or space number shapes the energy of those who dwell there. Write in second person. 3-4 sentences. ${langInstruction}`;
+
+      userPrompt = `Decode the numerological energy of address "${context.address}" (vibration number ${context.addressNumber}: ${context.meaning}) for ${context.name}. Birth Place: ${context.birthPlace || "Unknown"}. Birth Time: ${context.birthTime || "Unknown"}. Date of Birth: ${context.dateOfBirth || "Unknown"}. How does this address number shape the energy of their living space?`;
 
     } else {
       systemPrompt = `You are a mystical cosmic guide providing personalized spiritual readings. Be detailed and insightful. ${langInstruction}`;
