@@ -263,6 +263,14 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
   if (phase === "camera") {
     return (
       <div className="fixed inset-0 z-50 bg-background">
+        {/* Camera loading overlay */}
+        {cameraLoading && (
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-background">
+            <div className="h-12 w-12 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+            <p className="mt-4 font-display text-sm text-muted-foreground">{t("palm.activatingCamera")}</p>
+          </div>
+        )}
+
         <video
           ref={videoRef}
           autoPlay
@@ -271,63 +279,70 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
           className="absolute inset-0 h-full w-full object-cover"
         />
 
-        <div className="absolute inset-0 bg-gradient-to-b from-background/80 via-transparent to-background/90" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-transparent to-background/80 pointer-events-none" />
 
-        <div className="absolute inset-x-0 top-0 flex items-center justify-between px-4 pt-6">
+        {/* Top bar */}
+        <div className="absolute inset-x-0 top-0 z-20 flex items-center justify-between px-4 pt-6">
           <button
-            onClick={() => {
-              stopCamera();
-              setPhase("permission");
-            }}
+            onClick={() => { stopCamera(); setPhase("permission"); }}
             className="flex h-11 w-11 items-center justify-center rounded-full border border-border bg-background/70 text-foreground backdrop-blur-sm"
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div className="text-center">
-            <h1 className="font-display text-2xl font-bold text-foreground">{t("palm.title")}</h1>
-            <p className="text-sm text-foreground/75">{t("palm.positionHand")}</p>
+            <h1 className="font-display text-xl font-bold text-foreground">{t("palm.scanYourPalm")}</h1>
+            <p className="text-xs text-foreground/60">{t("palm.positionHand")}</p>
           </div>
           <div className="h-11 w-11" />
         </div>
 
-        <div className="absolute inset-0 flex items-center justify-center px-6 pointer-events-none">
-          <div className="relative h-[68vh] w-full max-w-sm rounded-[2rem] border border-foreground/20">
-            <div className="absolute inset-x-6 top-6 h-px bg-foreground/30" />
-            <div className="absolute inset-x-6 bottom-6 h-px bg-foreground/30" />
-            <div className="absolute inset-y-6 left-6 w-px bg-foreground/30" />
-            <div className="absolute inset-y-6 right-6 w-px bg-foreground/30" />
-            <div className="absolute inset-x-8 top-1/2 h-px -translate-y-1/2 bg-primary/40" />
+        {/* Palm guide frame */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="relative" style={{ width: "75%", height: "60%" }}>
+            {/* Corner brackets */}
+            <div className="absolute top-0 left-0 w-10 h-10 border-t-2 border-l-2 rounded-tl-lg" style={{ borderColor: "hsl(145 80% 55% / 0.7)" }} />
+            <div className="absolute top-0 right-0 w-10 h-10 border-t-2 border-r-2 rounded-tr-lg" style={{ borderColor: "hsl(145 80% 55% / 0.7)" }} />
+            <div className="absolute bottom-0 left-0 w-10 h-10 border-b-2 border-l-2 rounded-bl-lg" style={{ borderColor: "hsl(145 80% 55% / 0.7)" }} />
+            <div className="absolute bottom-0 right-0 w-10 h-10 border-b-2 border-r-2 rounded-br-lg" style={{ borderColor: "hsl(145 80% 55% / 0.7)" }} />
+            {/* Center crosshair */}
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-6 h-6">
+              <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2" style={{ background: "hsl(145 80% 55% / 0.4)" }} />
+              <div className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2" style={{ background: "hsl(145 80% 55% / 0.4)" }} />
+            </div>
           </div>
         </div>
 
-        <div className="absolute inset-x-0 bottom-0 px-4 pb-6 pt-10">
-          <div className="mx-auto flex max-w-sm items-center justify-between gap-4 rounded-[2rem] border border-border bg-background/65 p-4 backdrop-blur-md">
+        {/* Bottom controls */}
+        <div className="absolute inset-x-0 bottom-0 z-20 px-4 pb-8 pt-10">
+          <div className="mx-auto flex max-w-sm items-center justify-between gap-4">
             <Button
               onClick={() => fileInputRef.current?.click()}
               variant="ghost"
-              className="h-14 min-w-14 rounded-full border border-border bg-background/60 px-0 text-foreground"
+              className="h-14 min-w-14 rounded-full border border-border bg-background/60 px-0 text-foreground backdrop-blur-sm"
             >
               <Upload className="h-5 w-5" />
             </Button>
 
             <button
               onClick={capturePhoto}
-              className="flex h-20 w-20 items-center justify-center rounded-full border-4 border-primary bg-background shadow-lg shadow-primary/20"
+              className="flex h-[72px] w-[72px] items-center justify-center rounded-full border-[3px] shadow-lg"
+              style={{
+                borderColor: "hsl(145 80% 55%)",
+                boxShadow: "0 0 20px hsl(145 80% 55% / 0.3), inset 0 0 20px hsl(145 80% 55% / 0.1)",
+              }}
             >
-              <div className="h-16 w-16 rounded-full bg-primary" />
+              <div className="h-[58px] w-[58px] rounded-full" style={{ background: "hsl(145 80% 55%)" }} />
             </button>
 
             <Button
-              onClick={() => {
-                stopCamera();
-                startCamera();
-              }}
+              onClick={() => { stopCamera(); startCamera(); }}
               variant="ghost"
-              className="h-14 min-w-14 rounded-full border border-border bg-background/60 px-0 text-foreground"
+              className="h-14 min-w-14 rounded-full border border-border bg-background/60 px-0 text-foreground backdrop-blur-sm"
             >
               <RotateCcw className="h-5 w-5" />
             </Button>
           </div>
+        </div>
         </div>
 
         <canvas ref={canvasRef} className="hidden" />
