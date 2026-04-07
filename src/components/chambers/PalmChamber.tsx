@@ -253,33 +253,103 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
       {phase === "scanning" && imageData && (
         <div className="mt-4 animate-fade-up">
           <div className="relative rounded-2xl overflow-hidden">
-            {/* Palm image with B&W filter */}
+            {/* Palm image with dramatic filter */}
             <img
               src={imageData}
               alt="Palm"
               className="w-full rounded-2xl"
-              style={{ filter: "grayscale(0.7) brightness(0.8)" }}
+              style={{ filter: "grayscale(0.6) brightness(0.7) contrast(1.2)" }}
             />
-            {/* Scanning line */}
+
+            {/* Full-screen green tint overlay */}
             <div
-              className="absolute left-0 right-0 h-0.5 transition-all duration-[1500ms] ease-linear"
+              className="absolute inset-0 rounded-2xl pointer-events-none"
               style={{
-                top: `${currentScan.pct}%`,
-                background: "linear-gradient(90deg, transparent 0%, hsl(160, 50%, 55%) 30%, hsl(160, 50%, 55%) 70%, transparent 100%)",
-                boxShadow: "0 0 12px 4px hsl(160, 50%, 55%, 0.4)",
+                background: "radial-gradient(ellipse at center, hsl(160, 60%, 40%, 0.15) 0%, hsl(160, 80%, 20%, 0.25) 70%, hsl(160, 90%, 10%, 0.4) 100%)",
+                mixBlendMode: "screen",
               }}
             />
+
+            {/* Animated scan grid lines */}
+            <div
+              className="absolute inset-0 rounded-2xl pointer-events-none opacity-20"
+              style={{
+                backgroundImage: `
+                  repeating-linear-gradient(0deg, transparent, transparent 29px, hsl(160, 50%, 55%, 0.3) 30px),
+                  repeating-linear-gradient(90deg, transparent, transparent 29px, hsl(160, 50%, 55%, 0.15) 30px)
+                `,
+                backgroundSize: "30px 30px",
+              }}
+            />
+
+            {/* PRIMARY LASER LINE — bright green, tall glow */}
+            <div
+              className="absolute left-0 right-0 transition-all duration-[1600ms] ease-in-out"
+              style={{
+                top: `${currentScan.pct}%`,
+                height: "3px",
+                background: "linear-gradient(90deg, transparent 0%, hsl(145, 100%, 60%) 15%, hsl(145, 100%, 75%) 50%, hsl(145, 100%, 60%) 85%, transparent 100%)",
+                boxShadow: `
+                  0 0 8px 2px hsl(145, 100%, 55%, 0.8),
+                  0 0 25px 8px hsl(145, 100%, 50%, 0.5),
+                  0 0 60px 20px hsl(145, 80%, 45%, 0.3),
+                  0 0 100px 40px hsl(145, 60%, 40%, 0.15)
+                `,
+              }}
+            />
+
+            {/* Secondary trailing glow below laser */}
+            <div
+              className="absolute left-0 right-0 transition-all duration-[1600ms] ease-in-out pointer-events-none"
+              style={{
+                top: `${Math.min(currentScan.pct + 1, 100)}%`,
+                height: "40px",
+                background: "linear-gradient(180deg, hsl(145, 100%, 55%, 0.2) 0%, transparent 100%)",
+              }}
+            />
+
+            {/* Corner brackets — sci-fi targeting UI */}
+            <div className="absolute inset-4 pointer-events-none">
+              {/* Top-left */}
+              <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 rounded-tl-md" style={{ borderColor: "hsl(145, 80%, 55%, 0.6)" }} />
+              {/* Top-right */}
+              <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 rounded-tr-md" style={{ borderColor: "hsl(145, 80%, 55%, 0.6)" }} />
+              {/* Bottom-left */}
+              <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 rounded-bl-md" style={{ borderColor: "hsl(145, 80%, 55%, 0.6)" }} />
+              {/* Bottom-right */}
+              <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 rounded-br-md" style={{ borderColor: "hsl(145, 80%, 55%, 0.6)" }} />
+            </div>
+
             {/* Progress badge */}
-            <div className="absolute bottom-3 right-3 bg-background/80 backdrop-blur-sm rounded-lg px-3 py-1.5">
-              <span className="text-sm font-display font-bold text-foreground">{currentScan.pct}%</span>
+            <div className="absolute bottom-3 right-3 bg-background/80 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-primary/20">
+              <span className="text-sm font-display font-bold" style={{ color: "hsl(145, 80%, 55%)" }}>{currentScan.pct}%</span>
+            </div>
+
+            {/* Scan type badge */}
+            <div className="absolute top-3 left-3 bg-background/60 backdrop-blur-sm rounded-lg px-3 py-1.5 border border-primary/10">
+              <span className="text-[10px] uppercase tracking-[0.15em] font-display font-bold" style={{ color: "hsl(145, 60%, 55%)" }}>
+                ◉ {t("palm.palmScan")}
+              </span>
             </div>
           </div>
+
           {/* Status text */}
-          <div className="text-center mt-4 space-y-1">
-            <p className="font-display text-base font-bold text-foreground animate-pulse">
+          <div className="text-center mt-5 space-y-2">
+            <p className="font-display text-lg font-bold animate-pulse" style={{ color: "hsl(145, 70%, 55%)" }}>
               {t(currentScan.labelKey)}
             </p>
-            <p className="text-[11px] uppercase tracking-[0.2em] text-primary/60">
+            {/* Mini progress bar */}
+            <div className="w-48 h-1 mx-auto rounded-full overflow-hidden" style={{ backgroundColor: "hsl(160, 20%, 15%)" }}>
+              <div
+                className="h-full rounded-full transition-all duration-[1600ms] ease-in-out"
+                style={{
+                  width: `${currentScan.pct}%`,
+                  background: "linear-gradient(90deg, hsl(145, 80%, 40%), hsl(145, 100%, 55%))",
+                  boxShadow: "0 0 8px hsl(145, 100%, 55%, 0.5)",
+                }}
+              />
+            </div>
+            <p className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground/60">
               {t("palm.speculative")}
             </p>
           </div>
