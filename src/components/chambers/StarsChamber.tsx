@@ -192,6 +192,7 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
     name: profile?.fullName || "",
     birthPlace: profile?.birthPlace || "",
     birthTime: profile?.birthTime || "",
+    dateOfBirth: profile?.dateOfBirth || "",
     language: lang,
   }), [zodiac.sign, zodiac.element, lifePath, chineseZodiac, lang, profile?.fullName]);
 
