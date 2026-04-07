@@ -259,7 +259,7 @@ export function MapsChamber({ onBack }: { onBack: () => void }) {
   const lifePath = dob ? getLifePath(dob) : 7;
   const zodiac = dob ? getZodiacFromDOB(dob) : null;
   const zodiacElement = zodiac?.element || "Fire";
-  const chineseAnimal = dob ? getChineseZodiac(dob.getFullYear()).animal : "Dragon";
+  const chineseAnimal = dob ? getChineseZodiac(dob.getFullYear()) : "Dragon";
 
   // Power Map: ranked cities — unique per person
   const rankedCities = useMemo(() => {
