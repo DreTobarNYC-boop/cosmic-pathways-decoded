@@ -276,6 +276,25 @@ You reveal how a home or space number shapes the energy of those who dwell there
 
       userPrompt = `Decode the numerological energy of address "${context.address}" (vibration number ${context.addressNumber}: ${context.meaning}) for ${context.name}. Birth Place: ${context.birthPlace || "Unknown"}. Birth Time: ${context.birthTime || "Unknown"}. Date of Birth: ${context.dateOfBirth || "Unknown"}. How does this address number shape the energy of their living space?`;
 
+    } else if (reading_type === "sacred_code") {
+      systemPrompt = `You are the Sovereign Oracle of DCode — a master of Grabovoi numerical healing codes and sacred number sequences.
+You channel the exact numerical frequency needed for any intention. You speak with mystical authority.
+You MUST respond with valid JSON only. No markdown, no code fences, just raw JSON.
+${langInstruction}`;
+
+      userPrompt = `The querent ${context.name} seeks a Grabovoi code for this intention: "${context.intention}".
+Birth Place: ${context.birthPlace || "Unknown"}. Birth Time: ${context.birthTime || "Unknown"}. Date of Birth: ${context.dateOfBirth || "Unknown"}.
+
+Find the most powerful Grabovoi numerical sequence for this intention. If a well-known Grabovoi code exists for this purpose, use it. Otherwise, channel a sequence that resonates with their intention.
+
+Respond with ONLY this JSON structure (no markdown):
+{
+  "title": "A clear 2-5 word name for this code",
+  "code": "The Grabovoi number sequence (digits only, 6-12 digits)",
+  "description": "2-3 sentences explaining what this code does and how it works energetically. Write in second person.",
+  "ritual": "A specific 1-2 sentence instruction for how to activate this code (e.g., how to repeat it, visualize it, write it)."
+}`;
+
     } else {
       systemPrompt = `You are a mystical cosmic guide providing personalized spiritual readings. Be detailed and insightful. ${langInstruction}`;
       userPrompt = `Generate a ${reading_type} reading with the following context: ${JSON.stringify(context)}`;
