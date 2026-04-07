@@ -38,12 +38,8 @@ export default function PalmScanner() {
   const handleFileChange = useCallback((e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setCapturedImage(ev.target.result);
-      setPhase("preview");
-    };
-    reader.readAsDataURL(file);
+    setCapturedImage(URL.createObjectURL(file));
+    setPhase("preview");
   }, []);
 
   const openCamera = useCallback(() => {
