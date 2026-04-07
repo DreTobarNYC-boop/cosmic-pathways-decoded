@@ -614,7 +614,7 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
             {t("palm.privacyNote")}
           </p>
           <Button
-            onClick={startCamera}
+            onClick={() => void startCamera()}
             className="h-14 w-full max-w-xs rounded-2xl bg-primary font-display text-lg font-bold text-primary-foreground hover:bg-primary/90"
           >
             {t("palm.openCamera")}
