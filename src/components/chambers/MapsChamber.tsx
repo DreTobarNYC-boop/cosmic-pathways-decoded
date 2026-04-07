@@ -305,7 +305,7 @@ export function MapsChamber({ onBack }: { onBack: () => void }) {
     } finally {
       setIsLoading(false);
     }
-  }, [name, profile, i18n.language]);
+  }, [fullName, profile, i18n.language]);
 
   const decodeAddress = useCallback(async (addr: string) => {
     if (!addr.trim()) return;
@@ -319,7 +319,7 @@ export function MapsChamber({ onBack }: { onBack: () => void }) {
         body: {
           reading_type: "maps_address",
           context: {
-            name,
+            name: fullName,
             address: addr.trim(),
             addressNumber: num,
             meaning: LOCATION_MEANINGS[num]?.vibe,
@@ -337,7 +337,7 @@ export function MapsChamber({ onBack }: { onBack: () => void }) {
     } finally {
       setIsAddressLoading(false);
     }
-  }, [name, profile, i18n.language]);
+  }, [fullName, profile, i18n.language]);
 
   return (
     <ChamberLayout title="The Maps" onBack={onBack}>
