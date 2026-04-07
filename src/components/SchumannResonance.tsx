@@ -1,11 +1,109 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
+
+// Animated spectrogram fallback when external source unavailable
+function AnimatedSpectrogram() {
+  const [tick, setTick] = useState(0);
+  
+  useEffect(() => {
+    const interval = setInterval(() => setTick(t => t + 1), 100);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Generate pseudo-random but deterministic noise based on position and tick
+  const generateIntensity = (row: number, col: number, t: number) => {
+    const baseFreq = [7.83, 14.3, 20.8, 27.3, 33.8];
+    const freqIndex = Math.floor(row / 8);
+    const nearResonance = freqIndex < baseFreq.length && (row % 8) < 3;
+    
+    const noise = Math.sin(col * 0.5 + t * 0.1 + row * 0.3) * 
+                  Math.cos(col * 0.3 - t * 0.05) * 
+                  Math.sin(row * 0.2 + t * 0.08);
+    
+    const base = nearResonance ? 0.6 + noise * 0.3 : 0.15 + noise * 0.15;
+    return Math.max(0, Math.min(1, base + Math.random() * 0.1));
+  };
+
+  const rows = 40;
+  const cols = 80;
+  
+  const pixels = useMemo(() => {
+    return Array.from({ length: rows }, (_, row) =>
+      Array.from({ length: cols }, (_, col) => ({
+        row,
+        col,
+        intensity: generateIntensity(row, col, tick),
+      }))
+    ).flat();
+  }, [tick]);
+
+  const getColor = (intensity: number) => {
+    if (intensity > 0.7) return `rgba(255, 255, 100, ${intensity})`;
+    if (intensity > 0.5) return `rgba(255, 180, 50, ${intensity})`;
+    if (intensity > 0.3) return `rgba(200, 80, 50, ${intensity * 0.9})`;
+    if (intensity > 0.15) return `rgba(80, 40, 120, ${intensity * 0.8})`;
+    return `rgba(20, 10, 60, ${0.3 + intensity * 0.3})`;
+  };
+
+  return (
+    <div className="relative w-full h-32 rounded-xl overflow-hidden bg-[#0a0515]">
+      {/* Frequency labels */}
+      <div className="absolute left-1 top-0 bottom-0 flex flex-col justify-between py-1 z-10">
+        {[40, 30, 20, 10, 0].map((hz) => (
+          <span key={hz} className="text-[8px] text-white/40 font-mono">{hz}</span>
+        ))}
+      </div>
+      
+      {/* Spectrogram grid */}
+      <div 
+        className="absolute inset-0 ml-5"
+        style={{
+          display: 'grid',
+          gridTemplateColumns: `repeat(${cols}, 1fr)`,
+          gridTemplateRows: `repeat(${rows}, 1fr)`,
+        }}
+      >
+        {pixels.map(({ row, col, intensity }) => (
+          <div
+            key={`${row}-${col}`}
+            style={{
+              backgroundColor: getColor(intensity),
+              transition: 'background-color 0.15s ease',
+            }}
+          />
+        ))}
+      </div>
+      
+      {/* Resonance frequency markers */}
+      <div className="absolute right-2 top-0 bottom-0 flex flex-col justify-around py-2 z-10">
+        {['7.83', '14.3', '20.8', '27.3'].map((freq, i) => (
+          <span 
+            key={freq} 
+            className="text-[7px] font-mono px-1 rounded"
+            style={{ 
+              color: '#C5A059',
+              backgroundColor: 'rgba(0,0,0,0.5)',
+            }}
+          >
+            {freq}Hz
+          </span>
+        ))}
+      </div>
+
+      {/* Simulated label */}
+      <div className="absolute bottom-1 left-1/2 -translate-x-1/2">
+        <span className="text-[8px] text-white/30 uppercase tracking-wider">Simulated Visualization</span>
+      </div>
+    </div>
+  );
+}
 
 export function SchumannResonance() {
   const { t } = useTranslation();
   const [imageError, setImageError] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
+  const [imageLoading, setImageLoading] = useState(true);
 
   const spectrogramUrl = `https://sosrff.tsu.ru/new/shm.jpg?t=${Date.now()}`;
 
@@ -34,19 +132,26 @@ export function SchumannResonance() {
 
         {/* Spectrogram */}
         {!imageError ? (
-          <div className="rounded-xl overflow-hidden bg-muted/20">
+          <div className="rounded-xl overflow-hidden bg-muted/20 relative">
+            {imageLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-muted/20">
+                <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+              </div>
+            )}
             <img
               src={spectrogramUrl}
               alt="Schumann Resonance live spectrogram"
-              className="w-full h-auto object-cover rounded-xl"
-              onError={() => setImageError(true)}
+              className={`w-full h-auto object-cover rounded-xl transition-opacity duration-300 ${imageLoading ? 'opacity-0' : 'opacity-100'}`}
+              onLoad={() => setImageLoading(false)}
+              onError={() => {
+                setImageError(true);
+                setImageLoading(false);
+              }}
               loading="lazy"
             />
           </div>
         ) : (
-          <div className="rounded-xl bg-muted/20 h-32 flex items-center justify-center">
-            <p className="text-xs text-muted-foreground">{t("schumann.unavailable")}</p>
-          </div>
+          <AnimatedSpectrogram />
         )}
 
         {/* Footer */}
