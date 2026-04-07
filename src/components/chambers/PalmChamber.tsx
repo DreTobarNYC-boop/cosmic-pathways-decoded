@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
@@ -42,32 +42,66 @@ Respond ONLY with valid JSON in this exact structure, no other text:
   "destiny": "A powerful 3-sentence personalized destiny message"
 }`;
 
+const readFileAsBase64 = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      if (typeof reader.result !== "string") {
+        reject(new Error("Unable to read captured image"));
+        return;
+      }
+
+      const [, base64 = ""] = reader.result.split(",");
+      resolve(base64);
+    };
+
+    reader.onerror = () => reject(reader.error ?? new Error("Unable to read captured image"));
+    reader.readAsDataURL(file);
+  });
+
 export function PalmChamber({ onBack }: { onBack: () => void }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const previewUrlRef = useRef<string | null>(null);
   const [phase, setPhase] = useState<"intro" | "preview" | "scanning" | "results">("intro");
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [capturedFile, setCapturedFile] = useState<File | null>(null);
   const [reading, setReading] = useState<any>(null);
   const [scanProgress, setScanProgress] = useState(0);
   const [scanMessage, setScanMessage] = useState(SCAN_MESSAGES[0]);
   const [activeTab, setActiveTab] = useState("reading");
 
+  const revokePreviewUrl = useCallback(() => {
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => revokePreviewUrl();
+  }, [revokePreviewUrl]);
+
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setCapturedImage(ev.target?.result as string);
-      setPhase("preview");
-    };
-    reader.readAsDataURL(file);
-  }, []);
+
+    revokePreviewUrl();
+
+    const previewUrl = URL.createObjectURL(file);
+    previewUrlRef.current = previewUrl;
+
+    setCapturedFile(file);
+    setCapturedImage(previewUrl);
+    setPhase("preview");
+  }, [revokePreviewUrl]);
 
   const openCamera = useCallback(() => {
     fileInputRef.current?.click();
   }, []);
 
   const analyzePalm = useCallback(async () => {
-    if (!capturedImage) return;
+    if (!capturedFile) return;
     setPhase("scanning");
     setScanProgress(0);
 
@@ -85,7 +119,8 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
     }, 300);
 
     try {
-      const base64 = capturedImage.split(",")[1];
+      const base64 = await readFileAsBase64(capturedFile);
+      const mimeType = capturedFile.type || "image/jpeg";
       const seed = Math.floor(Math.random() * 999999);
 
       const res = await fetch(
@@ -98,7 +133,7 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
             contents: [{
               parts: [
                 { text: `Seed: ${seed}. Analyze this palm and give a completely unique reading.` },
-                { inline_data: { mime_type: "image/jpeg", data: base64 } },
+                { inline_data: { mime_type: mimeType, data: base64 } },
               ],
             }],
             generationConfig: { temperature: 1.0, maxOutputTokens: 2000 },
@@ -156,17 +191,19 @@ export function PalmChamber({ onBack }: { onBack: () => void }) {
         setPhase("results");
       }, 800);
     }
-  }, [capturedImage]);
+  }, [capturedFile]);
 
   const reset = useCallback(() => {
+    revokePreviewUrl();
     setCapturedImage(null);
+    setCapturedFile(null);
     setReading(null);
     setScanProgress(0);
     setScanMessage(SCAN_MESSAGES[0]);
     setActiveTab("reading");
     setPhase("intro");
     if (fileInputRef.current) fileInputRef.current.value = "";
-  }, []);
+  }, [revokePreviewUrl]);
 
   const tabs = [
     { id: "reading", label: "Reading", icon: "○" },
