@@ -52,105 +52,78 @@ export function SchumannResonance() {
   const { t } = useTranslation();
   const [showInfo, setShowInfo] = useState(false);
   const [currentReading, setCurrentReading] = useState(7.83);
-  const [isAnimating, setIsAnimating] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
   const animationRef = useRef<number>(0);
   const historyRef = useRef<number[][]>([]);
-  const dimensionsRef = useRef({ width: 320, height: 120 });
   
-  // Draw the spectrogram - uses logical dimensions (not scaled)
-  const drawSpectrogram = useCallback(() => {
+  // Fixed dimensions - works reliably on mobile
+  const WIDTH = 300;
+  const HEIGHT = 100;
+  
+  useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     
-    // Use logical dimensions for drawing (DPR scaling handled by ctx.scale)
-    const width = dimensionsRef.current.width;
-    const height = dimensionsRef.current.height;
-    const now = Date.now();
+    // Set canvas size
+    canvas.width = WIDTH;
+    canvas.height = HEIGHT;
     
-    // Generate new column
-    const newColumn = generateSpectrogramColumn(now);
-    historyRef.current.push(newColumn);
-    
-    // Keep only enough history to fill the canvas
-    const maxColumns = Math.ceil(width / 2);
-    if (historyRef.current.length > maxColumns) {
-      historyRef.current = historyRef.current.slice(-maxColumns);
-    }
-    
-    // Clear canvas
-    ctx.fillStyle = '#0a0a12';
-    ctx.fillRect(0, 0, width, height);
-    
-    // Draw spectrogram waterfall
-    const colWidth = 2;
-    const binHeight = height / 64;
-    
-    historyRef.current.forEach((column, colIndex) => {
-      const x = colIndex * colWidth;
-      column.forEach((intensity, binIndex) => {
-        const y = height - (binIndex + 1) * binHeight;
-        ctx.fillStyle = getSpectrogramColor(intensity);
-        ctx.fillRect(x, y, colWidth, binHeight);
+    const draw = () => {
+      const now = Date.now();
+      
+      // Generate new column
+      const newColumn = generateSpectrogramColumn(now);
+      historyRef.current.push(newColumn);
+      
+      // Keep only enough history to fill the canvas
+      const maxColumns = Math.ceil(WIDTH / 2);
+      if (historyRef.current.length > maxColumns) {
+        historyRef.current = historyRef.current.slice(-maxColumns);
+      }
+      
+      // Clear canvas
+      ctx.fillStyle = '#0a0a12';
+      ctx.fillRect(0, 0, WIDTH, HEIGHT);
+      
+      // Draw spectrogram waterfall
+      const colWidth = 2;
+      const binHeight = HEIGHT / 64;
+      
+      historyRef.current.forEach((column, colIndex) => {
+        const x = colIndex * colWidth;
+        column.forEach((intensity, binIndex) => {
+          const y = HEIGHT - (binIndex + 1) * binHeight;
+          ctx.fillStyle = getSpectrogramColor(intensity);
+          ctx.fillRect(x, y, colWidth, binHeight);
+        });
       });
-    });
-    
-    // Draw frequency labels on top
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-    ctx.font = '10px monospace';
-    SCHUMANN_FREQUENCIES.forEach(freq => {
-      const y = height - (freq / 40) * height;
-      ctx.fillText(`${freq}Hz`, 4, y + 4);
-    });
-    
-    // Update current reading with slight variation
-    setCurrentReading(7.83 + (Math.sin(now * 0.0005) * 0.15));
-    
-    animationRef.current = requestAnimationFrame(drawSpectrogram);
-  }, []);
-  
-  // Setup canvas and start animation
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const container = containerRef.current;
-    if (!canvas || !container) return;
-    
-    // Set canvas size based on container
-    const rect = container.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
-    const logicalWidth = Math.max(rect.width, 280);
-    const logicalHeight = 120;
-    
-    // Store logical dimensions for drawing
-    dimensionsRef.current = { width: logicalWidth, height: logicalHeight };
-    
-    // Set physical canvas size (scaled for DPR)
-    canvas.width = logicalWidth * dpr;
-    canvas.height = logicalHeight * dpr;
-    canvas.style.width = `${logicalWidth}px`;
-    canvas.style.height = `${logicalHeight}px`;
-    
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-      ctx.scale(dpr, dpr);
-      // Reset history when canvas resizes
-      historyRef.current = [];
-    }
+      
+      // Draw frequency labels
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+      ctx.font = '9px monospace';
+      [7.83, 14.3, 20.8].forEach(freq => {
+        const y = HEIGHT - (freq / 40) * HEIGHT;
+        ctx.fillText(`${freq}`, 4, y + 3);
+      });
+      
+      // Update current reading
+      setCurrentReading(7.83 + (Math.sin(now * 0.0005) * 0.15));
+      
+      animationRef.current = requestAnimationFrame(draw);
+    };
     
     // Start animation
-    setIsAnimating(true);
-    animationRef.current = requestAnimationFrame(drawSpectrogram);
+    draw();
     
     return () => {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [drawSpectrogram]);
+  }, []);
 
   return (
     <>
@@ -176,26 +149,18 @@ export function SchumannResonance() {
         </div>
 
         {/* Live Canvas Spectrogram */}
-        <div 
-          ref={containerRef}
-          className="rounded-xl overflow-hidden bg-[#0a0a12] relative"
-          style={{ minHeight: '120px' }}
-        >
+        <div className="rounded-xl overflow-hidden bg-[#0a0a12]">
           <canvas 
             ref={canvasRef}
-            className="block"
+            className="w-full h-auto block"
+            style={{ imageRendering: 'pixelated' }}
           />
-          {!isAnimating && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-xs text-muted-foreground">Loading...</span>
-            </div>
-          )}
         </div>
 
         {/* Footer */}
         <div className="flex justify-between mt-2">
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{t("schumann.tapToLearn")}</p>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Live Simulation</p>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Live Visualization</p>
         </div>
       </button>
 
