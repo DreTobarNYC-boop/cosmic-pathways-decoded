@@ -100,35 +100,37 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="px-5 pt-6 pb-2 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <img src={dcodeLogo} alt="DCode" className="w-9 h-9 rounded-lg" />
-          <h1 className="font-display text-xl font-bold text-foreground tracking-tight">
-            DCode
-          </h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2 bg-muted/30 rounded-full px-3 py-1.5">
-            <span className="text-sm">🌊</span>
-            <span className="text-sm font-display font-bold text-foreground">{firstName}</span>
+      <header className="px-5 pt-6 pb-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <img src={dcodeLogo} alt="DCode" className="w-9 h-9 rounded-lg" />
+            <h1 className="font-display text-xl font-bold text-foreground tracking-tight">
+              DCode
+            </h1>
           </div>
-          <button
-            onClick={() => navigate("/pricing")}
-            className="flex items-center gap-1.5 bg-primary/20 text-primary rounded-full px-3 py-1.5 text-sm font-medium hover:bg-primary/30 transition-colors"
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            Upgrade
-          </button>
-          <LanguageSwitcher />
-          {user && (
+          <div className="flex items-center gap-2">
             <button
-              onClick={signOut}
-              className="w-8 h-8 rounded-lg bg-muted/30 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-              title={t("header.signOut")}
+              onClick={() => navigate("/pricing")}
+              className="flex items-center gap-1.5 bg-primary/20 text-primary rounded-full px-3 py-1.5 text-sm font-medium hover:bg-primary/30 transition-colors"
             >
-              <LogOut className="w-4 h-4" />
+              <Sparkles className="w-3.5 h-3.5" />
+              Upgrade
             </button>
-          )}
+            <LanguageSwitcher />
+            {user && (
+              <button
+                onClick={signOut}
+                className="w-8 h-8 rounded-lg bg-muted/30 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                title={t("header.signOut")}
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+        <div className="mt-3 flex items-center gap-2">
+          <span className="text-lg">🌊</span>
+          <span className="font-display text-lg text-foreground">Welcome, <span className="text-primary font-bold">{firstName}</span></span>
         </div>
       </header>
 
