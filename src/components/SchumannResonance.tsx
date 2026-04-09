@@ -57,8 +57,9 @@ export function SchumannResonance() {
   const containerRef = useRef<HTMLDivElement>(null);
   const animationRef = useRef<number>(0);
   const historyRef = useRef<number[][]>([]);
+  const dimensionsRef = useRef({ width: 320, height: 120 });
   
-  // Draw the spectrogram
+  // Draw the spectrogram - uses logical dimensions (not scaled)
   const drawSpectrogram = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -66,8 +67,9 @@ export function SchumannResonance() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     
-    const width = canvas.width;
-    const height = canvas.height;
+    // Use logical dimensions for drawing (DPR scaling handled by ctx.scale)
+    const width = dimensionsRef.current.width;
+    const height = dimensionsRef.current.height;
     const now = Date.now();
     
     // Generate new column
@@ -120,10 +122,17 @@ export function SchumannResonance() {
     // Set canvas size based on container
     const rect = container.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = rect.width * dpr;
-    canvas.height = 120 * dpr;
-    canvas.style.width = `${rect.width}px`;
-    canvas.style.height = '120px';
+    const logicalWidth = Math.max(rect.width, 280);
+    const logicalHeight = 120;
+    
+    // Store logical dimensions for drawing
+    dimensionsRef.current = { width: logicalWidth, height: logicalHeight };
+    
+    // Set physical canvas size (scaled for DPR)
+    canvas.width = logicalWidth * dpr;
+    canvas.height = logicalHeight * dpr;
+    canvas.style.width = `${logicalWidth}px`;
+    canvas.style.height = `${logicalHeight}px`;
     
     const ctx = canvas.getContext('2d');
     if (ctx) {

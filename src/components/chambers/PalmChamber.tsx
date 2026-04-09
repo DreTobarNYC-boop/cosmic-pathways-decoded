@@ -8,23 +8,17 @@ import { toast } from "@/components/ui/use-toast";
 const SCAN_DURATION_MS = 3000;
 const MATRIX_CHARS = "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789";
 
-// Inject global keyframes once
-if (typeof document !== 'undefined') {
-  const styleId = 'matrix-rain-keyframes';
-  if (!document.getElementById(styleId)) {
-    const style = document.createElement('style');
-    style.id = styleId;
-    style.textContent = `
-      @keyframes matrixFall {
-        0% { transform: translate3d(0, -100%, 0); }
-        100% { transform: translate3d(0, 600%, 0); }
-      }
-    `;
-    document.head.appendChild(style);
-  }
+// Keyframes CSS for matrix rain animation
+const MATRIX_KEYFRAMES = `
+@keyframes matrixFall {
+  0% { transform: translateY(-100%); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateY(500%); opacity: 0; }
 }
+`;
 
-// GPU-accelerated Matrix Rain column with state-based animation
+// GPU-accelerated Matrix Rain column with inline animation
 const MatrixColumn = ({ delay, duration, isActive }: { delay: number; duration: number; isActive: boolean }) => {
   const chars = useMemo(() => {
     const len = 8 + Math.floor(Math.random() * 12);
@@ -33,16 +27,16 @@ const MatrixColumn = ({ delay, duration, isActive }: { delay: number; duration: 
     ).join("\n");
   }, []);
 
+  if (!isActive) return null;
+
   return (
     <div
       className="absolute text-[10px] leading-[1.2] font-mono whitespace-pre pointer-events-none select-none"
       style={{
         color: "#C5A059",
-        textShadow: "0 0 8px #C5A059, 0 0 12px #C5A059",
-        opacity: 0.85,
-        transform: "translate3d(0, -100%, 0)",
-        willChange: "transform",
-        animation: isActive ? `matrixFall ${duration}s linear ${delay}s infinite` : 'none',
+        textShadow: "0 0 8px #C5A059, 0 0 16px #C5A059",
+        opacity: 1,
+        animation: `matrixFall ${duration}s linear ${delay}s infinite`,
       }}
     >
       {chars}
@@ -208,19 +202,21 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
 
       {phase === "scanning" && (
         <div className="relative flex flex-col items-center justify-center min-h-[400px] -mx-4 -mt-4 overflow-hidden">
+          {/* Inject keyframes for matrix animation */}
+          <style dangerouslySetInnerHTML={{ __html: MATRIX_KEYFRAMES }} />
+          
           {/* Full-screen Matrix background overlay */}
           <div 
-            className="absolute inset-0 bg-black/95 z-0"
-            style={{ transform: "translate3d(0, 0, 0)" }}
+            className="absolute inset-0 bg-black z-0"
           >
             {/* Matrix Rain - GPU accelerated columns */}
             {matrixColumns.map(col => (
               <div
                 key={col.id}
-                className="absolute top-0 h-full"
+                className="absolute top-0 h-full overflow-visible"
                 style={{ left: col.left }}
               >
-                <MatrixColumn delay={col.delay} duration={col.duration} isActive={phase === "scanning"} />
+                <MatrixColumn delay={col.delay} duration={col.duration} isActive={true} />
               </div>
             ))}
           </div>
