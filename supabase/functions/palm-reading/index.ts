@@ -100,7 +100,7 @@ RULES:
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-pro",
+        model: "google/gemini-2.5-flash", // Fast model for quick responses
         messages: [
           { role: "system", content: systemPrompt },
           {
@@ -108,7 +108,7 @@ RULES:
             content: [
               {
                 type: "text",
-                text: "Study this palm carefully. Analyze every visible line, mount, and marking. Deliver a premium, detailed, and deeply personal palm reading based on what you actually observe in this image.",
+                text: "Analyze this palm. Return JSON.",
               },
               {
                 type: "image_url",
@@ -119,8 +119,8 @@ RULES:
             ],
           },
         ],
-        temperature: 0.75,
-        max_tokens: 4000,
+        temperature: 0.7,
+        max_tokens: 2000,
       }),
     });
 
