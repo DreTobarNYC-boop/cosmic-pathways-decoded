@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { BentoCard } from "@/components/BentoCard";
 import { DailyBriefing } from "@/components/DailyBriefing";
-import { SchumannResonance } from "@/components/SchumannResonance";
+
 import { OnboardingModal } from "@/components/OnboardingModal";
 import { useAuth } from "@/hooks/use-auth";
 import { OracleChamber } from "@/components/chambers/OracleChamber";
@@ -135,7 +135,6 @@ export default function Index() {
       </header>
 
       <main className="px-5 pb-10 space-y-5 max-w-lg mx-auto">
-        <SchumannResonance />
         <DailyBriefing dob={dob} name={profile.fullName} birthPlace={profile.birthPlace} birthTime={profile.birthTime} onOpenStars={() => setActiveChamber("stars")} />
 
         <div className="space-y-3">
