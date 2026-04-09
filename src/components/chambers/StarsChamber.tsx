@@ -205,13 +205,22 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
     language: lang,
   }), [zodiac.sign, zodiac.element, lifePath, chineseZodiac, lang, profile?.fullName, cusp.onCusp]);
 
+  // Cache keys determine how often readings regenerate:
+  // - daily: regenerates once per day
+  // - weekly: regenerates once per week (using week number)
+  // - monthly: regenerates once per month
+  // - yearly: regenerates once per year
+  // - permanent: never regenerates (birth chart)
+  const weekNumber = Math.ceil((today.getDate() + new Date(today.getFullYear(), today.getMonth(), 1).getDay()) / 7);
+  const weekKey = `${today.getFullYear()}-W${String(weekNumber).padStart(2, "0")}`;
+  
   const tabConfig: Record<string, { readingType: string; cacheKey: string }> = {
     today: { readingType: "stars_today", cacheKey: `${dateKey}_${lang}` },
     monthly: { readingType: "stars_monthly", cacheKey: `${monthKey}_${lang}` },
     yearly: { readingType: "stars_yearly", cacheKey: `${today.getFullYear()}_${lang}` },
-    love: { readingType: "stars_love", cacheKey: `${dateKey}_${lang}` },
-    career: { readingType: "stars_career", cacheKey: `${dateKey}_${lang}` },
-    birth_chart: { readingType: "stars_birth_chart", cacheKey: `chart_${lang}` },
+    love: { readingType: "stars_love", cacheKey: `${weekKey}_${lang}` }, // Weekly, not daily
+    career: { readingType: "stars_career", cacheKey: `${weekKey}_${lang}` }, // Weekly, not daily
+    birth_chart: { readingType: "stars_birth_chart", cacheKey: `chart_${lang}` }, // Permanent
   };
 
   const currentTab = tabConfig[activeTab] || tabConfig.today;
