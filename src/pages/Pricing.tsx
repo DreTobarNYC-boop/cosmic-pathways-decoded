@@ -28,7 +28,7 @@ const PRICING_TIERS: PricingTier[] = [
     id: "free",
     name: "Free",
     price: "$0",
-    description: "Begin your cosmic journey",
+    description: "Start decoding your blueprint",
     features: [
       "Daily horoscope reading",
       "Daily numerology insight",
@@ -36,7 +36,7 @@ const PRICING_TIERS: PricingTier[] = [
       "Basic palm scan",
       "No credit card required",
     ],
-    cta: "Get Started",
+    cta: "Start Decoding",
     tier: "free",
   },
   {
@@ -44,19 +44,19 @@ const PRICING_TIERS: PricingTier[] = [
     name: "Essential",
     price: "$8.88",
     yearlyPrice: "$88",
-    description: "Unlock your full cosmic potential",
+    description: "Full access to your cosmic code",
     features: [
       "Everything in Free",
-      "Ad-free experience",
-      "Unlimited Oracle conversations",
-      "Full detailed palm reading",
-      "All frequency tools",
+      "Zero ads, zero distractions",
+      "Unlimited Oracle guidance",
+      "Complete palm analysis",
+      "All frequency calibrations",
       "7-day reading archive",
       "Full community access",
     ],
     highlighted: true,
     badge: "Most Popular",
-    cta: "Subscribe Now",
+    cta: "Unlock Full Access",
     tier: "essential",
   },
   {
@@ -258,8 +258,8 @@ export default function Pricing() {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="font-display text-xl text-primary">Choose Your Path</h1>
-            <p className="text-sm text-muted-foreground">Unlock your cosmic potential</p>
+            <h1 className="font-display text-xl text-primary">Decode Your Matrix</h1>
+            <p className="text-sm text-muted-foreground">The simulation leaves clues. Start reading them.</p>
           </div>
         </div>
       </header>
