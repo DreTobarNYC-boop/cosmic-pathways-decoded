@@ -20,6 +20,7 @@ interface PricingTier {
   badge?: string;
   cta: string;
   tier: "free" | "essential" | "lifetime" | "inner_circle";
+  hidden?: boolean; // Set to true to hide tier from public view
 }
 
 const PRICING_TIERS: PricingTier[] = [
@@ -74,6 +75,7 @@ const PRICING_TIERS: PricingTier[] = [
     badge: "Best Value",
     cta: "Get Lifetime Access",
     tier: "lifetime",
+    hidden: true, // Hidden for now - payment processor concerns
   },
   {
     id: "inner_circle",
@@ -92,6 +94,7 @@ const PRICING_TIERS: PricingTier[] = [
     badge: "Exclusive",
     cta: "Claim Your Seat",
     tier: "inner_circle",
+    hidden: true, // Hidden for now - payment processor concerns
   },
 ];
 
@@ -290,8 +293,8 @@ export default function Pricing() {
         </div>
 
         {/* Pricing Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {PRICING_TIERS.map((tier) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+          {PRICING_TIERS.filter((t) => !t.hidden).map((tier) => (
             <div
               key={tier.id}
               className={`relative rounded-2xl border ${
@@ -403,7 +406,8 @@ export default function Pricing() {
           </div>
         </div>
 
-        {/* Inner Circle Warning */}
+        {/* Inner Circle Warning - Hidden while tier is hidden */}
+        {/* Uncomment when Inner Circle tier is re-enabled:
         <div className="max-w-2xl mx-auto text-center">
           <div className="bg-card/20 rounded-2xl border border-primary/30 p-6">
             <Crown className="w-8 h-8 text-primary mx-auto mb-4" />
@@ -417,6 +421,7 @@ export default function Pricing() {
             </p>
           </div>
         </div>
+        */}
       </main>
     </div>
   );
