@@ -2,6 +2,7 @@ import { useState, useCallback, useMemo } from "react";
 import { ChamberLayout } from "@/components/ChamberLayout";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import { WithInfo } from "@/components/ui/info-tooltip";
 import { Search, Copy, Check, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
@@ -261,7 +262,7 @@ export function SacredCodesChamber({ onBack }: { onBack: () => void }) {
         {/* ─── Sacred Codes Section ─── */}
         <div className="space-y-4">
           <p className="text-[10px] uppercase tracking-[0.25em] text-primary/80 font-bold text-center">
-            SACRED CODES
+            <WithInfo term="grabovoi">SACRED CODES (GRABOVOI)</WithInfo>
           </p>
 
           {/* Search */}

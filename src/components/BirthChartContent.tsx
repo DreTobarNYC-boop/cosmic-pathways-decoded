@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Loader2, Star } from "lucide-react";
 import { getZodiacImage } from "@/lib/zodiac-images";
 import { useCachedReading } from "@/hooks/use-cached-reading";
+import { WithInfo } from "@/components/ui/info-tooltip";
 
 interface Placement {
   planet: string;

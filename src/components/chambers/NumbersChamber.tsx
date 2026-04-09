@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { ChamberLayout } from "@/components/ChamberLayout";
 import { useAuth } from "@/hooks/use-auth";
 import { useCachedReading } from "@/hooks/use-cached-reading";
+import { WithInfo } from "@/components/ui/info-tooltip";
 import {
   getZodiacFromDOB,
   getLifePath,
@@ -299,7 +300,7 @@ export function NumbersChamber({ onBack }: { onBack: () => void }) {
             <div className="flex items-center gap-4">
               <NumberCircle value={personalDay} color="blue" size="sm" />
               <div className="flex-1">
-                <p className="text-xs uppercase tracking-wider text-muted-foreground">Personal Day</p>
+                <p className="text-xs uppercase tracking-wider text-muted-foreground"><WithInfo term="personalYear">Personal Day</WithInfo></p>
                 <p className="text-sm font-semibold text-foreground">{PERSONAL_DAY_MEANINGS[personalDay]}</p>
               </div>
             </div>
@@ -335,7 +336,7 @@ export function NumbersChamber({ onBack }: { onBack: () => void }) {
             <div className="flex items-center gap-4">
               <NumberCircle value={lifePath} color="gold" />
               <div>
-                <p className="text-xs uppercase tracking-wider text-muted-foreground">Your Life Path</p>
+                <p className="text-xs uppercase tracking-wider text-muted-foreground"><WithInfo term="lifePath">Your Life Path</WithInfo></p>
                 <p className="font-display text-xl font-bold text-foreground">{lifePath} · {lifePathName}</p>
               </div>
             </div>
