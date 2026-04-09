@@ -1,9 +1,52 @@
-import { useState, useRef } from "react";
-import { Camera, RotateCcw, Loader2, Fingerprint } from "lucide-react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { Camera, RotateCcw, Fingerprint } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ChamberLayout } from "@/components/ChamberLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
+
+const SCAN_DURATION_MS = 3000;
+const MATRIX_CHARS = "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789";
+
+// GPU-accelerated Matrix Rain column - memoized for performance
+const MatrixColumn = ({ delay, duration }: { delay: number; duration: number }) => {
+  const chars = useMemo(() => {
+    const len = 8 + Math.floor(Math.random() * 12);
+    return Array.from({ length: len }, () => 
+      MATRIX_CHARS[Math.floor(Math.random() * MATRIX_CHARS.length)]
+    ).join("\n");
+  }, []);
+
+  return (
+    <div
+      className="absolute text-[10px] leading-[1.2] font-mono whitespace-pre pointer-events-none select-none"
+      style={{
+        color: "#C5A059",
+        textShadow: "0 0 8px #C5A059",
+        opacity: 0.7,
+        transform: "translate3d(0, -100%, 0)",
+        willChange: "transform",
+        animation: `matrixFall ${duration}s linear ${delay}s infinite`,
+      }}
+    >
+      {chars}
+    </div>
+  );
+};
+
+// Laser scan line component - hardcoded to follow scanProgress
+const LaserLine = ({ progress }: { progress: number }) => (
+  <div
+    className="absolute left-0 right-0 h-[2px] pointer-events-none z-20"
+    style={{
+      top: `${progress}%`,
+      background: "linear-gradient(90deg, transparent 0%, #C5A059 20%, #C5A059 80%, transparent 100%)",
+      boxShadow: "0 0 15px 3px #C5A059, 0 0 30px 6px rgba(197, 160, 89, 0.5)",
+      transform: "translate3d(0, 0, 0)",
+      willChange: "top",
+    }}
+  />
+);
 
 interface PalmChamberProps {
   onBack: () => void;
@@ -13,7 +56,45 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
   const [phase, setPhase] = useState<"idle" | "scanning" | "done">("idle");
   const [reading, setReading] = useState<any>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [scanProgress, setScanProgress] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
+  const scanStartTimeRef = useRef<number>(0);
+  const rafRef = useRef<number>(0);
+
+  // GPU-accelerated scan progress animation using requestAnimationFrame
+  const animateScan = useCallback(() => {
+    const elapsed = performance.now() - scanStartTimeRef.current;
+    const progress = Math.min((elapsed / SCAN_DURATION_MS) * 100, 100);
+    setScanProgress(progress);
+    
+    if (progress < 100) {
+      rafRef.current = requestAnimationFrame(animateScan);
+    }
+  }, []);
+
+  // Start scanning animation immediately when phase changes
+  useEffect(() => {
+    if (phase === "scanning") {
+      scanStartTimeRef.current = performance.now();
+      setScanProgress(0);
+      rafRef.current = requestAnimationFrame(animateScan);
+    }
+    return () => {
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+      }
+    };
+  }, [phase, animateScan]);
+
+  // Generate matrix columns once
+  const matrixColumns = useMemo(() => {
+    return Array.from({ length: 30 }, (_, i) => ({
+      id: i,
+      left: `${(i / 30) * 100}%`,
+      delay: Math.random() * 2,
+      duration: 1.5 + Math.random() * 1.5,
+    }));
+  }, []);
 
   const fileToBase64 = (file: File): Promise<string> =>
     new Promise((resolve, reject) => {
@@ -30,15 +111,29 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setImagePreview(URL.createObjectURL(file));
-    setPhase("scanning");
+    // Immediately set scanning state and preview - no delay
+    const previewUrl = URL.createObjectURL(file);
+    setImagePreview(previewUrl);
     setReading(null);
+    setPhase("scanning"); // Force scanning state immediately
 
     try {
-      const base64 = await fileToBase64(file);
-      const { data, error } = await supabase.functions.invoke("palm-reading", {
-        body: { image_base64: base64 },
-      });
+      const base64Promise = fileToBase64(file);
+      
+      // Run API call in parallel with animation
+      const apiPromise = base64Promise.then(base64 => 
+        supabase.functions.invoke("palm-reading", {
+          body: { image_base64: base64 },
+        })
+      );
+
+      // Wait for both scan animation minimum time and API response
+      const [apiResult] = await Promise.all([
+        apiPromise,
+        new Promise(resolve => setTimeout(resolve, SCAN_DURATION_MS))
+      ]);
+
+      const { data, error } = apiResult;
 
       if (error) throw new Error(error.message || "Reading failed");
       if (data?.error) throw new Error(data.error);
@@ -56,6 +151,8 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
     setPhase("idle");
     setReading(null);
     setImagePreview(null);
+    setScanProgress(0);
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
     if (fileRef.current) fileRef.current.value = "";
   };
 
@@ -93,16 +190,71 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
       )}
 
       {phase === "scanning" && (
-        <div className="flex flex-col items-center text-center pt-12 space-y-6">
-          {imagePreview && (
-            <div className="w-48 h-48 rounded-2xl overflow-hidden border border-primary/30">
-              <img src={imagePreview} alt="Your palm" className="w-full h-full object-cover" />
-            </div>
-          )}
-          <div className="flex items-center gap-3 text-muted-foreground">
-            <Loader2 className="w-5 h-5 animate-spin text-primary" />
-            <span className="font-display text-sm">Reading your palm…</span>
+        <div className="relative flex flex-col items-center justify-center min-h-[400px] -mx-4 -mt-4 overflow-hidden">
+          {/* Full-screen Matrix background overlay */}
+          <div 
+            className="absolute inset-0 bg-black/95 z-0"
+            style={{ transform: "translate3d(0, 0, 0)" }}
+          >
+            {/* Matrix Rain - GPU accelerated columns */}
+            {matrixColumns.map(col => (
+              <div
+                key={col.id}
+                className="absolute top-0 h-full"
+                style={{ left: col.left }}
+              >
+                <MatrixColumn delay={col.delay} duration={col.duration} />
+              </div>
+            ))}
           </div>
+
+          {/* Palm image with scan overlay */}
+          <div className="relative z-10 w-56 h-56 rounded-2xl overflow-hidden border-2 border-[#C5A059]/50 shadow-[0_0_30px_rgba(197,160,89,0.3)]">
+            {imagePreview && (
+              <img 
+                src={imagePreview} 
+                alt="Your palm" 
+                className="w-full h-full object-cover opacity-70"
+                style={{ filter: "sepia(30%) hue-rotate(-10deg)" }}
+              />
+            )}
+            {/* Laser scan line - follows scanProgress */}
+            <LaserLine progress={scanProgress} />
+            
+            {/* Scan grid overlay */}
+            <div 
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                backgroundImage: `
+                  linear-gradient(rgba(197, 160, 89, 0.1) 1px, transparent 1px),
+                  linear-gradient(90deg, rgba(197, 160, 89, 0.1) 1px, transparent 1px)
+                `,
+                backgroundSize: "20px 20px",
+              }}
+            />
+          </div>
+
+          {/* Scanning text - covers any spinner */}
+          <div className="relative z-10 mt-6 text-center">
+            <div className="font-mono text-[#C5A059] text-sm tracking-wider animate-pulse">
+              ANALYZING PALM DATA
+            </div>
+            <div className="font-mono text-[#C5A059]/60 text-xs mt-2">
+              {Math.round(scanProgress)}% COMPLETE
+            </div>
+          </div>
+
+          {/* CSS for matrix animation */}
+          <style>{`
+            @keyframes matrixFall {
+              0% {
+                transform: translate3d(0, -100%, 0);
+              }
+              100% {
+                transform: translate3d(0, 500%, 0);
+              }
+            }
+          `}</style>
         </div>
       )}
 
