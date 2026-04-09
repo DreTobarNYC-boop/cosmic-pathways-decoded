@@ -1,5 +1,6 @@
-// DCode Payment Products
+// DCode Payment Products - Lemon Squeezy
 // Source of truth for all subscription tiers and pricing
+// Configure variant IDs in environment variables after creating products in Lemon Squeezy
 
 export type SubscriptionTier = 'free' | 'essential' | 'lifetime' | 'inner_circle' | 'founders';
 
@@ -14,7 +15,21 @@ export interface Product {
   highlighted?: boolean;
   limitedSeats?: number;
   badge?: string;
+  // Lemon Squeezy variant ID - configure in env vars
+  variantId?: string;
 }
+
+// Lemon Squeezy configuration
+export const LEMON_SQUEEZY_CONFIG = {
+  storeId: import.meta.env.VITE_LEMONSQUEEZY_STORE_ID || '',
+  // Variant IDs for each product (set in Lemon Squeezy dashboard)
+  variants: {
+    'essential-monthly': import.meta.env.VITE_LEMONSQUEEZY_ESSENTIAL_MONTHLY_VARIANT_ID || '',
+    'essential-yearly': import.meta.env.VITE_LEMONSQUEEZY_ESSENTIAL_YEARLY_VARIANT_ID || '',
+    'lifetime': import.meta.env.VITE_LEMONSQUEEZY_LIFETIME_VARIANT_ID || '',
+    'inner-circle': import.meta.env.VITE_LEMONSQUEEZY_INNER_CIRCLE_VARIANT_ID || '',
+  } as Record<string, string>,
+};
 
 // Free tier features (baseline)
 export const FREE_FEATURES = [
@@ -139,4 +154,38 @@ export function getPriceDisplay(product: Product): string {
     default:
       return price;
   }
+}
+
+// Get Lemon Squeezy variant ID for a product
+export function getVariantId(productId: string): string | undefined {
+  return LEMON_SQUEEZY_CONFIG.variants[productId];
+}
+
+// Build Lemon Squeezy checkout URL
+export function buildCheckoutUrl(
+  variantId: string,
+  options?: {
+    email?: string;
+    userId?: string;
+    discountCode?: string;
+    redirectUrl?: string;
+  }
+): string {
+  const params = new URLSearchParams();
+  
+  if (options?.email) {
+    params.set('checkout[email]', options.email);
+  }
+  if (options?.userId) {
+    params.set('checkout[custom][user_id]', options.userId);
+  }
+  if (options?.discountCode) {
+    params.set('checkout[discount_code]', options.discountCode);
+  }
+  if (options?.redirectUrl) {
+    params.set('checkout[custom][redirect_url]', options.redirectUrl);
+  }
+  
+  const queryString = params.toString();
+  return `https://dcode.lemonsqueezy.com/checkout/buy/${variantId}${queryString ? `?${queryString}` : ''}`;
 }
