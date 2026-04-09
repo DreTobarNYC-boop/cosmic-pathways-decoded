@@ -52,12 +52,14 @@ export function SchumannResonance() {
   const { t } = useTranslation();
   const [showInfo, setShowInfo] = useState(false);
   const [currentReading, setCurrentReading] = useState(7.83);
+  const [isAnimating, setIsAnimating] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const animationRef = useRef<number>(0);
   const historyRef = useRef<number[][]>([]);
   
-  // Animate the spectrogram
-  const animate = useCallback(() => {
+  // Draw the spectrogram
+  const drawSpectrogram = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     
@@ -82,7 +84,7 @@ export function SchumannResonance() {
     ctx.fillStyle = '#0a0a12';
     ctx.fillRect(0, 0, width, height);
     
-    // Draw spectrogram
+    // Draw spectrogram waterfall
     const colWidth = 2;
     const binHeight = height / 64;
     
@@ -95,28 +97,51 @@ export function SchumannResonance() {
       });
     });
     
-    // Draw frequency labels
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-    ctx.font = '9px monospace';
+    // Draw frequency labels on top
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+    ctx.font = '10px monospace';
     SCHUMANN_FREQUENCIES.forEach(freq => {
       const y = height - (freq / 40) * height;
-      ctx.fillText(`${freq}`, 4, y + 3);
+      ctx.fillText(`${freq}Hz`, 4, y + 4);
     });
     
     // Update current reading with slight variation
     setCurrentReading(7.83 + (Math.sin(now * 0.0005) * 0.15));
     
-    animationRef.current = requestAnimationFrame(animate);
+    animationRef.current = requestAnimationFrame(drawSpectrogram);
   }, []);
   
+  // Setup canvas and start animation
   useEffect(() => {
-    animationRef.current = requestAnimationFrame(animate);
+    const canvas = canvasRef.current;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
+    
+    // Set canvas size based on container
+    const rect = container.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = rect.width * dpr;
+    canvas.height = 120 * dpr;
+    canvas.style.width = `${rect.width}px`;
+    canvas.style.height = '120px';
+    
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.scale(dpr, dpr);
+      // Reset history when canvas resizes
+      historyRef.current = [];
+    }
+    
+    // Start animation
+    setIsAnimating(true);
+    animationRef.current = requestAnimationFrame(drawSpectrogram);
+    
     return () => {
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [animate]);
+  }, [drawSpectrogram]);
 
   return (
     <>
@@ -142,13 +167,20 @@ export function SchumannResonance() {
         </div>
 
         {/* Live Canvas Spectrogram */}
-        <div className="rounded-xl overflow-hidden bg-[#0a0a12]">
+        <div 
+          ref={containerRef}
+          className="rounded-xl overflow-hidden bg-[#0a0a12] relative"
+          style={{ minHeight: '120px' }}
+        >
           <canvas 
             ref={canvasRef}
-            width={320}
-            height={100}
-            className="w-full h-auto"
+            className="block"
           />
+          {!isAnimating && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-xs text-muted-foreground">Loading...</span>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
