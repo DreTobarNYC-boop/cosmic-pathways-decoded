@@ -2,8 +2,10 @@ import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { ChamberLayout } from "@/components/ChamberLayout";
 import { useAuth } from "@/hooks/use-auth";
+import { useSubscription } from "@/hooks/use-subscription";
 import { useCachedReading } from "@/hooks/use-cached-reading";
 import { supabase } from "@/integrations/supabase/client";
+import { UpgradePrompt } from "@/components/UpgradePrompt";
 import {
   getZodiacFromDOB,
   getLifePath,
@@ -145,6 +147,7 @@ interface ChatMessage {
 export function OracleChamber({ onBack }: { onBack: () => void }) {
   const { i18n } = useTranslation();
   const { profile } = useAuth();
+  const { canAskOracle, incrementUsage } = useSubscription();
 
   const today = useMemo(() => new Date(), []);
   const dob = useMemo(() => profile?.dateOfBirth ? new Date(profile.dateOfBirth + "T12:00:00") : null, [profile?.dateOfBirth]);
@@ -207,11 +210,25 @@ export function OracleChamber({ onBack }: { onBack: () => void }) {
     const text = input.trim();
     if (!text || chatLoading) return;
 
+    // Check usage limits
+    const oracleCheck = canAskOracle();
+    if (!oracleCheck.allowed) {
+      setMessages(prev => [...prev, 
+        { role: "user", content: text },
+        { role: "assistant", content: oracleCheck.reason || "You've reached your daily limit. Upgrade to continue." }
+      ]);
+      setInput("");
+      return;
+    }
+
     const userMsg: ChatMessage = { role: "user", content: text };
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
     setInput("");
     setChatLoading(true);
+
+    // Increment usage before making the API call
+    await incrementUsage("oracle_question");
 
     try {
       const { data, error } = await supabase.functions.invoke("generate-reading", {
@@ -239,7 +256,7 @@ export function OracleChamber({ onBack }: { onBack: () => void }) {
     } finally {
       setChatLoading(false);
     }
-  }, [input, chatLoading, messages, name, zodiac, lifePath, chineseZodiac, profile, i18n.language]);
+  }, [input, chatLoading, messages, name, zodiac, lifePath, chineseZodiac, profile, i18n.language, canAskOracle, incrementUsage]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
