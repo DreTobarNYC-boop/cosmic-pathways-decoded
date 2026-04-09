@@ -8,8 +8,24 @@ import { toast } from "@/components/ui/use-toast";
 const SCAN_DURATION_MS = 3000;
 const MATRIX_CHARS = "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789";
 
-// GPU-accelerated Matrix Rain column - memoized for performance
-const MatrixColumn = ({ delay, duration }: { delay: number; duration: number }) => {
+// Inject global keyframes once
+if (typeof document !== 'undefined') {
+  const styleId = 'matrix-rain-keyframes';
+  if (!document.getElementById(styleId)) {
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = `
+      @keyframes matrixFall {
+        0% { transform: translate3d(0, -100%, 0); }
+        100% { transform: translate3d(0, 600%, 0); }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+}
+
+// GPU-accelerated Matrix Rain column with state-based animation
+const MatrixColumn = ({ delay, duration, isActive }: { delay: number; duration: number; isActive: boolean }) => {
   const chars = useMemo(() => {
     const len = 8 + Math.floor(Math.random() * 12);
     return Array.from({ length: len }, () => 
@@ -22,11 +38,11 @@ const MatrixColumn = ({ delay, duration }: { delay: number; duration: number }) 
       className="absolute text-[10px] leading-[1.2] font-mono whitespace-pre pointer-events-none select-none"
       style={{
         color: "#C5A059",
-        textShadow: "0 0 8px #C5A059",
-        opacity: 0.7,
+        textShadow: "0 0 8px #C5A059, 0 0 12px #C5A059",
+        opacity: 0.85,
         transform: "translate3d(0, -100%, 0)",
         willChange: "transform",
-        animation: `matrixFall ${duration}s linear ${delay}s infinite`,
+        animation: isActive ? `matrixFall ${duration}s linear ${delay}s infinite` : 'none',
       }}
     >
       {chars}
@@ -37,11 +53,12 @@ const MatrixColumn = ({ delay, duration }: { delay: number; duration: number }) 
 // Laser scan line component - hardcoded to follow scanProgress
 const LaserLine = ({ progress }: { progress: number }) => (
   <div
-    className="absolute left-0 right-0 h-[2px] pointer-events-none z-20"
+    className="absolute left-0 right-0 pointer-events-none z-30"
     style={{
       top: `${progress}%`,
-      background: "linear-gradient(90deg, transparent 0%, #C5A059 20%, #C5A059 80%, transparent 100%)",
-      boxShadow: "0 0 15px 3px #C5A059, 0 0 30px 6px rgba(197, 160, 89, 0.5)",
+      height: '4px',
+      background: "linear-gradient(90deg, transparent 0%, #C5A059 10%, #FFD700 50%, #C5A059 90%, transparent 100%)",
+      boxShadow: "0 0 20px 5px #C5A059, 0 0 40px 10px rgba(197, 160, 89, 0.6), 0 0 60px 15px rgba(197, 160, 89, 0.3)",
       transform: "translate3d(0, 0, 0)",
       willChange: "top",
     }}
@@ -203,7 +220,7 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
                 className="absolute top-0 h-full"
                 style={{ left: col.left }}
               >
-                <MatrixColumn delay={col.delay} duration={col.duration} />
+                <MatrixColumn delay={col.delay} duration={col.duration} isActive={phase === "scanning"} />
               </div>
             ))}
           </div>
@@ -244,18 +261,7 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
             </div>
           </div>
 
-          {/* CSS for matrix animation */}
-          <style>{`
-            @keyframes matrixFall {
-              0% {
-                transform: translate3d(0, -100%, 0);
-              }
-              100% {
-                transform: translate3d(0, 500%, 0);
-              }
-            }
-          `}</style>
-        </div>
+          </div>
       )}
 
       {phase === "done" && reading && (
