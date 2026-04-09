@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Camera, RotateCcw, Loader2, Fingerprint } from "lucide-react";
+import { Camera, RotateCcw, Fingerprint } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ChamberLayout } from "@/components/ChamberLayout";
 import { supabase } from "@/integrations/supabase/client";
@@ -113,45 +113,45 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
               <div className="relative w-44 h-44 rounded-2xl overflow-hidden border border-primary/50 animate-pulse-glow">
                 <img src={imagePreview} alt="Your palm" className="w-full h-full object-cover" />
                 
-                {/* Scanning line overlay */}
-                <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                  <div className="absolute inset-x-0 h-1 bg-gradient-to-b from-transparent via-primary/80 to-transparent animate-scan-line" />
-                </div>
+                {/* Laser sweep line */}
+                <div className="absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent animate-laser-sweep" style={{ boxShadow: '0 0 20px hsl(43 90% 67% / 0.8), 0 0 40px hsl(43 90% 67% / 0.4)' }} />
+                
+                {/* Matrix grid overlay */}
+                <div 
+                  className="absolute inset-0 pointer-events-none opacity-30"
+                  style={{
+                    backgroundImage: `
+                      linear-gradient(hsl(43 90% 67% / 0.5) 1px, transparent 1px),
+                      linear-gradient(90deg, hsl(43 90% 67% / 0.5) 1px, transparent 1px)
+                    `,
+                    backgroundSize: '16px 16px'
+                  }}
+                />
                 
                 {/* Corner brackets */}
                 <div className="absolute top-2 left-2 w-4 h-4 border-l-2 border-t-2 border-primary animate-corner-pulse" />
                 <div className="absolute top-2 right-2 w-4 h-4 border-r-2 border-t-2 border-primary animate-corner-pulse" style={{ animationDelay: '0.25s' }} />
                 <div className="absolute bottom-2 left-2 w-4 h-4 border-l-2 border-b-2 border-primary animate-corner-pulse" style={{ animationDelay: '0.5s' }} />
                 <div className="absolute bottom-2 right-2 w-4 h-4 border-r-2 border-b-2 border-primary animate-corner-pulse" style={{ animationDelay: '0.75s' }} />
-                
-                {/* Grid overlay */}
-                <div className="absolute inset-0 opacity-20 pointer-events-none"
-                  style={{
-                    backgroundImage: `linear-gradient(hsl(var(--primary) / 0.3) 1px, transparent 1px),
-                      linear-gradient(90deg, hsl(var(--primary) / 0.3) 1px, transparent 1px)`,
-                    backgroundSize: '20px 20px'
-                  }}
-                />
               </div>
             )}
             
             {/* Orbiting dots */}
             <div className="absolute inset-0 animate-matrix-ring" style={{ animationDuration: '4s' }}>
-              <div className="absolute top-1/2 -left-1 w-1.5 h-1.5 bg-primary rounded-full shadow-lg shadow-primary/50" />
+              <div className="absolute top-1/2 -left-1 w-1.5 h-1.5 bg-primary rounded-full" style={{ boxShadow: '0 0 8px hsl(43 90% 67% / 0.8)' }} />
             </div>
             <div className="absolute inset-0 animate-matrix-ring" style={{ animationDuration: '6s', animationDelay: '1s' }}>
               <div className="absolute top-1/2 -right-1 w-1 h-1 bg-primary/70 rounded-full" />
             </div>
           </div>
           
-          {/* Status text with streaming effect */}
+          {/* Status text */}
           <div className="space-y-3">
             <div className="flex items-center justify-center gap-3 text-primary">
-              <Loader2 className="w-5 h-5 animate-spin" />
               <span className="font-display text-base">Analyzing palm patterns...</span>
             </div>
             
-            {/* Simulated processing steps */}
+            {/* Processing steps */}
             <div className="flex flex-col items-center gap-1.5 text-xs text-muted-foreground">
               <div className="flex items-center gap-2 animate-data-stream" style={{ animationDelay: '0s' }}>
                 <div className="w-1 h-1 bg-primary/60 rounded-full" />
