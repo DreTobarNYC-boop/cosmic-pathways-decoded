@@ -2,7 +2,7 @@ import { ArrowLeft } from "lucide-react";
 
 interface ChamberLayoutProps {
   title: string;
-  subtitle?: string;
+  subtitle?: React.ReactNode;
   children: React.ReactNode;
   onBack: () => void;
 }

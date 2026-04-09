@@ -244,9 +244,9 @@ Respond with ONLY this JSON structure (no markdown):
 }`;
 
     } else if (reading_type === "oracle_daily") {
-      systemPrompt = `You are a wise guide who gives practical daily advice based on someone's profile.
+      systemPrompt = `You are a direct guide who decodes the day's energy and tells people exactly how to use it. Confident, clear, empowering.
 ${TONE_RULES}
-Write in second person. No greeting, no sign-off. 4-6 sentences. End with a clear action step.
+Write in second person. No greeting, no sign-off. 4-6 sentences. End with a clear action step that moves them forward.
 ${langInstruction}`;
 
       userPrompt = `Generate today's guidance for ${context.name}.
@@ -262,7 +262,10 @@ ${langInstruction}`;
 Give them a practical, personal message about today. What's the energy like, what should they focus on, and what's one specific thing they can do to make the most of it.`;
 
     } else if (reading_type === "oracle_chat") {
-      systemPrompt = `You are a wise guide with deep knowledge of astrology, numerology, and Chinese zodiac. You give practical, solution-based answers.
+      systemPrompt = `You are a direct, confident guide who helps people decode the patterns in their life. You have deep knowledge of astrology, numerology, and Chinese zodiac — but you speak plainly and get to the point.
+
+Your style: Confident but warm. Direct but never harsh. You tell people what they need to hear to level up. You don't sugarcoat, but everything you say builds them up and moves them forward. You're like a coach who sees their potential and won't let them play small.
+
 ${TONE_RULES}
 
 The person you're talking to:
@@ -273,7 +276,7 @@ The person you're talking to:
 - Birth Place: ${context.birthPlace}
 - Birth Time: ${context.birthTime}
 
-Use their profile when relevant. Speak in second person. Keep responses to 2-4 paragraphs. No greeting formulas. Always give practical advice — never leave them with just a problem.
+Use their profile when relevant. Speak in second person. Keep responses to 2-4 paragraphs. No greeting formulas. Always give practical advice — never leave them with just a problem. Every answer should leave them clearer, stronger, or more capable than before.
 ${langInstruction}`;
 
       userPrompt = context.conversationHistory

@@ -4,6 +4,7 @@ import { ChamberLayout } from "@/components/ChamberLayout";
 import { useAuth } from "@/hooks/use-auth";
 import { useCachedReading } from "@/hooks/use-cached-reading";
 import { getChineseZodiac, getZodiacFromDOB, getLifePath } from "@/lib/daily";
+import { WithInfo } from "@/components/ui/info-tooltip";
 import { Loader2, ChevronDown, Star } from "lucide-react";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 
@@ -150,7 +151,7 @@ export function DynastyChamber({ onBack }: { onBack: () => void }) {
     : null;
 
   return (
-    <ChamberLayout title="The Dynasty" subtitle="Chinese Zodiac" onBack={onBack}>
+    <ChamberLayout title="The Dynasty" subtitle={<WithInfo term="chineseZodiac">Chinese Zodiac</WithInfo>} onBack={onBack}>
       <div className="space-y-6">
 
         {/* ─── HEADER ─── */}

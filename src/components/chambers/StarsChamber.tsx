@@ -5,6 +5,7 @@ import { Star, Loader2 } from "lucide-react";
 import { getZodiacImage } from "@/lib/zodiac-images";
 import { BirthChartContent } from "@/components/BirthChartContent";
 import { useAuth } from "@/hooks/use-auth";
+import { WithInfo } from "@/components/ui/info-tooltip";
 import {
   formatDate,
   getZodiacFromDOB,
