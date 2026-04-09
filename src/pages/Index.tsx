@@ -100,14 +100,14 @@ export default function Index() {
       <header className="px-5 pt-6 pb-2 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <img src={dcodeLogo} alt="DCode" className="w-9 h-9 rounded-lg" />
-          <h1 className="font-display text-xl font-bold text-foreground tracking-tight">
+          <h1 className="font-display text-xl font-bold text-title tracking-tight">
             DCode
           </h1>
         </div>
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-2 bg-muted/30 rounded-full px-3 py-1.5">
             <span className="text-sm">🌊</span>
-            <span className="text-sm font-display font-bold text-foreground">{firstName}</span>
+            <span className="text-sm font-display font-bold text-title">{firstName}</span>
           </div>
           <LanguageSwitcher />
           {user && (

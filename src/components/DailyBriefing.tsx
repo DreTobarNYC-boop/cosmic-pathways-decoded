@@ -91,7 +91,7 @@ export function DailyBriefing({ dob, name, birthPlace, birthTime, onOpenStars }:
           </div>
         </div>
 
-        <p className="text-[11px] uppercase tracking-[0.2em] text-primary/80 mb-3">
+        <p className="text-[11px] uppercase tracking-[0.2em] text-subtitle mb-3">
           {t("briefing.yourDailyHoroscope")}
         </p>
 
@@ -103,7 +103,7 @@ export function DailyBriefing({ dob, name, birthPlace, birthTime, onOpenStars }:
           </div>
         ) : (
           <div>
-            <p className="text-base text-foreground/90 leading-relaxed font-display">
+            <p className="text-base text-body leading-relaxed font-display">
               {preview}
               {horoscope && horoscope.length > preview.length && (
                 <span className="text-primary/60">…</span>
@@ -134,20 +134,20 @@ export function DailyBriefing({ dob, name, birthPlace, birthTime, onOpenStars }:
 
       <div className="grid grid-cols-2 gap-3">
         <div className="card-cosmic rounded-2xl p-4">
-          <p className="text-[11px] uppercase tracking-[0.2em] text-primary/70 mb-1">
+          <p className="text-[11px] uppercase tracking-[0.2em] text-subtitle mb-1">
             {t("briefing.universalDay")}
           </p>
-          <p className="text-3xl font-display font-bold text-primary">{universalDay}</p>
-          <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+          <p className="text-3xl font-display font-bold text-title">{universalDay}</p>
+          <p className="text-xs text-body mt-1.5 leading-relaxed">
             {t(`universalDayMeanings.${universalDay}`)}
           </p>
         </div>
         <div className="card-cosmic rounded-2xl p-4">
-          <p className="text-[11px] uppercase tracking-[0.2em] text-primary/70 mb-1">
+          <p className="text-[11px] uppercase tracking-[0.2em] text-subtitle mb-1">
             {t("briefing.personalDay")}
           </p>
-          <p className="text-3xl font-display font-bold text-primary">{personalDay}</p>
-          <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+          <p className="text-3xl font-display font-bold text-title">{personalDay}</p>
+          <p className="text-xs text-body mt-1.5 leading-relaxed">
             {t(`personalDayMeanings.${personalDay}`)}
           </p>
         </div>

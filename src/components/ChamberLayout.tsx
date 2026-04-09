@@ -18,9 +18,9 @@ export function ChamberLayout({ title, subtitle, children, onBack }: ChamberLayo
           <ArrowLeft className="w-4 h-4" />
         </button>
         <div>
-          <h1 className="font-display text-lg font-bold text-foreground">{title}</h1>
+          <h1 className="font-display text-lg font-bold text-title">{title}</h1>
           {subtitle && (
-            <p className="text-xs text-muted-foreground">{subtitle}</p>
+            <p className="text-xs text-subtitle uppercase tracking-widest">{subtitle}</p>
           )}
         </div>
       </header>

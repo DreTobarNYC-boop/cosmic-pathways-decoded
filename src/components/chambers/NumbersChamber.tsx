@@ -80,13 +80,13 @@ function AIReadingBlock({ content, isLoading, error, label }: { content: string 
     const parsed = JSON.parse(content);
     return (
       <div className="space-y-2">
-        {parsed.title && <p className="text-sm font-bold text-foreground">{parsed.title}</p>}
-        <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">{parsed.reading || parsed.content || content}</p>
+        {parsed.title && <p className="text-sm font-bold text-title">{parsed.title}</p>}
+        <p className="text-sm text-body leading-relaxed whitespace-pre-line">{parsed.reading || parsed.content || content}</p>
         {parsed.cosmicAdvice && <p className="text-xs italic text-primary mt-2">"{parsed.cosmicAdvice}"</p>}
       </div>
     );
   } catch {
-    return <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">{content}</p>;
+    return <p className="text-sm text-body leading-relaxed whitespace-pre-line">{content}</p>;
   }
 }
 
@@ -248,12 +248,12 @@ export function NumbersChamber({ onBack }: { onBack: () => void }) {
       <div className="flex items-center gap-4 mb-5">
         <NumberCircle value={lifePath} color="gold" />
         <div>
-          <p className="text-xs uppercase tracking-widest text-muted-foreground">{name.split(" ")[0].toUpperCase()}'S NUMEROLOGY</p>
-          <p className="font-display text-lg font-bold text-foreground">
+          <p className="text-xs uppercase tracking-widest text-subtitle">{name.split(" ")[0].toUpperCase()}&apos;S NUMEROLOGY</p>
+          <p className="font-display text-lg font-bold text-title">
             Life Path {dob ? `${dob.getDate()}/${lifePath}` : lifePath} · {lifePathName}
           </p>
           {zodiac && (
-            <p className="text-xs text-muted-foreground">{zodiac.symbol} {zodiac.sign} · {zodiac.element}</p>
+            <p className="text-xs text-body">{zodiac.symbol} {zodiac.sign} · {zodiac.element}</p>
           )}
         </div>
       </div>
@@ -287,9 +287,9 @@ export function NumbersChamber({ onBack }: { onBack: () => void }) {
             <div className="flex items-center gap-4">
               <NumberCircle value={universalDay} color="purple" size="sm" />
               <div className="flex-1">
-                <p className="text-xs uppercase tracking-wider text-muted-foreground">Universal Day</p>
-                <p className="text-sm font-semibold text-foreground">{UNIVERSAL_DAY_MEANINGS[universalDay]}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{dateStr}</p>
+                <p className="text-xs uppercase tracking-wider text-subtitle">Universal Day</p>
+                <p className="text-sm font-semibold text-title">{UNIVERSAL_DAY_MEANINGS[universalDay]}</p>
+                <p className="text-xs text-body mt-0.5">{dateStr}</p>
               </div>
             </div>
           </SectionCard>
@@ -299,8 +299,8 @@ export function NumbersChamber({ onBack }: { onBack: () => void }) {
             <div className="flex items-center gap-4">
               <NumberCircle value={personalDay} color="blue" size="sm" />
               <div className="flex-1">
-                <p className="text-xs uppercase tracking-wider text-muted-foreground">Personal Day</p>
-                <p className="text-sm font-semibold text-foreground">{PERSONAL_DAY_MEANINGS[personalDay]}</p>
+                <p className="text-xs uppercase tracking-wider text-subtitle">Personal Day</p>
+                <p className="text-sm font-semibold text-title">{PERSONAL_DAY_MEANINGS[personalDay]}</p>
               </div>
             </div>
             <AIReadingBlock content={todayReading.content} isLoading={todayReading.isLoading} error={todayReading.error} label="today's frequency" />
@@ -311,8 +311,8 @@ export function NumbersChamber({ onBack }: { onBack: () => void }) {
             <div className="flex items-center gap-4">
               <NumberCircle value={personalMonth} color="green" size="sm" />
               <div className="flex-1">
-                <p className="text-xs uppercase tracking-wider text-muted-foreground">Personal Month</p>
-                <p className="text-sm font-semibold text-foreground">{personalMonth} — {PERSONAL_MONTH_MEANINGS[personalMonth]}</p>
+                <p className="text-xs uppercase tracking-wider text-subtitle">Personal Month</p>
+                <p className="text-sm font-semibold text-title">{personalMonth} — {PERSONAL_MONTH_MEANINGS[personalMonth]}</p>
               </div>
             </div>
           </SectionCard>
@@ -322,8 +322,8 @@ export function NumbersChamber({ onBack }: { onBack: () => void }) {
             <div className="flex items-center gap-4">
               <NumberCircle value={personalYear} color="rose" size="sm" />
               <div className="flex-1">
-                <p className="text-xs uppercase tracking-wider text-muted-foreground">Personal Year {today.getFullYear()}</p>
-                <p className="text-sm font-semibold text-foreground">{personalYear} — {PERSONAL_YEAR_MEANINGS[personalYear]}</p>
+                <p className="text-xs uppercase tracking-wider text-subtitle">Personal Year {today.getFullYear()}</p>
+                <p className="text-sm font-semibold text-title">{personalYear} — {PERSONAL_YEAR_MEANINGS[personalYear]}</p>
               </div>
             </div>
           </SectionCard>
@@ -335,8 +335,8 @@ export function NumbersChamber({ onBack }: { onBack: () => void }) {
             <div className="flex items-center gap-4">
               <NumberCircle value={lifePath} color="gold" />
               <div>
-                <p className="text-xs uppercase tracking-wider text-muted-foreground">Your Life Path</p>
-                <p className="font-display text-xl font-bold text-foreground">{lifePath} · {lifePathName}</p>
+                <p className="text-xs uppercase tracking-wider text-subtitle">Your Life Path</p>
+                <p className="font-display text-xl font-bold text-title">{lifePath} · {lifePathName}</p>
               </div>
             </div>
             <AIReadingBlock content={lifePathReading.content} isLoading={lifePathReading.isLoading} error={lifePathReading.error} label="your life path" />
@@ -356,8 +356,8 @@ export function NumbersChamber({ onBack }: { onBack: () => void }) {
               <div className="flex items-center gap-4">
                 <NumberCircle value={item.value} color={item.color} size="sm" />
                 <div>
-                  <p className="text-xs uppercase tracking-wider text-muted-foreground">{item.label} Number</p>
-                  <p className="text-sm font-semibold text-foreground">{item.value} — {item.desc}</p>
+                  <p className="text-xs uppercase tracking-wider text-subtitle">{item.label} Number</p>
+                  <p className="text-sm font-semibold text-title">{item.value} — {item.desc}</p>
                 </div>
               </div>
             </SectionCard>
@@ -367,8 +367,8 @@ export function NumbersChamber({ onBack }: { onBack: () => void }) {
         {/* ── NAME ── */}
         <TabsContent value="name" className="space-y-4">
           <SectionCard>
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">Full Name Analysis</p>
-            <p className="font-display text-lg font-bold text-primary">{name}</p>
+            <p className="text-xs uppercase tracking-wider text-subtitle">Full Name Analysis</p>
+            <p className="font-display text-lg font-bold text-title">{name}</p>
             <div className="grid grid-cols-3 gap-3 mt-3">
               {[
                 { label: "Expression", value: expressionNum, color: "purple" },
@@ -377,7 +377,7 @@ export function NumbersChamber({ onBack }: { onBack: () => void }) {
               ].map(item => (
                 <div key={item.label} className="flex flex-col items-center gap-2">
                   <NumberCircle value={item.value} color={item.color} size="sm" />
-                  <p className="text-xs text-muted-foreground text-center">{item.label}</p>
+                  <p className="text-xs text-body text-center">{item.label}</p>
                 </div>
               ))}
             </div>
@@ -385,14 +385,14 @@ export function NumbersChamber({ onBack }: { onBack: () => void }) {
 
           {/* Letter breakdown */}
           <SectionCard>
-            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Letter Values</p>
+            <p className="text-xs uppercase tracking-wider text-subtitle mb-2">Letter Values</p>
             <div className="flex flex-wrap gap-2">
               {name.split("").map((ch, i) => {
                 const val = letterValue(ch);
                 if (!val) return <span key={i} className="w-4" />;
                 return (
                   <div key={i} className="flex flex-col items-center">
-                    <span className="text-sm font-bold text-foreground">{ch.toUpperCase()}</span>
+                    <span className="text-sm font-bold text-title">{ch.toUpperCase()}</span>
                     <span className="text-xs text-primary">{val}</span>
                   </div>
                 );
@@ -404,14 +404,14 @@ export function NumbersChamber({ onBack }: { onBack: () => void }) {
         {/* ── CYCLES ── */}
         <TabsContent value="cycles" className="space-y-4">
           <SectionCard>
-            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-3">Pinnacle Cycles</p>
+            <p className="text-xs uppercase tracking-wider text-subtitle mb-3">Pinnacle Cycles</p>
             <div className="space-y-3">
               {pinnacles.map(p => (
                 <div key={p.label} className="flex items-center gap-3">
                   <NumberCircle value={p.value} color="gold" size="sm" />
                   <div>
-                    <p className="text-sm font-semibold text-foreground">{p.label}</p>
-                    <p className="text-xs text-muted-foreground">Ages {p.ages}</p>
+                    <p className="text-sm font-semibold text-title">{p.label}</p>
+                    <p className="text-xs text-body">Ages {p.ages}</p>
                   </div>
                 </div>
               ))}
@@ -419,14 +419,14 @@ export function NumbersChamber({ onBack }: { onBack: () => void }) {
           </SectionCard>
 
           <SectionCard>
-            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-3">Challenge Cycles</p>
+            <p className="text-xs uppercase tracking-wider text-subtitle mb-3">Challenge Cycles</p>
             <div className="space-y-3">
               {challenges.map(c => (
                 <div key={c.label} className="flex items-center gap-3">
                   <NumberCircle value={c.value} color="rose" size="sm" />
                   <div>
-                    <p className="text-sm font-semibold text-foreground">{c.label}</p>
-                    <p className="text-xs text-muted-foreground">Number {c.value}</p>
+                    <p className="text-sm font-semibold text-title">{c.label}</p>
+                    <p className="text-xs text-body">Number {c.value}</p>
                   </div>
                 </div>
               ))}
@@ -437,22 +437,22 @@ export function NumbersChamber({ onBack }: { onBack: () => void }) {
         {/* ── LUCKY ── */}
         <TabsContent value="lucky" className="space-y-4">
           <SectionCard>
-            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-3">Your Lucky Numbers</p>
+            <p className="text-xs uppercase tracking-wider text-subtitle mb-3">Your Lucky Numbers</p>
             <div className="flex flex-wrap gap-3 justify-center">
               {luckyNums.map((n, i) => (
                 <NumberCircle key={i} value={n} color={["gold", "purple", "blue", "green", "rose", "copper"][i]} size="sm" />
               ))}
             </div>
-            <p className="text-xs text-muted-foreground text-center mt-3">
+            <p className="text-xs text-body text-center mt-3">
               Derived from your Life Path, Expression, Soul Urge, Birthday, and power combinations.
             </p>
           </SectionCard>
 
           <SectionCard>
-            <p className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Today's Power Number</p>
+            <p className="text-xs uppercase tracking-wider text-subtitle mb-2">Today&apos;s Power Number</p>
             <div className="flex items-center gap-3">
               <NumberCircle value={reduceToSingle(personalDay + universalDay)} color="teal" size="sm" />
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-body">
                 Your personal day ({personalDay}) + universal day ({universalDay}) = {reduceToSingle(personalDay + universalDay)}
               </p>
             </div>

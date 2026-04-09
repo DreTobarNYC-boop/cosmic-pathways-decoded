@@ -245,8 +245,8 @@ function ArcGauge({ level, calibration }: { level: HawkinsLevel; calibration: nu
       <h2 className="text-3xl font-display font-bold mt-[-10px]" style={{ color: level.color }}>
         {level.level}
       </h2>
-      <p className="text-sm text-muted-foreground italic">{level.emotion}</p>
-      <p className="text-sm text-foreground/70 text-center mt-2 max-w-xs">
+      <p className="text-sm text-subtitle italic">{level.emotion}</p>
+      <p className="text-sm text-body text-center mt-2 max-w-xs">
         {level.description}
       </p>
     </div>
@@ -277,10 +277,10 @@ function QuizScreen({ onComplete }: { onComplete: (answers: number[]) => void })
       {/* Progress */}
       <div>
         <div className="flex justify-between items-center mb-2">
-          <p className="text-[11px] uppercase tracking-[0.2em] text-primary font-bold">
+          <p className="text-[11px] uppercase tracking-[0.2em] text-subtitle font-bold">
             {q.category}
           </p>
-          <span className="text-sm text-muted-foreground">{currentQ + 1}/{QUIZ_QUESTIONS.length}</span>
+          <span className="text-sm text-body">{currentQ + 1}/{QUIZ_QUESTIONS.length}</span>
         </div>
         <div className="w-full h-1.5 bg-muted/30 rounded-full overflow-hidden">
           <div
@@ -291,7 +291,7 @@ function QuizScreen({ onComplete }: { onComplete: (answers: number[]) => void })
       </div>
 
       {/* Question */}
-      <h2 className="text-xl font-display font-bold text-foreground leading-tight">
+      <h2 className="text-xl font-display font-bold text-title leading-tight">
         {q.question}
       </h2>
 
@@ -301,7 +301,7 @@ function QuizScreen({ onComplete }: { onComplete: (answers: number[]) => void })
           <button
             key={i}
             onClick={() => handleAnswer(answer.score)}
-            className="w-full text-left card-cosmic rounded-xl p-4 text-sm text-foreground/90 hover:border-primary/40 transition-all active:scale-[0.98]"
+            className="w-full text-left card-cosmic rounded-xl p-4 text-sm text-body hover:border-primary/40 transition-all active:scale-[0.98]"
           >
             {answer.text}
           </button>
@@ -384,14 +384,14 @@ function ResultsScreen({
         <ArcGauge level={result.current} calibration={result.calibration} />
 
         {result.next && (
-          <p className="text-sm text-muted-foreground mt-4">
+          <p className="text-sm text-body mt-4">
             <span className="font-bold" style={{ color: result.next.color }}>{result.pointsToNext}</span>
             {" "}points to {result.next.level}
           </p>
         )}
 
         {result.next && (
-          <p className="text-xs text-foreground/60 text-center mt-2 max-w-xs">
+          <p className="text-xs text-body text-center mt-2 max-w-xs">
             Moving from {result.current.level} to {result.next.level}{" "}
             {result.current.level === "Love"
               ? "means the heart has stabilized and begun to radiate. Compassion becomes effortless."
@@ -404,7 +404,7 @@ function ResultsScreen({
 
       {/* AI Reading */}
       <div className="card-cosmic rounded-2xl p-5">
-        <p className="text-[11px] uppercase tracking-[0.2em] text-primary/70 font-bold mb-3">
+        <p className="text-[11px] uppercase tracking-[0.2em] text-subtitle font-bold mb-3">
           YOUR READING
         </p>
         {readingLoading ? (
@@ -413,7 +413,7 @@ function ResultsScreen({
             <span className="text-sm">Channeling your frequency...</span>
           </div>
         ) : (
-          <p className="text-base text-foreground/90 leading-relaxed font-display">
+          <p className="text-base text-body leading-relaxed font-display">
             {reading?.reading || "Your consciousness field resonates at a powerful frequency."}
           </p>
         )}
@@ -427,17 +427,17 @@ function ResultsScreen({
               <p className="text-[10px] uppercase tracking-[0.15em] text-destructive font-bold mb-2">
                 SHADOW
               </p>
-              <p className="text-xs text-foreground/80 leading-relaxed">
+              <p className="text-xs text-body leading-relaxed">
                 {reading.shadow}
               </p>
             </div>
           )}
           {reading.gift && (
             <div className="card-cosmic rounded-2xl p-4">
-              <p className="text-[10px] uppercase tracking-[0.15em] text-primary font-bold mb-2">
+              <p className="text-[10px] uppercase tracking-[0.15em] text-subtitle font-bold mb-2">
                 GIFT
               </p>
-              <p className="text-xs text-foreground/80 leading-relaxed">
+              <p className="text-xs text-body leading-relaxed">
                 {reading.gift}
               </p>
             </div>
@@ -450,7 +450,7 @@ function ResultsScreen({
         onClick={() => setShowBreakdown(!showBreakdown)}
         className="card-cosmic rounded-2xl p-4 w-full flex items-center justify-between"
       >
-        <p className="text-[11px] uppercase tracking-[0.2em] text-primary/70 font-bold">
+        <p className="text-[11px] uppercase tracking-[0.2em] text-subtitle font-bold">
           SCORE BREAKDOWN
         </p>
         {showBreakdown ? (
@@ -464,7 +464,7 @@ function ResultsScreen({
         <div className="space-y-2 animate-fade-up">
           {answers.map((score, i) => (
             <div key={i} className="card-cosmic rounded-xl p-3 flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">{QUIZ_QUESTIONS[i].category}</span>
+              <span className="text-xs text-body">{QUIZ_QUESTIONS[i].category}</span>
               <div className="flex items-center gap-2">
                 <div className="flex gap-0.5">
                   {[1, 2, 3, 4, 5].map((s) => (
@@ -490,20 +490,20 @@ function ResultsScreen({
 
       {/* Sonic Prescription */}
       <div className="card-cosmic rounded-2xl p-5 space-y-3">
-        <p className="text-[11px] uppercase tracking-[0.2em] text-primary/70 font-bold">
+        <p className="text-[11px] uppercase tracking-[0.2em] text-subtitle font-bold">
           YOUR SONIC PRESCRIPTION
         </p>
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
-            <span className="text-sm font-display font-bold text-primary">{prescription.freq}</span>
+            <span className="text-sm font-display font-bold text-subtitle">{prescription.freq}</span>
           </div>
           <div>
-            <p className="text-base font-display font-bold text-foreground">
+            <p className="text-base font-display font-bold text-title">
               {prescription.freq} Hz — {prescription.name}
             </p>
           </div>
         </div>
-        <p className="text-sm text-foreground/70 leading-relaxed">
+        <p className="text-sm text-body leading-relaxed">
           {prescription.description}
         </p>
         <button
@@ -518,7 +518,7 @@ function ResultsScreen({
       <div className="grid grid-cols-2 gap-3">
         <button
           onClick={onScanAgain}
-          className="card-cosmic rounded-xl p-3 flex items-center justify-center gap-2 text-sm font-display font-bold text-foreground/80 hover:text-foreground transition-colors"
+          className="card-cosmic rounded-xl p-3 flex items-center justify-center gap-2 text-sm font-display font-bold text-body hover:text-title transition-colors"
         >
           <RotateCcw className="w-4 h-4" />
           Scan Again

@@ -47,12 +47,17 @@
 
     /* Custom tokens */
     --gold: 43 90% 67%;
-    --gold-bright: 45 100% 50%;
+    --gold-bright: 45 85% 67%;
     --copper: 25 50% 45%;
     --cosmic-bg: 170 40% 7%;
     --cosmic-deep: 170 50% 4%;
-    --cream: 45 100% 91%;
+    --cream: 55 100% 91%;
     --blue-accent: 220 30% 62%;
+    
+    /* High contrast text colors */
+    --text-title: 0 0% 100%;
+    --text-subtitle: 45 85% 67%;
+    --text-body: 55 100% 91%;
   }
 }
 
@@ -77,6 +82,18 @@
 
   .text-cream {
     color: hsl(var(--cream));
+  }
+
+  .text-title {
+    color: hsl(var(--text-title));
+  }
+
+  .text-subtitle {
+    color: hsl(var(--text-subtitle));
+  }
+
+  .text-body {
+    color: hsl(var(--text-body));
   }
 
   .text-copper {

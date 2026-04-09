@@ -126,7 +126,7 @@ function OrbWithAnswer({ answer, onTap }: { answer: string; onTap: () => void })
         <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-6 bg-gradient-to-b from-white/15 to-transparent rounded-full blur-sm" />
       </div>
       <div className="absolute inset-0 flex flex-col items-center justify-center px-6">
-        <p className="text-sm text-foreground font-display font-bold text-center leading-snug">{answer}</p>
+        <p className="text-sm text-title font-display font-bold text-center leading-snug">{answer}</p>
         <Triangle className="w-3 h-3 text-primary/50 mt-2" />
       </div>
     </button>
@@ -253,8 +253,8 @@ export function OracleChamber({ onBack }: { onBack: () => void }) {
           <div className="w-14 h-14 mx-auto rounded-full bg-muted/30 flex items-center justify-center">
             <Sparkles className="w-7 h-7 text-primary" />
           </div>
-          <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground font-display">
-            {chineseData ? `${chineseData.char} ${chineseZodiac}` : "✦"} · TODAY'S ORACLE
+          <p className="text-xs uppercase tracking-[0.2em] text-subtitle font-display">
+            {chineseData ? `${chineseData.char} ${chineseZodiac}` : "✦"} · TODAY&apos;S ORACLE
           </p>
         </div>
 
@@ -268,8 +268,8 @@ export function OracleChamber({ onBack }: { onBack: () => void }) {
             </div>
           ) : (
             <div className="space-y-3">
-              <p className="text-sm font-bold text-primary">Your code is activated. Here's what it means.</p>
-              <p className="text-sm text-foreground/90 leading-relaxed">
+              <p className="text-sm font-bold text-subtitle">Your code is activated. Here&apos;s what it means.</p>
+              <p className="text-sm text-body leading-relaxed">
                 {oracleReading.content || "The Oracle is preparing your reading…"}
               </p>
             </div>
@@ -278,26 +278,26 @@ export function OracleChamber({ onBack }: { onBack: () => void }) {
 
         {/* ── Today's Code (Grabovoi) ── */}
         <div className="card-cosmic rounded-2xl px-5 py-4 border-primary/20">
-          <p className="text-[10px] uppercase tracking-[0.2em] text-primary/70 font-bold mb-1">TODAY'S CODE</p>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-subtitle font-bold mb-1">TODAY&apos;S CODE</p>
           <div className="flex items-center gap-2">
             <span className="text-primary">△</span>
-            <span className="font-display text-lg font-bold text-foreground">{todaysCode.code} — {todaysCode.meaning}</span>
+            <span className="font-display text-lg font-bold text-title">{todaysCode.code} — {todaysCode.meaning}</span>
           </div>
         </div>
 
         {/* ── Today's Frequency ── */}
         <div className="card-cosmic rounded-2xl px-5 py-4 border-primary/20">
-          <p className="text-[10px] uppercase tracking-[0.2em] text-primary/70 font-bold mb-1">TODAY'S FREQUENCY</p>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-subtitle font-bold mb-1">TODAY&apos;S FREQUENCY</p>
           <div className="flex items-center gap-2">
             <span className="text-primary">◉</span>
-            <span className="font-display text-lg font-bold text-foreground">{todaysFreq.hz} Hz — {todaysFreq.name}</span>
+            <span className="font-display text-lg font-bold text-title">{todaysFreq.hz} Hz — {todaysFreq.name}</span>
           </div>
         </div>
 
         {/* ── The Orb ── */}
         <div className="text-center space-y-3 py-4">
-          <h3 className="font-display text-sm font-bold uppercase tracking-[0.15em] text-foreground">THE ORB</h3>
-          <p className="text-xs text-muted-foreground">
+          <h3 className="font-display text-sm font-bold uppercase tracking-[0.15em] text-title">THE ORB</h3>
+          <p className="text-xs text-body">
             {orbAnswer ? "Tap to ask again" : "Tap the orb for cosmic guidance"}
           </p>
 
@@ -333,7 +333,7 @@ export function OracleChamber({ onBack }: { onBack: () => void }) {
                     : "card-cosmic text-foreground/90"
                 }`}>
                   {msg.role === "assistant" && (
-                    <p className="text-[10px] uppercase tracking-wider text-primary/70 font-bold mb-1">✦ ORACLE</p>
+                    <p className="text-[10px] uppercase tracking-wider text-subtitle font-bold mb-1">✦ ORACLE</p>
                   )}
                   <span className="whitespace-pre-line">{msg.content}</span>
                 </div>
@@ -342,7 +342,7 @@ export function OracleChamber({ onBack }: { onBack: () => void }) {
             {chatLoading && (
               <div className="flex justify-start">
                 <div className="card-cosmic rounded-2xl px-4 py-3">
-                  <p className="text-[10px] uppercase tracking-wider text-primary/70 font-bold mb-1">✦ ORACLE</p>
+                  <p className="text-[10px] uppercase tracking-wider text-subtitle font-bold mb-1">✦ ORACLE</p>
                   <div className="flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-primary/50 animate-bounce" style={{ animationDelay: "0ms" }} />
                     <span className="w-1.5 h-1.5 rounded-full bg-primary/50 animate-bounce" style={{ animationDelay: "150ms" }} />
@@ -357,8 +357,8 @@ export function OracleChamber({ onBack }: { onBack: () => void }) {
         {/* ── Ask the Oracle ── */}
         <div className="space-y-3">
           <div className="text-center">
-            <h3 className="font-display text-base font-bold text-foreground">Ask the Oracle, {name.split(" ")[0]}</h3>
-            <p className="text-xs text-muted-foreground italic">Speak your question into the void</p>
+            <h3 className="font-display text-base font-bold text-title">Ask the Oracle, {name.split(" ")[0]}</h3>
+            <p className="text-xs text-body italic">Speak your question into the void</p>
           </div>
           <div className="flex items-end gap-2">
             <input

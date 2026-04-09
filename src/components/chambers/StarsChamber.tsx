@@ -96,15 +96,15 @@ function StarsTabContent({
         <div className="animate-shimmer absolute inset-0 pointer-events-none rounded-2xl" />
 
         {reading.title && (
-          <h2 className="text-xl font-display font-bold text-foreground mb-1">
+          <h2 className="text-xl font-display font-bold text-title mb-1">
             {reading.title}
           </h2>
         )}
         {reading.subtitle && (
-          <p className="text-sm text-primary/80 mb-5">{reading.subtitle}</p>
+          <p className="text-sm text-subtitle mb-5">{reading.subtitle}</p>
         )}
 
-        <div className="text-base text-foreground/90 leading-relaxed font-display whitespace-pre-line">
+        <div className="text-base text-body leading-relaxed font-display whitespace-pre-line">
           {reading.reading}
         </div>
       </div>
@@ -112,10 +112,10 @@ function StarsTabContent({
       {/* Cosmic Advice */}
       {reading.cosmicAdvice && (
         <div className="card-cosmic rounded-2xl p-5">
-          <p className="text-[11px] uppercase tracking-[0.2em] text-primary/70 mb-2 font-bold">
+          <p className="text-[11px] uppercase tracking-[0.2em] text-subtitle mb-2 font-bold">
             {t("stars.cosmicAdvice")}
           </p>
-          <p className="text-base text-foreground/80 leading-relaxed font-display italic">
+          <p className="text-base text-body leading-relaxed font-display italic">
             "{reading.cosmicAdvice}"
           </p>
         </div>
@@ -126,26 +126,26 @@ function StarsTabContent({
         <div className="grid grid-cols-3 gap-3">
           {reading.luckyNumber && (
             <div className="card-cosmic rounded-2xl p-4 text-center">
-              <p className="text-[10px] uppercase tracking-[0.15em] text-primary/70 font-bold mb-1">
+              <p className="text-[10px] uppercase tracking-[0.15em] text-subtitle font-bold mb-1">
                 {t("stars.luckyNumber")}
               </p>
-              <p className="text-2xl font-display font-bold text-primary">
+              <p className="text-2xl font-display font-bold text-title">
                 {reading.luckyNumber}
               </p>
             </div>
           )}
           {reading.powerColor && (
             <div className="card-cosmic rounded-2xl p-4 text-center">
-              <p className="text-[10px] uppercase tracking-[0.15em] text-primary/70 font-bold mb-1">
+              <p className="text-[10px] uppercase tracking-[0.15em] text-subtitle font-bold mb-1">
                 {t("stars.powerColor")}
               </p>
-              <p className="text-sm font-display font-bold text-primary">
+              <p className="text-sm font-display font-bold text-title">
                 {reading.powerColor}
               </p>
             </div>
           )}
           <div className="card-cosmic rounded-2xl p-4 text-center">
-            <p className="text-[10px] uppercase tracking-[0.15em] text-primary/70 font-bold mb-1">
+            <p className="text-[10px] uppercase tracking-[0.15em] text-subtitle font-bold mb-1">
               {t("stars.sun")}
             </p>
             {getZodiacImage(zodiac.sign) ? (
@@ -160,10 +160,10 @@ function StarsTabContent({
       {/* Affirmation */}
       {reading.affirmation && (
         <div className="card-cosmic rounded-2xl p-5 bg-primary/5 border-primary/20 text-center">
-          <p className="text-[11px] uppercase tracking-[0.2em] text-primary font-bold mb-2">
+          <p className="text-[11px] uppercase tracking-[0.2em] text-subtitle font-bold mb-2">
             {t("stars.affirmation")}
           </p>
-          <p className="text-base text-foreground/80 leading-relaxed font-display italic">
+          <p className="text-base text-body leading-relaxed font-display italic">
             "{reading.affirmation}"
           </p>
         </div>

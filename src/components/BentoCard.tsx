@@ -37,8 +37,8 @@ export function BentoCard({
           <Icon className="w-5 h-5" style={{ color: accentColor }} />
         </div>
         <div className="flex-1 text-left">
-          <h3 className="font-display text-base font-bold text-foreground">{title}</h3>
-          <p className="text-[11px] uppercase tracking-[0.2em] text-primary/80 mt-0.5">{subtitle}</p>
+          <h3 className="font-display text-base font-bold text-title">{title}</h3>
+          <p className="text-[11px] uppercase tracking-[0.2em] text-subtitle mt-0.5">{subtitle}</p>
         </div>
         <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0 group-hover:translate-x-0.5 transition-transform" />
       </button>
@@ -61,8 +61,8 @@ export function BentoCard({
       >
         <Icon className="w-5 h-5" style={{ color: accentColor }} />
       </div>
-      <h3 className="font-display text-base font-bold text-foreground mb-1">{title}</h3>
-      <p className="text-[11px] uppercase tracking-[0.2em] text-primary/70">{subtitle}</p>
+      <h3 className="font-display text-base font-bold text-title mb-1">{title}</h3>
+      <p className="text-[11px] uppercase tracking-[0.2em] text-subtitle">{subtitle}</p>
     </button>
   );
 }
