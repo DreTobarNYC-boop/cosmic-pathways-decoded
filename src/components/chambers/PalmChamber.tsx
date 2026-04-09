@@ -5,7 +5,7 @@ import { ChamberLayout } from "@/components/ChamberLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 
-const SCAN_DURATION_MS = 3000;
+const SCAN_DURATION_MS = 2000; // 2 seconds for snappy feel
 const MATRIX_CHARS = "アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789";
 
 // Keyframes CSS for matrix rain animation
@@ -64,7 +64,7 @@ interface PalmChamberProps {
 }
 
 export function PalmChamber({ onBack }: PalmChamberProps) {
-  const [phase, setPhase] = useState<"idle" | "scanning" | "done">("idle");
+  const [phase, setPhase] = useState<"idle" | "scanning" | "processing" | "done">("idle");
   const [reading, setReading] = useState<any>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [scanProgress, setScanProgress] = useState(0);
@@ -129,22 +129,24 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
     setPhase("scanning"); // Force scanning state immediately
 
     try {
+      // Start base64 conversion immediately
       const base64Promise = fileToBase64(file);
       
-      // Run API call in parallel with animation
+      // Start API call as soon as base64 is ready (don't wait for animation)
       const apiPromise = base64Promise.then(base64 => 
         supabase.functions.invoke("palm-reading", {
           body: { image_base64: base64 },
         })
       );
 
-      // Wait for both scan animation minimum time and API response
-      const [apiResult] = await Promise.all([
-        apiPromise,
-        new Promise(resolve => setTimeout(resolve, SCAN_DURATION_MS))
-      ]);
+      // Wait for scan animation to complete (2 seconds)
+      await new Promise(resolve => setTimeout(resolve, SCAN_DURATION_MS));
+      
+      // Switch to processing phase (gentler loading state)
+      setPhase("processing");
 
-      const { data, error } = apiResult;
+      // Now wait for API response
+      const { data, error } = await apiPromise;
 
       if (error) throw new Error(error.message || "Reading failed");
       if (data?.error) throw new Error(data.error);
@@ -258,6 +260,25 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
           </div>
 
           </div>
+      )}
+
+      {phase === "processing" && (
+        <div className="flex flex-col items-center justify-center min-h-[400px] text-center space-y-6">
+          {imagePreview && (
+            <div className="w-40 h-40 rounded-2xl overflow-hidden border border-primary/30 shadow-lg">
+              <img src={imagePreview} alt="Your palm" className="w-full h-full object-cover" />
+            </div>
+          )}
+          <div className="space-y-2">
+            <div className="flex items-center justify-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+              <span className="font-display text-sm text-primary">Consulting the Oracle</span>
+            </div>
+            <p className="text-xs text-muted-foreground max-w-xs">
+              The cosmos is interpreting the lines of your palm...
+            </p>
+          </div>
+        </div>
       )}
 
       {phase === "done" && reading && (
