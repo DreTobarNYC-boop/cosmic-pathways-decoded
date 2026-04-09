@@ -93,15 +93,79 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
       )}
 
       {phase === "scanning" && (
-        <div className="flex flex-col items-center text-center pt-12 space-y-6">
-          {imagePreview && (
-            <div className="w-48 h-48 rounded-2xl overflow-hidden border border-primary/30">
-              <img src={imagePreview} alt="Your palm" className="w-full h-full object-cover" />
+        <div className="flex flex-col items-center text-center pt-8 space-y-6">
+          {/* Matrix ring scanning container */}
+          <div className="relative w-64 h-64 flex items-center justify-center">
+            {/* Outer rotating ring */}
+            <div className="absolute inset-0 rounded-full border-2 border-primary/20 animate-matrix-ring">
+              <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-primary rounded-full" />
+              <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-primary/60 rounded-full" />
             </div>
-          )}
-          <div className="flex items-center gap-3 text-muted-foreground">
-            <Loader2 className="w-5 h-5 animate-spin text-primary" />
-            <span className="font-display text-sm">Reading your palm…</span>
+            
+            {/* Middle rotating ring (reverse) */}
+            <div className="absolute inset-4 rounded-full border border-dashed border-primary/30 animate-matrix-ring-reverse" />
+            
+            {/* Inner pulsing ring */}
+            <div className="absolute inset-8 rounded-full border border-primary/40 animate-pulse-glow" />
+            
+            {/* Palm image container */}
+            {imagePreview && (
+              <div className="relative w-44 h-44 rounded-2xl overflow-hidden border border-primary/50 animate-pulse-glow">
+                <img src={imagePreview} alt="Your palm" className="w-full h-full object-cover" />
+                
+                {/* Scanning line overlay */}
+                <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                  <div className="absolute inset-x-0 h-1 bg-gradient-to-b from-transparent via-primary/80 to-transparent animate-scan-line" />
+                </div>
+                
+                {/* Corner brackets */}
+                <div className="absolute top-2 left-2 w-4 h-4 border-l-2 border-t-2 border-primary animate-corner-pulse" />
+                <div className="absolute top-2 right-2 w-4 h-4 border-r-2 border-t-2 border-primary animate-corner-pulse" style={{ animationDelay: '0.25s' }} />
+                <div className="absolute bottom-2 left-2 w-4 h-4 border-l-2 border-b-2 border-primary animate-corner-pulse" style={{ animationDelay: '0.5s' }} />
+                <div className="absolute bottom-2 right-2 w-4 h-4 border-r-2 border-b-2 border-primary animate-corner-pulse" style={{ animationDelay: '0.75s' }} />
+                
+                {/* Grid overlay */}
+                <div className="absolute inset-0 opacity-20 pointer-events-none"
+                  style={{
+                    backgroundImage: `linear-gradient(hsl(var(--primary) / 0.3) 1px, transparent 1px),
+                      linear-gradient(90deg, hsl(var(--primary) / 0.3) 1px, transparent 1px)`,
+                    backgroundSize: '20px 20px'
+                  }}
+                />
+              </div>
+            )}
+            
+            {/* Orbiting dots */}
+            <div className="absolute inset-0 animate-matrix-ring" style={{ animationDuration: '4s' }}>
+              <div className="absolute top-1/2 -left-1 w-1.5 h-1.5 bg-primary rounded-full shadow-lg shadow-primary/50" />
+            </div>
+            <div className="absolute inset-0 animate-matrix-ring" style={{ animationDuration: '6s', animationDelay: '1s' }}>
+              <div className="absolute top-1/2 -right-1 w-1 h-1 bg-primary/70 rounded-full" />
+            </div>
+          </div>
+          
+          {/* Status text with streaming effect */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-center gap-3 text-primary">
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span className="font-display text-base">Analyzing palm patterns...</span>
+            </div>
+            
+            {/* Simulated processing steps */}
+            <div className="flex flex-col items-center gap-1.5 text-xs text-muted-foreground">
+              <div className="flex items-center gap-2 animate-data-stream" style={{ animationDelay: '0s' }}>
+                <div className="w-1 h-1 bg-primary/60 rounded-full" />
+                <span>Mapping line structures</span>
+              </div>
+              <div className="flex items-center gap-2 animate-data-stream" style={{ animationDelay: '0.5s' }}>
+                <div className="w-1 h-1 bg-primary/60 rounded-full" />
+                <span>Identifying mount formations</span>
+              </div>
+              <div className="flex items-center gap-2 animate-data-stream" style={{ animationDelay: '1s' }}>
+                <div className="w-1 h-1 bg-primary/60 rounded-full" />
+                <span>Decoding cosmic signatures</span>
+              </div>
+            </div>
           </div>
         </div>
       )}
