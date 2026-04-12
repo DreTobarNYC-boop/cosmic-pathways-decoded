@@ -1,428 +1,170 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Check, Star, Crown, Sparkles, Users, Lock, Gift } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useAuth } from "@/hooks/use-auth";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 
-type BillingCycle = "monthly" | "yearly";
-
-interface PricingTier {
-  id: string;
-  name: string;
-  price: string;
-  yearlyPrice?: string;
-  description: string;
-  features: string[];
-  highlighted?: boolean;
-  badge?: string;
-  cta: string;
-  tier: "free" | "essential" | "lifetime" | "inner_circle";
-  hidden?: boolean; // Set to true to hide tier from public view
-}
-
-const PRICING_TIERS: PricingTier[] = [
+const tiers = [
   {
-    id: "free",
     name: "Free",
-    price: "$0",
-    description: "Start decoding your blueprint",
+    monthlyPrice: "$0",
+    annualPrice: "$0",
+    description: "Begin your journey",
     features: [
-      "Daily horoscope reading",
-      "Daily numerology insight",
+      "Daily horoscope",
+      "Daily numerology",
       "1 Oracle question per day",
       "Basic palm scan",
-      "No credit card required",
     ],
-    cta: "Start Decoding",
-    tier: "free",
+    cta: "Start Free",
+    highlight: false,
+    variantId: null,
   },
   {
-    id: "essential",
     name: "Essential",
-    price: "$8.88",
-    yearlyPrice: "$88",
-    description: "Full access to your cosmic code",
+    monthlyPrice: "$8.88",
+    annualPrice: "$88",
+    description: "Full access to your frequency",
     features: [
       "Everything in Free",
-      "Zero ads, zero distractions",
-      "Unlimited Oracle guidance",
-      "Complete palm analysis",
-      "All frequency calibrations",
+      "Unlimited Oracle questions",
+      "Full palm reading report",
+      "All 432Hz & 528Hz frequencies",
       "7-day reading archive",
-      "Full community access",
+      "Ad-free experience",
+      "Community access",
     ],
-    highlighted: true,
-    badge: "Most Popular",
-    cta: "Unlock Full Access",
-    tier: "essential",
+    cta: "Start Essential",
+    highlight: true,
+    monthlyVariantId: "ESSENTIAL_MONTHLY_VARIANT_ID",
+    annualVariantId: "ESSENTIAL_ANNUAL_VARIANT_ID",
   },
   {
-    id: "lifetime",
     name: "Lifetime",
-    price: "$688",
-    description: "One payment, eternal access",
+    monthlyPrice: "$688",
+    annualPrice: "$688",
+    description: "One payment. Everything. Forever.",
     features: [
-      "Everything in Essential",
-      "Lifetime access forever",
-      "All current features",
+      "All Essential features",
       "All future features included",
-      "Priority support",
       "Never pay again",
+      "Founding member status",
     ],
-    badge: "Best Value",
     cta: "Get Lifetime Access",
-    tier: "lifetime",
-    hidden: true, // Hidden for now - payment processor concerns
+    highlight: false,
+    variantId: "LIFETIME_VARIANT_ID",
   },
   {
-    id: "inner_circle",
     name: "Inner Circle",
-    price: "$1,888",
-    description: "A permanent seat at the table",
+    monthlyPrice: "$1,888",
+    annualPrice: "$1,888",
+    description: "100 seats. Never reopens.",
     features: [
-      "Everything in Lifetime",
-      "Monthly private group call with David Christian",
-      "Behind-the-scenes access",
-      "Early access to all new features",
-      "Exclusive physical merchandise drops",
+      "All Lifetime features",
+      "Monthly private call with David",
+      "Behind-the-scenes app access",
+      "Early feature access",
+      "Exclusive merchandise drops",
       "Priority event tickets",
-      "Limited to 100 members worldwide",
+      "Permanent seat at the table",
     ],
-    badge: "Exclusive",
     cta: "Claim Your Seat",
-    tier: "inner_circle",
-    hidden: true, // Hidden for now - payment processor concerns
+    highlight: false,
+    variantId: "INNER_CIRCLE_VARIANT_ID",
+    cap: 100,
   },
 ];
 
 export default function Pricing() {
-  const navigate = useNavigate();
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const [billingCycle, setBillingCycle] = useState<BillingCycle>("monthly");
-  const [couponCode, setCouponCode] = useState("");
-  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
-  const [innerCircleSeats, setInnerCircleSeats] = useState({ taken: 0, max: 100 });
-  const [currentTier, setCurrentTier] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetchInnerCircleSeats();
-    if (user) {
-      fetchCurrentSubscription();
-    }
-  }, [user]);
-
-  const fetchInnerCircleSeats = async () => {
-    const { data, error } = await supabase
-      .from("inner_circle_seats")
-      .select("*")
-      .limit(1);
-    
-    if (data && data.length > 0) {
-      setInnerCircleSeats({ taken: data.length, max: 100 });
-    }
-  };
-
-  const fetchCurrentSubscription = async () => {
-    if (!user) return;
-    
-    const { data } = await supabase
-      .from("subscriptions")
-      .select("tier")
-      .eq("user_id", user.id)
-      .eq("status", "active")
-      .single();
-    
-    if (data) {
-      setCurrentTier(data.tier);
-    }
-  };
-
-  const handleApplyCoupon = async () => {
-    if (!couponCode.trim()) return;
-    
-    setIsApplyingCoupon(true);
-    try {
-      const { data: coupon, error } = await supabase
-        .from("coupon_codes")
-        .select("*")
-        .eq("code", couponCode.toUpperCase())
-        .eq("is_active", true)
-        .single();
-
-      if (error || !coupon) {
-        toast({
-          title: "Invalid coupon",
-          description: "This coupon code is not valid or has expired.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Check if expired
-      if (coupon.expires_at && new Date(coupon.expires_at) < new Date()) {
-        toast({
-          title: "Coupon expired",
-          description: "This coupon code has expired.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Check max uses
-      if (coupon.max_uses && coupon.times_used >= coupon.max_uses) {
-        toast({
-          title: "Coupon exhausted",
-          description: "This coupon has reached its maximum number of uses.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      toast({
-        title: "Coupon applied!",
-        description: coupon.type === "free_access" 
-          ? `You'll receive ${coupon.value} days of free access!`
-          : `${coupon.value}% discount will be applied at checkout.`,
-      });
-      
-      // Store coupon for checkout
-      sessionStorage.setItem("appliedCoupon", JSON.stringify(coupon));
-    } catch (err) {
-      toast({
-        title: "Error",
-        description: "Failed to apply coupon. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsApplyingCoupon(false);
-    }
-  };
-
-  const handleSelectPlan = async (tier: PricingTier) => {
-    if (tier.tier === "free") {
-      if (!user) {
-        navigate("/");
-        toast({
-          title: "Sign up to get started",
-          description: "Create a free account to begin your cosmic journey.",
-        });
-      } else {
-        navigate("/");
-      }
-      return;
-    }
-
-    if (!user) {
-      toast({
-        title: "Sign in required",
-        description: "Please sign in to subscribe to a plan.",
-      });
-      navigate("/");
-      return;
-    }
-
-    // Check Inner Circle availability
-    if (tier.tier === "inner_circle" && innerCircleSeats.taken >= innerCircleSeats.max) {
-      toast({
-        title: "Inner Circle is full",
-        description: "All 100 seats have been claimed. This tier is permanently closed.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // TODO: Integrate with Stripe checkout
-    toast({
-      title: "Redirecting to checkout...",
-      description: `Setting up ${tier.name} subscription.`,
-    });
-  };
-
-  const seatsRemaining = innerCircleSeats.max - innerCircleSeats.taken;
+  const [isAnnual, setIsAnnual] = useState(false);
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate("/")}
-            className="text-muted-foreground hover:text-foreground"
+    <div className="min-h-screen bg-[#0B1A1A] text-[#FFFDD0] px-4 py-12">
+      <h1 className="text-center font-display text-3xl text-[#F5D060] mb-2">
+        Choose Your Sanctuary
+      </h1>
+      <p className="text-center text-[#FFFDD0]/60 text-sm mb-8">
+        Decode your frequency. Own your path.
+      </p>
+
+      <div className="flex items-center justify-center gap-4 mb-10">
+        <span className={`text-sm ${!isAnnual ? "text-[#F5D060]" : "text-[#FFFDD0]/40"}`}>
+          Monthly
+        </span>
+        <button
+          onClick={() => setIsAnnual(!isAnnual)}
+          className={`relative w-12 h-6 rounded-full transition-colors ${
+            isAnnual ? "bg-[#F5D060]" : "bg-[#FFFDD0]/20"
+          }`}
+        >
+          <span
+            className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${
+              isAnnual ? "translate-x-6" : "translate-x-0"
+            }`}
+          />
+        </button>
+        <span className={`text-sm ${isAnnual ? "text-[#F5D060]" : "text-[#FFFDD0]/40"}`}>
+          Annual <span className="text-xs text-green-400 ml-1">Save 17%</span>
+        </span>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 max-w-5xl mx-auto md:grid-cols-2 lg:grid-cols-4">
+        {tiers.map((tier) => (
+          <div
+            key={tier.name}
+            className={`rounded-2xl p-6 border backdrop-blur-md flex flex-col ${
+              tier.highlight
+                ? "border-[#F5D060] bg-[#F5D060]/5"
+                : "border-[#B87333]/20 bg-[#2A1F0F]/30"
+            }`}
           >
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div>
-            <h1 className="font-display text-xl text-primary">Decode Your Matrix</h1>
-            <p className="text-sm text-muted-foreground">The simulation leaves clues. Start reading them.</p>
-          </div>
-        </div>
-      </header>
+            {tier.highlight && (
+              <span className="text-xs text-[#0B1A1A] bg-[#F5D060] rounded-full px-3 py-0.5 self-start mb-3 font-bold">
+                MOST POPULAR
+              </span>
+            )}
+            {tier.cap && (
+              <span className="text-xs text-red-400 border border-red-400/30 rounded-full px-3 py-0.5 self-start mb-3">
+                100 SEATS ONLY
+              </span>
+            )}
 
-      <main className="max-w-7xl mx-auto px-4 py-8 space-y-12">
-        {/* Billing Toggle */}
-        <div className="flex justify-center">
-          <div className="bg-card/50 rounded-full p-1 flex items-center gap-1">
-            <button
-              onClick={() => setBillingCycle("monthly")}
-              className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${
-                billingCycle === "monthly"
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Monthly
-            </button>
-            <button
-              onClick={() => setBillingCycle("yearly")}
-              className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${
-                billingCycle === "yearly"
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Yearly
-              <span className="ml-2 text-xs opacity-75">Save 17%</span>
-            </button>
-          </div>
-        </div>
+            <h3 className="text-[#F5D060] font-display text-xl mb-1">{tier.name}</h3>
+            <p className="text-[#FFFDD0]/50 text-xs mb-4">{tier.description}</p>
 
-        {/* Pricing Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
-          {PRICING_TIERS.filter((t) => !t.hidden).map((tier) => (
-            <div
-              key={tier.id}
-              className={`relative rounded-2xl border ${
-                tier.highlighted
-                  ? "border-primary bg-gradient-to-b from-primary/10 to-transparent"
-                  : "border-border/50 bg-card/30"
-              } p-6 flex flex-col`}
-            >
-              {tier.badge && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <span className="bg-primary text-primary-foreground text-xs font-semibold px-3 py-1 rounded-full">
-                    {tier.badge}
-                  </span>
-                </div>
+            <div className="mb-6">
+              <span className="text-3xl font-bold text-[#FFFDD0]">
+                {isAnnual ? tier.annualPrice : tier.monthlyPrice}
+              </span>
+              {tier.name === "Essential" && (
+                <span className="text-[#FFFDD0]/40 text-sm ml-1">
+                  {isAnnual ? "/yr" : "/mo"}
+                </span>
               )}
-
-              <div className="text-center mb-6">
-                <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-primary/20 flex items-center justify-center">
-                  {tier.id === "free" && <Sparkles className="w-6 h-6 text-primary" />}
-                  {tier.id === "essential" && <Star className="w-6 h-6 text-primary" />}
-                  {tier.id === "lifetime" && <Crown className="w-6 h-6 text-primary" />}
-                  {tier.id === "inner_circle" && <Users className="w-6 h-6 text-primary" />}
-                </div>
-
-                <h3 className="font-display text-xl text-foreground mb-2">{tier.name}</h3>
-                <p className="text-sm text-muted-foreground mb-4">{tier.description}</p>
-
-                <div className="mb-2">
-                  <span className="text-4xl font-bold text-primary">
-                    {tier.id === "essential" && billingCycle === "yearly"
-                      ? tier.yearlyPrice
-                      : tier.price}
-                  </span>
-                  {tier.id === "essential" && (
-                    <span className="text-muted-foreground ml-1">
-                      /{billingCycle === "monthly" ? "mo" : "yr"}
-                    </span>
-                  )}
-                  {(tier.id === "lifetime" || tier.id === "inner_circle") && (
-                    <span className="text-muted-foreground ml-1">one-time</span>
-                  )}
-                </div>
-
-                {tier.id === "inner_circle" && (
-                  <div className="flex items-center justify-center gap-2 text-sm">
-                    {seatsRemaining > 0 ? (
-                      <>
-                        <span className="text-primary font-semibold">{seatsRemaining}</span>
-                        <span className="text-muted-foreground">seats remaining</span>
-                      </>
-                    ) : (
-                      <span className="text-destructive flex items-center gap-1">
-                        <Lock className="w-4 h-4" /> Permanently Closed
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <ul className="space-y-3 mb-6 flex-1">
-                {tier.features.map((feature, idx) => (
-                  <li key={idx} className="flex items-start gap-3 text-sm">
-                    <Check className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                    <span className="text-muted-foreground">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <Button
-                onClick={() => handleSelectPlan(tier)}
-                className={`w-full ${
-                  tier.highlighted
-                    ? "bg-primary hover:bg-primary/90 text-primary-foreground"
-                    : "bg-card hover:bg-card/80 text-foreground border border-border"
-                }`}
-                disabled={
-                  currentTier === tier.tier ||
-                  (tier.id === "inner_circle" && seatsRemaining === 0)
-                }
-              >
-                {currentTier === tier.tier ? "Current Plan" : tier.cta}
-              </Button>
+              {(tier.name === "Lifetime" || tier.name === "Inner Circle") && (
+                <span className="text-[#FFFDD0]/40 text-sm ml-1">one-time</span>
+              )}
             </div>
-          ))}
-        </div>
 
-        {/* Coupon Code Section */}
-        <div className="max-w-md mx-auto">
-          <div className="bg-card/30 rounded-2xl border border-border/50 p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <Gift className="w-5 h-5 text-primary" />
-              <h3 className="font-display text-lg">Have a coupon code?</h3>
-            </div>
-            <div className="flex gap-2">
-              <Input
-                placeholder="Enter code"
-                value={couponCode}
-                onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                className="bg-background/50 border-border/50 uppercase"
-              />
-              <Button
-                onClick={handleApplyCoupon}
-                disabled={isApplyingCoupon || !couponCode.trim()}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground"
-              >
-                Apply
-              </Button>
-            </div>
+            <ul className="space-y-2 mb-8 flex-1">
+              {tier.features.map((feature) => (
+                <li key={feature} className="flex items-start gap-2 text-sm text-[#FFFDD0]/80">
+                  <span className="text-[#F5D060] mt-0.5">✦</span>
+                  {feature}
+                </li>
+              ))}
+            </ul>
+
+            <button
+              className={`w-full py-3 rounded-xl text-sm font-semibold tracking-widest transition-all ${
+                tier.highlight
+                  ? "bg-[#F5D060] text-[#0B1A1A] hover:bg-[#FFBF00]"
+                  : tier.name === "Inner Circle"
+                  ? "bg-transparent border border-[#F5D060] text-[#F5D060] hover:bg-[#F5D060]/10"
+                  : "bg-[#FFFDD0]/10 text-[#FFFDD0] hover:bg-[#FFFDD0]/20"
+              }`}
+            >
+              {tier.cta}
+            </button>
           </div>
-        </div>
-
-        {/* Inner Circle Warning - Hidden while tier is hidden */}
-        {/* Uncomment when Inner Circle tier is re-enabled:
-        <div className="max-w-2xl mx-auto text-center">
-          <div className="bg-card/20 rounded-2xl border border-primary/30 p-6">
-            <Crown className="w-8 h-8 text-primary mx-auto mb-4" />
-            <h3 className="font-display text-lg text-primary mb-2">
-              Inner Circle: A Permanent Seat at the Table
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              Strictly capped at 100 members worldwide. Once all 100 seats are filled, 
-              this tier closes forever with no exceptions. This is not a marketing tactic - 
-              it&apos;s a commitment to maintain an intimate, high-value community.
-            </p>
-          </div>
-        </div>
-        */}
-      </main>
+        ))}
+      </div>
     </div>
   );
 }
