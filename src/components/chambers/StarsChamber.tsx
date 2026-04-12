@@ -56,8 +56,8 @@ interface StarsChamberProps {
   language?: "en" | "es" | "pt";
 }
 
-export default function StarsChamber({
-  horoscope = "",
+export function StarsChamber({
+    horoscope = "",
   monthlyReading = "",
   yearlyReading = "",
   loveReading = "",
