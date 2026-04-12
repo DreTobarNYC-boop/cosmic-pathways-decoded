@@ -2,8 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 serve(async (req) => {
@@ -12,64 +11,54 @@ serve(async (req) => {
   }
 
   try {
-    const body = await req.json();
-    const readingType = body.reading_type || body.readingType;
-    const context = body.context || {};
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) {
-      return new Response(JSON.stringify({ error: "Server misconfiguration: GEMINI_API_KEY is missing." }), { status: 500, headers: corsHeaders });
-    }
+    const { sign, birthDate, readingType, selectedLanguage } = await req.json();
 
-    // Build prompts. Adjust these prompts based on your application's needs.
-    const systemPrompt = `You are a knowledgeable astrologer who provides personalized readings. Respond with clear, concise insights in plain language. Do not include markdown or code fences.`;
-    const userPrompt = `Generate a reading for the following context and reading type: ${readingType}. Context: ${JSON.stringify(context)}.`;
+    const language = selectedLanguage || "en";
 
-    // Prepare request for Gemini 3 Flash
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    const languageInstruction =
+      language === "es"
+        ? "Respond ONLY in Spanish. Do not use any English."
+        : language === "pt"
+        ? "Respond ONLY in Portuguese (Brazilian). Do not use any English."
+        : "Respond in English.";
 
-    const requestBody = {
-      contents: [
-        { role: "system", parts: [{ text: systemPrompt }] },
-        { role: "user", parts: [{ text: userPrompt }] },
-      ],
-      generationConfig: {
-        temperature: 0.9,
-        maxOutputTokens: 600,
-      },
+    const prompts: Record<string, string> = {
+      daily: `You are DCode, a spiritual oracle speaking directly to a ${sign}. ${languageInstruction} Write a personal, deeply insightful daily horoscope for today. Speak directly to them — use "you" and "your". 3-4 sentences. No JSON, no formatting, just flowing prose.`,
+      monthly: `You are DCode, a spiritual oracle. ${languageInstruction} Write a monthly horoscope for ${sign} for this month. Personal, direct, insightful. 4-5 sentences. No JSON, just flowing prose.`,
+      yearly: `You are DCode, a spiritual oracle. ${languageInstruction} Write a 2026 yearly forecast for ${sign}. Personal, visionary, empowering. 5-6 sentences. No JSON, just flowing prose.`,
+      love: `You are DCode, a spiritual oracle. ${languageInstruction} Write a love and relationships reading for ${sign}. Warm, honest, personal. 3-4 sentences. No JSON, just flowing prose.`,
+      career: `You are DCode, a spiritual oracle. ${languageInstruction} Write a career and purpose reading for ${sign}. Empowering, direct, specific. 3-4 sentences. No JSON, just flowing prose.`,
+      wellness: `You are DCode, a spiritual oracle. ${languageInstruction} Write a wellness and energy reading for ${sign}. Grounding, nurturing, personal. 3-4 sentences. No JSON, just flowing prose.`,
     };
 
-    let response;
-    try {
-      response = await fetch(
-        `https://generativelanguage.googleapis.com/v1/models/gemini-3-flash:generateContent?key=${GEMINI_API_KEY}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(requestBody),
-          signal: controller.signal,
-        },
-      );
-    } catch (error) {
-      if (error.name === "AbortError") {
-        return new Response(JSON.stringify({ error: "The AI request timed out." }), { status: 408, headers: corsHeaders });
+    const prompt = prompts[readingType] || prompts.daily;
+
+    const geminiResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${Deno.env.get("GEMINI_API_KEY")}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.9,
+            maxOutputTokens: 300,
+          },
+        }),
       }
-      throw error;
-    } finally {
-      clearTimeout(timeoutId);
-    }
+    );
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      return new Response(JSON.stringify({ error: `AI request failed with status ${response.status}: ${errorText}` }), { status: 500, headers: corsHeaders });
-    }
+    const geminiData = await geminiResponse.json();
+    const reading =
+      geminiData?.candidates?.[0]?.content?.parts?.[0]?.text || "Your reading is being prepared.";
 
-    const data = await response.json();
-    const content =
-      data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ||
-      "Readings are temporarily unavailable. Try again shortly.";
-    return new Response(JSON.stringify({ content }), { status: 200, headers: corsHeaders });
+    return new Response(JSON.stringify({ reading }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message || "Unexpected server error." }), { status: 500, headers: corsHeaders });
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
