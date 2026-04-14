@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { ChamberLayout } from "@/components/ChamberLayout";
 import { useAuth } from "@/hooks/use-auth";
 import { useCachedReading } from "@/hooks/use-cached-reading";
+import { WithInfo } from "@/components/ui/info-tooltip";
 import { Share2, RotateCcw, Loader2, ChevronRight, ChevronDown } from "lucide-react";
 
 /* ─── Hawkins Map of Consciousness ─── */
@@ -491,7 +492,7 @@ function ResultsScreen({
       {/* Sonic Prescription */}
       <div className="card-cosmic rounded-2xl p-5 space-y-3">
         <p className="text-[11px] uppercase tracking-[0.2em] text-primary/70 font-bold">
-          YOUR SONIC PRESCRIPTION
+          <WithInfo term="solfeggio">YOUR SONIC PRESCRIPTION</WithInfo>
         </p>
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">

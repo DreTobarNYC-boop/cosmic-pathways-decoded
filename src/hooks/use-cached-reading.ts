@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
+import { normalizeLanguage } from "@/lib/language";
 
 interface UseCachedReadingOptions {
   readingType: string;
@@ -20,7 +21,6 @@ export function useCachedReading({
   const [content, setContent] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Stable ref for context to avoid re-triggering
   const contextRef = useRef(context);
   contextRef.current = context;
 
@@ -34,11 +34,9 @@ export function useCachedReading({
       setError(null);
 
       try {
-        // 1. Check if user is authenticated for DB caching
         const { data: authData } = await supabase.auth.getUser();
         const userId = authData?.user?.id;
 
-        // 2. Check DB cache (only if authenticated)
         if (userId) {
           const { data: cached } = await supabase
             .from("cached_readings")
@@ -57,39 +55,76 @@ export function useCachedReading({
           }
         }
 
-        // 3. Generate via Gemini edge function
+        // Build a clean context payload the edge function understands
+        const ctx = contextRef.current;
+        const rawLang = String(ctx.selectedLanguage ?? ctx.language ?? "en");
+        const selectedLanguage = normalizeLanguage(rawLang);
+        const body = {
+          reading_type: readingType,
+          readingType,
+          sign: ctx.sign ?? ctx.zodiacSign ?? ctx.sunSign ?? "",
+          name: ctx.name ?? ctx.firstName ?? "",
+          birthDate: ctx.birthDate ?? ctx.dateOfBirth ?? "",
+          selectedLanguage,
+          context: { ...ctx, language: selectedLanguage },
+        };
+
         const { data: fnData, error: fnError } = await supabase.functions.invoke(
           "generate-reading",
-          { body: { reading_type: readingType, context: contextRef.current } }
+          { body }
         );
 
         if (fnError) throw new Error(fnError.message);
 
-        const generatedContent = fnData?.content;
+        // Accept whatever key the edge function returns
+        const generatedContent =
+          fnData?.reading ??
+          fnData?.content ??
+          fnData?.text ??
+          fnData?.message ??
+          (typeof fnData === "string" ? fnData : null);
+
         if (!generatedContent) throw new Error("No content returned");
 
-        if (!cancelled) {
-          setContent(generatedContent);
+        // Strip any accidental JSON wrapping
+        let cleanContent = generatedContent.trim();
+        if (cleanContent.startsWith("{") || cleanContent.startsWith("[")) {
+          try {
+            const parsed = JSON.parse(cleanContent);
+            cleanContent =
+              parsed?.reading ??
+              parsed?.content ??
+              parsed?.text ??
+              Object.values(parsed).find((v) => typeof v === "string") ??
+              cleanContent;
+          } catch {
+            cleanContent = cleanContent
+              .replace(/^\{.*?"[^"]+"\s*:\s*"/, "")
+              .replace(/"\s*\}$/, "")
+              .trim();
+          }
         }
 
-        // 4. Cache the result in DB (only if authenticated)
+        if (!cancelled) {
+          setContent(cleanContent);
+        }
+
         if (userId) {
           supabase.from("cached_readings").upsert(
             [{
               user_id: userId,
               reading_type: readingType,
               cache_key: cacheKey,
-              content: generatedContent,
+              content: cleanContent,
               metadata: contextRef.current as unknown as Json,
             }],
             { onConflict: "user_id,reading_type,cache_key" }
-          ).then(() => { /* fire and forget */ });
+          ).then(() => {});
         }
       } catch (err) {
         if (!cancelled) {
           const msg = err instanceof Error ? err.message : "Failed to load reading";
           setError(msg);
-          // Use fallback if provided
           if (fallback) {
             setContent(fallback);
           }

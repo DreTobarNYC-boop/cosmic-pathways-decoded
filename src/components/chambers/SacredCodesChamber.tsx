@@ -2,9 +2,11 @@ import { useState, useCallback, useMemo } from "react";
 import { ChamberLayout } from "@/components/ChamberLayout";
 import { useAuth } from "@/hooks/use-auth";
 import { supabase } from "@/integrations/supabase/client";
+import { WithInfo } from "@/components/ui/info-tooltip";
 import { Search, Copy, Check, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
+import { normalizeLanguage } from "@/lib/language";
 
 /* ─── Grabovoi Code Database ─── */
 
@@ -206,6 +208,8 @@ export function SacredCodesChamber({ onBack }: { onBack: () => void }) {
     setIsSearching(true);
     setAiResult(null);
 
+    const language = normalizeLanguage(i18n.language);
+
     try {
       const { data, error } = await supabase.functions.invoke("generate-reading", {
         body: {
@@ -216,13 +220,13 @@ export function SacredCodesChamber({ onBack }: { onBack: () => void }) {
             birthPlace: profile?.birthPlace || "Unknown",
             birthTime: profile?.birthTime || "Unknown",
             dateOfBirth: profile?.dateOfBirth || "Unknown",
-            language: i18n.language,
+            language,
           },
         },
       });
       if (error) throw error;
 
-      const content = data?.content;
+      const content = data?.reading ?? data?.content;
       if (content) {
         try {
           const parsed = JSON.parse(content);
@@ -261,7 +265,7 @@ export function SacredCodesChamber({ onBack }: { onBack: () => void }) {
         {/* ─── Sacred Codes Section ─── */}
         <div className="space-y-4">
           <p className="text-[10px] uppercase tracking-[0.25em] text-primary/80 font-bold text-center">
-            SACRED CODES
+            <WithInfo term="grabovoi">SACRED CODES (GRABOVOI)</WithInfo>
           </p>
 
           {/* Search */}

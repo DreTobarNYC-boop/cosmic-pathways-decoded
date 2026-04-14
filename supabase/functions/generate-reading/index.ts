@@ -2,424 +2,481 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-
-const TONE_RULES = `
-WRITING STYLE (MANDATORY):
-- Use plain, everyday language. Talk like a smart friend — direct, warm, real.
-- NO flowery or fantasy words. Banned words: cosmic, mystical, ethereal, celestial, sovereign, divine, sacred, transcendent, alchemical, luminous, radiant, realm, vessel, channeling, resonance, vibration, awakening, veil, oracle, transmute, alchemy, tapestry, weave, unfurl, beckon.
-- Keep sentences short. Get to the point.
-- Say "you're good at reading people" NOT "your psychic antenna resonates with the collective consciousness."
-- Say "today is a good day to plan ahead" NOT "the cosmic winds whisper of preparation."
-
-SOLUTION-BASED APPROACH (CRITICAL):
-- Every observation MUST include practical, actionable advice. Never just name a problem — always give a real-world solution.
-- NEVER say "today is a bad day" or "avoid doing X." Frame everything constructively.
-- If it's a challenging day, say what to DO with that energy: "This is a great day to pause and reflect before making big moves" NOT "beware of hasty decisions."
-- Frame challenges as opportunities with specific actions.
-- Every reading should leave the person with something concrete they can actually do TODAY.
-- We DECODE — we give people tools to work with what they've got.`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    const body = await req.json();
+
+    // Accept both naming conventions from the frontend
+    const readingType = body.readingType ?? body.reading_type ?? "daily";
+    const selectedLanguage =
+      body.selectedLanguage ??
+      body.language ??
+      body.context?.selectedLanguage ??
+      body.context?.language ??
+      "en";
+    const sign =
+      body.sign ??
+      body.context?.sign ??
+      body.context?.zodiacSign ??
+      body.context?.sunSign ??
+      "Aries";
+    const name =
+      body.name ?? body.context?.name ?? body.context?.firstName ?? "";
+
+    // Extract rich context for daily horoscope readings
+    const ctx = body.context || {};
+    const element = String(ctx.element || "");
+    const lifePath = ctx.lifePath != null ? String(ctx.lifePath) : "";
+    const chineseZodiac = String(ctx.chineseZodiac || "");
+    const dateStr = String(ctx.date || new Date().toDateString());
+    const universalDay = ctx.universalDay != null ? String(ctx.universalDay) : "";
+    const personalDay = ctx.personalDay != null ? String(ctx.personalDay) : "";
+    const cuspInfo = ctx.cuspInfo ? String(ctx.cuspInfo) : null;
+
+    const nameStr = name ? `, ${name}` : "";
+    const cuspNote = cuspInfo ? ` (${cuspInfo})` : "";
+
+    // ── Language configuration ──────────────────────────────────────────────
+    // For each supported language we define:
+    //   - langName:        human-readable name used inside prompts
+    //   - langInstruction: a strict, explicit directive pasted into every prompt
+    //   - labels:          UI-level section headings translated to the target language
+    type LangConfig = {
+      langName: string;
+      langInstruction: string;
+      heading: string;
+      universalDayLabel: string;
+      personalDayLabel: string;
+      elementLabel: (el: string) => string;
+      pathLabel: (n: string) => string;
+    };
+
+    const lang: LangConfig =
+      selectedLanguage === "es"
+        ? {
+            langName: "Spanish",
+            langInstruction:
+              "CRÍTICO: Responde ÚNICAMENTE en español. Cada palabra — incluyendo todos los encabezados, etiquetas, texto del cuerpo y términos astrológicos — debe estar en español. No uses ninguna palabra en inglés. No agregues comentarios meta, líneas de confirmación como '* Spanish only? Yes', ni ecos de instrucciones.",
+            heading: "TU HORÓSCOPO DIARIO",
+            universalDayLabel: "DÍA UNIVERSAL",
+            personalDayLabel: "DÍA PERSONAL",
+            elementLabel: (el) =>
+              el === "Fire"
+                ? "Signo de Fuego"
+                : el === "Earth"
+                ? "Signo de Tierra"
+                : el === "Air"
+                ? "Signo de Aire"
+                : el === "Water"
+                ? "Signo de Agua"
+                : `Signo ${el}`,
+            pathLabel: (n) => `Camino ${n}`,
+          }
+        : selectedLanguage === "pt"
+        ? {
+            langName: "Brazilian Portuguese",
+            langInstruction:
+              "CRÍTICO: Responda SOMENTE em português do Brasil. Cada palavra — incluindo todos os títulos, rótulos, texto do corpo e termos astrológicos — deve estar em português. Não use nenhuma palavra em inglês. Não adicione comentários meta, linhas de confirmação ou ecos de instrução.",
+            heading: "SEU HORÓSCOPO DIÁRIO",
+            universalDayLabel: "DIA UNIVERSAL",
+            personalDayLabel: "DIA PESSOAL",
+            elementLabel: (el) =>
+              el === "Fire"
+                ? "Signo de Fogo"
+                : el === "Earth"
+                ? "Signo de Terra"
+                : el === "Air"
+                ? "Signo de Ar"
+                : el === "Water"
+                ? "Signo de Água"
+                : `Signo ${el}`,
+            pathLabel: (n) => `Caminho ${n}`,
+          }
+        : {
+            langName: "English",
+            langInstruction: "Respond in English.",
+            heading: "YOUR DAILY HOROSCOPE",
+            universalDayLabel: "UNIVERSAL DAY",
+            personalDayLabel: "PERSONAL DAY",
+            elementLabel: (el) => `${el} Sign`,
+            pathLabel: (n) => `Path ${n}`,
+          };
+
+    // ── Astrology tag line for daily readings ───────────────────────────────
+    const tagParts: string[] = [];
+    if (element) tagParts.push(lang.elementLabel(element));
+    if (lifePath) tagParts.push(lang.pathLabel(lifePath));
+    if (chineseZodiac) tagParts.push(chineseZodiac);
+    const tagLine = tagParts.join(" • ");
+
+    // ── DAILY HOROSCOPE prompt (daily_horoscope / daily) ───────────────────
+    // Used by DailyBriefing home card. Produces rich narrative prose.
+    // The UI already renders the date badge, zodiac badge, Universal Day card,
+    // and Personal Day card separately, so we output only the narrative text.
+    const dailyHoroscopePrompt = [
+      `You are DCode, a mystical and compassionate spiritual oracle.`,
+      lang.langInstruction,
+      ``,
+      `Write a rich, deeply personal daily horoscope reading for ${sign}${cuspNote}${nameStr} for ${dateStr}.`,
+      ``,
+      `Instructions:`,
+      `- Write 3 to 4 full paragraphs of flowing, empathetic prose (at least 10 sentences total).`,
+      `- Speak directly to the person using "you" and "your".`,
+      `- Be poetic, warm, and specific to ${sign}${element ? ` (${lang.elementLabel(element)})` : ""}${lifePath ? `, ${lang.pathLabel(lifePath)}` : ""}.`,
+      `- Weave in today's cosmic energies, emotional landscape, practical guidance, and an inspiring closing thought.`,
+      `- Do NOT use bullet points. Do NOT add a line labeled "Affirmation:". Do NOT add any section headers.`,
+      `- Do NOT output any meta-commentary, instruction echoes, or confirmation text.`,
+      `- Output ONLY the horoscope narrative — nothing else.`,
+      ``,
+      `Write exclusively in ${lang.langName}. Every word must be in ${lang.langName}.`,
+    ].join("\n");
+
+    // ── STARS TODAY prompt (stars_today) ───────────────────────────────────
+    // Used by StarsChamber "TODAY" tab. Produces the full structured reading
+    // matching the MVP screenshot layout, with localized section headings.
+    const universalDaySection =
+      universalDay
+        ? [
+            ``,
+            lang.universalDayLabel,
+            universalDay,
+            `[One sentence in ${lang.langName} describing the energy of universal day ${universalDay}.]`,
+          ].join("\n")
+        : "";
+
+    const personalDaySection =
+      personalDay
+        ? [
+            ``,
+            lang.personalDayLabel,
+            personalDay,
+            `[One sentence in ${lang.langName} describing what personal day ${personalDay} means for ${name || "the seeker"} today.]`,
+          ].join("\n")
+        : "";
+
+    const starsTodayPrompt = [
+      `You are DCode, a mystical and compassionate spiritual oracle.`,
+      lang.langInstruction,
+      ``,
+      `Write a complete, richly structured daily horoscope for ${sign}${cuspNote}${nameStr} for ${dateStr}.`,
+      ``,
+      `Output EXACTLY the following structure. Replace every bracketed placeholder with real content in ${lang.langName}.`,
+      `Do NOT output the brackets themselves. Do NOT add extra sections. Do NOT output any meta-commentary.`,
+      ``,
+      `---`,
+      `${dateStr}   |   ${sign}`,
+      ``,
+      lang.heading,
+      ``,
+      `[Write 3 full paragraphs of flowing, empathetic prose — at least 10 sentences. Use "you" and "your". Be poetic, warm, and specific to ${sign}${element ? ` (${lang.elementLabel(element)})` : ""}${lifePath ? `, ${lang.pathLabel(lifePath)}` : ""}. Cover the cosmic climate, emotional landscape, practical guidance, and an uplifting close. No bullet points. No affirmation labels.]`,
+      ``,
+      tagLine || `[${lang.elementLabel(element || "Sign")} • ${lang.pathLabel(lifePath || "?")}}]`,
+      universalDaySection,
+      personalDaySection,
+      `---`,
+      ``,
+      `Write every single word in ${lang.langName}. Translate element type, path label, and all section headings to ${lang.langName}. No English leakage. No instruction echoes.`,
+    ]
+      .filter((line) => line !== null && line !== undefined)
+      .join("\n");
+
+    // ── Shared rich prompt builder for non-daily reading types ─────────────
+    function buildPrompt(
+      type: string,
+      tone: string,
+      length: string,
+    ): string {
+      return [
+        `You are DCode, a spiritual oracle writing for ${sign}${nameStr}.`,
+        lang.langInstruction,
+        ``,
+        `Write a ${type} reading for ${sign}. ${tone} ${length} of flowing prose.`,
+        `Speak directly using "you" and "your". No bullet points. No meta-commentary. No instruction echoes.`,
+        `Output only the reading text in ${lang.langName}.`,
+      ].join("\n");
     }
 
-    const { reading_type, context } = await req.json();
+    // ── Prompt map ─────────────────────────────────────────────────────────
+    // Maps every readingType sent by the frontend to a prompt string.
+    const prompts: Record<string, string> = {
+      // Daily / home card
+      daily: dailyHoroscopePrompt,
+      daily_horoscope: dailyHoroscopePrompt,
 
-    if (!reading_type || !context) {
+      // StarsChamber tabs
+      stars_today: starsTodayPrompt,
+      stars_monthly: buildPrompt(
+        "monthly horoscope",
+        "Personal, direct, and insightful.",
+        "5-6 sentences",
+      ),
+      stars_yearly: buildPrompt(
+        "2026 yearly forecast",
+        "Visionary, empowering, and forward-looking.",
+        "6-7 sentences",
+      ),
+      stars_love: buildPrompt(
+        "love and relationships",
+        "Warm, honest, and deeply personal.",
+        "4-5 sentences",
+      ),
+      stars_career: buildPrompt(
+        "career and purpose",
+        "Empowering, direct, and specific.",
+        "4-5 sentences",
+      ),
+      stars_wellness: buildPrompt(
+        "wellness and energy",
+        "Grounding, nurturing, and supportive.",
+        "4-5 sentences",
+      ),
+
+      // Legacy / alternate keys
+      monthly: buildPrompt(
+        "monthly horoscope",
+        "Personal, direct, and insightful.",
+        "5-6 sentences",
+      ),
+      yearly: buildPrompt(
+        "2026 yearly forecast",
+        "Visionary, empowering, and forward-looking.",
+        "6-7 sentences",
+      ),
+      love: buildPrompt(
+        "love and relationships",
+        "Warm, honest, and deeply personal.",
+        "4-5 sentences",
+      ),
+      career: buildPrompt(
+        "career and purpose",
+        "Empowering, direct, and specific.",
+        "4-5 sentences",
+      ),
+      wellness: buildPrompt(
+        "wellness and energy",
+        "Grounding, nurturing, and supportive.",
+        "4-5 sentences",
+      ),
+      compatibility: buildPrompt(
+        "compatibility and relationship synergy",
+        "Thoughtful, nuanced, and empathetic.",
+        "4-5 sentences",
+      ),
+
+      // Oracle chamber
+      oracle_daily: [
+        `You are DCode, an all-seeing mystical oracle${nameStr}.`,
+        lang.langInstruction,
+        ``,
+        `Write a profound oracle daily message for ${sign}. Cryptic yet clear, inspiring, and deeply personal.`,
+        `3-4 sentences of flowing prose. No bullet points. No meta-commentary. No instruction echoes.`,
+        `Output only the oracle message in ${lang.langName}.`,
+      ].join("\n"),
+
+      // Oracle chamber — conversational chat
+      oracle_chat: [
+        `You are DCode, an all-knowing cosmic oracle${nameStr}.`,
+        lang.langInstruction,
+        ``,
+        String(ctx.conversationHistory || "").trim()
+          ? `Recent conversation:\n${String(ctx.conversationHistory)}\n`
+          : "",
+        `The seeker asks: "${String(ctx.userMessage || "Guide me.")}"`,
+        ``,
+        `Respond as a wise, direct oracle. Give a clear, actionable insight in 2-3 sentences.`,
+        `Use "you" and "your". No greetings. No meta-commentary. No instruction echoes.`,
+        `Output only the oracle response in ${lang.langName}.`,
+      ].filter(Boolean).join("\n"),
+
+      // Dynasty chamber
+      dynasty_profile: [
+        `You are DCode, a spiritual oracle${nameStr}.`,
+        lang.langInstruction,
+        ``,
+        `Write a personal profile for the ${String(ctx.yearElement || "")} ${String(ctx.animal || "Dragon")} (${String(ctx.yinYang || "")} ${String(ctx.fixedElement || "")} energy).`,
+        lifePath ? `They have Life Path ${lifePath} and are a ${sign}.` : `They are a ${sign}.`,
+        ``,
+        `3-4 sentences of direct, personal prose. Speak as "you". Cover personality, strengths, and life purpose.`,
+        `No bullet points. No meta-commentary. Output only the profile text in ${lang.langName}.`,
+      ].join("\n"),
+
+      dynasty_year: [
+        `You are DCode, a spiritual oracle${nameStr}.`,
+        lang.langInstruction,
+        ``,
+        `Write a ${String(ctx.currentYear || new Date().getFullYear())} Year Energy Report for the ${String(ctx.yearElement || "")} ${String(ctx.animal || "Dragon")}.`,
+        ``,
+        `3-4 sentences covering: major themes for this year, one challenge to watch, one key opportunity, and one concrete action to take. Speak as "you".`,
+        `No bullet points. No meta-commentary. Output only the report in ${lang.langName}.`,
+      ].join("\n"),
+
+      dynasty_forecast: (() => {
+        const startYr = Number(ctx.startYear) || new Date().getFullYear();
+        return [
+          `You are DCode, a spiritual oracle${nameStr}.`,
+          lang.langInstruction,
+          ``,
+          `Generate a 5-year fortune forecast for the ${String(ctx.yearElement || "")} ${String(ctx.animal || "Dragon")} for the years ${startYr} through ${startYr + 4}.`,
+          ``,
+          `Return ONLY a valid JSON object — no markdown, no code blocks, no explanation outside the JSON:`,
+          `{"years":[{"year":${startYr},"title":"Short Theme 3-4 words","rating":3,"summary":"2-3 sentence summary."},{"year":${startYr + 1},"title":"...","rating":4,"summary":"..."},{"year":${startYr + 2},"title":"...","rating":3,"summary":"..."},{"year":${startYr + 3},"title":"...","rating":4,"summary":"..."},{"year":${startYr + 4},"title":"...","rating":5,"summary":"..."}]}`,
+          `Replace every "..." with real content. Rating is 1-5 stars (overall fortune). All titles and summaries in ${lang.langName}.`,
+        ].join("\n");
+      })(),
+
+      // Sacred Codes chamber
+      sacred_code: [
+        `You are DCode, a sacred numerology oracle${nameStr}.`,
+        lang.langInstruction,
+        ``,
+        `The seeker's intention: "${String(ctx.intention || "abundance and healing")}"`,
+        ``,
+        `Create a personal Grabovoi-style sacred code for this intention.`,
+        `Return ONLY a valid JSON object — no markdown, no code blocks, no explanation outside the JSON:`,
+        `{"title":"Name of the code","code":"numeric sequence of 6-12 digits with spaces","description":"2-3 sentences explaining the energy in ${lang.langName}.","ritual":"1-2 sentences on how to use it in ${lang.langName}."}`,
+      ].join("\n"),
+
+      // Frequency Scanner chamber
+      frequency_reading: [
+        `You are DCode, a consciousness frequency oracle${nameStr}.`,
+        lang.langInstruction,
+        ``,
+        `The seeker calibrates at ${String(ctx.calibration || "200")} — the level of ${String(ctx.level || "Courage")} (${String(ctx.emotion || "Affirmation")}).`,
+        String(ctx.nextLevel || "") && String(ctx.nextLevel) !== "Beyond"
+          ? `Their next level is ${String(ctx.nextLevel)}.`
+          : "",
+        ``,
+        `Return ONLY a valid JSON object — no markdown, no code blocks, no explanation outside the JSON:`,
+        `{"reading":"3-4 sentences: their current energy pattern, what it means for their life right now, and one clear action to begin elevating — in ${lang.langName}.","shadow":"1 sentence: the hidden challenge at this level — in ${lang.langName}.","gift":"1 sentence: the unique strength or gift they carry at this level — in ${lang.langName}."}`,
+      ].filter(Boolean).join("\n"),
+
+      // Numbers chamber
+      numbers_today: [
+        `You are DCode, a numerology oracle${nameStr}.`,
+        lang.langInstruction,
+        ``,
+        `Write today's personal numerology reading for ${name || "the seeker"}.`,
+        lifePath ? `Life Path ${lifePath} — ${String(ctx.lifePathName || "")}.` : "",
+        universalDay ? `Universal Day: ${universalDay}.` : "",
+        personalDay ? `Personal Day: ${personalDay}.` : "",
+        element ? `${sign}, ${lang.elementLabel(element)}.` : sign ? `${sign}.` : "",
+        ``,
+        `3-4 sentences. What does today's numerology mean for their day? One specific, practical action to take today.`,
+        `Speak as "you". No meta-commentary. Output only the reading in ${lang.langName}.`,
+      ].filter(Boolean).join("\n"),
+
+      numbers_life_path: [
+        `You are DCode, a numerology oracle${nameStr}.`,
+        lang.langInstruction,
+        ``,
+        `Write a Life Path reading for ${name || "the seeker"}: Life Path ${lifePath || "Unknown"} — ${String(ctx.lifePathName || "The Seeker")}.`,
+        ctx.expressionNum != null ? `Expression Number: ${ctx.expressionNum}.` : "",
+        ctx.soulUrgeNum != null ? `Soul Urge: ${ctx.soulUrgeNum}.` : "",
+        ctx.personalityNum != null ? `Personality Number: ${ctx.personalityNum}.` : "",
+        element ? `${sign}, ${lang.elementLabel(element)}.` : sign ? `${sign}.` : "",
+        ``,
+        `4-5 sentences. Cover their life purpose, natural talents, deepest desires, and one concrete step toward their highest path.`,
+        `Speak as "you". No meta-commentary. Output only the reading in ${lang.langName}.`,
+      ].filter(Boolean).join("\n"),
+
+      // Maps chamber
+      maps_decode: [
+        `You are DCode, a sacred geography oracle${nameStr}.`,
+        lang.langInstruction,
+        ``,
+        `Decode the energy of "${String(ctx.locationName || "this location")}" (Location Number: ${String(ctx.locationNumber || "1")} — ${String(ctx.meaning || "new beginnings")}).`,
+        ``,
+        `3-4 sentences. What energy does this place carry? How does it align with or challenge the seeker's journey? One clear insight on whether to visit, move to, or release this location.`,
+        `Speak as "you". No meta-commentary. Output only the reading in ${lang.langName}.`,
+      ].join("\n"),
+
+      maps_address: [
+        `You are DCode, a sacred numerology oracle${nameStr}.`,
+        lang.langInstruction,
+        ``,
+        `Decode this home or address: "${String(ctx.address || "this address")}" (Address Number: ${String(ctx.addressNumber || "1")} — ${String(ctx.meaning || "new beginnings")}).`,
+        ``,
+        `3-4 sentences. What is the energetic signature of this space? What does it support or challenge for the person living there? One practical recommendation for working with this energy.`,
+        `Speak as "you". No meta-commentary. Output only the reading in ${lang.langName}.`,
+      ].join("\n"),
+    };
+
+    const prompt = prompts[readingType] ?? prompts["daily_horoscope"];
+
+    // ── Gemini API call ────────────────────────────────────────────────────
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) {
       return new Response(
-        JSON.stringify({ error: "reading_type and context are required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "Server misconfiguration: GEMINI_API_KEY is missing." }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    const lang = context.language || "en";
-    const langInstruction = lang.startsWith("es")
-      ? "IMPORTANT: Write your ENTIRE response in Spanish (Español)."
-      : lang.startsWith("pt")
-      ? "IMPORTANT: Write your ENTIRE response in Brazilian Portuguese (Português Brasileiro)."
-      : "Write your response in English.";
+    const model = Deno.env.get("GEMINI_MODEL") || "gemini-2.0-flash-001";
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
 
-    let systemPrompt = "";
-    let userPrompt = "";
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 25000);
 
-    if (reading_type === "daily_horoscope") {
-      systemPrompt = `You are a knowledgeable astrologer who gives practical, personalized daily readings.
-${TONE_RULES}
-Write in second person ("you"). No greeting, no sign-off — just the reading.
-Aim for 4-6 sentences. Always end with a specific thing they can do today.
-${langInstruction}`;
-
-      const cuspLine = context.cuspInfo ? `\n- Cusp Placement: ${context.cuspInfo} — blend both signs' traits into the reading` : "";
-
-      userPrompt = `Generate today's horoscope for ${context.name}:
-- Sun Sign: ${context.zodiacSign} (${context.element} element)${cuspLine}
-- Life Path Number: ${context.lifePath}
-- Chinese Zodiac: ${context.chineseZodiac}
-- Birth Place: ${context.birthPlace || "Unknown"}
-- Birth Time: ${context.birthTime || "Unknown"}
-- Date: ${context.date}
-- Universal Day Number: ${context.universalDay}
-- Personal Day Number: ${context.personalDay}
-
-Give a personal, practical daily reading that connects their astrology and numerology. End with a specific action or mindset shift for today.${context.cuspInfo ? " Since they're on a cusp, blend both signs throughout." : ""}`;
-
-    } else if (reading_type === "stars_today") {
-      systemPrompt = `You are a knowledgeable astrologer who gives practical, personalized readings in plain language.
-${TONE_RULES}
-You MUST respond with valid JSON only. No markdown, no code fences, just raw JSON.
-${langInstruction}`;
-
-      const cuspLine = context.cuspInfo ? `\n- Cusp Placement: ${context.cuspInfo}` : "";
-
-      userPrompt = `Generate a detailed daily astrological reading for ${context.name}.
-
-Profile:
-- Sun Sign: ${context.zodiacSign} (${context.element} element)${cuspLine}
-- Life Path Number: ${context.lifePath}
-- Chinese Zodiac: ${context.chineseZodiac}
-- Date of Birth: ${context.dateOfBirth || "Unknown"}
-- Current Date: ${context.date}
-- Birth Place: ${context.birthPlace || "Unknown"}
-- Birth Time: ${context.birthTime || "Unknown"}
-- Universal Day Number: ${context.universalDay}
-- Personal Day Number: ${context.personalDay}
-
-Respond with ONLY this JSON structure (no markdown):
-{
-  "title": "A clear 2-4 word theme for today",
-  "subtitle": "${context.zodiacSign}${context.cuspInfo ? ` (${context.cuspInfo})` : ""} · Dominant energy today",
-  "reading": "A detailed 3-4 paragraph reading that's practical and solution-based. Tell them what today's energy is good for and give specific actions they can take. Plain language, no flowery words.${context.cuspInfo ? " Blend both cusp signs throughout." : ""}",
-  "cosmicAdvice": "One clear, powerful sentence of practical advice for today.",
-  "luckyNumber": a single number 1-33,
-  "powerColor": "A specific color name like Sage Green or Deep Navy",
-  "affirmation": "A grounded first-person affirmation — practical, not fluffy."
-}`;
-
-    } else if (reading_type === "stars_birth_chart") {
-      systemPrompt = `You are a professional astrologer who calculates and interprets birth charts. You explain placements in plain, practical language.
-${TONE_RULES}
-You MUST respond with valid JSON only. No markdown, no code fences, just raw JSON.
-${langInstruction}`;
-
-      const cuspLine = context.cuspInfo ? `\n- Cusp Placement: ${context.cuspInfo}` : "";
-
-      userPrompt = `Generate a complete birth chart for ${context.name}.
-
-Profile:
-- Date of Birth: ${context.dateOfBirth || "Unknown"}
-- Birth Place: ${context.birthPlace || "Unknown"}
-- Birth Time: ${context.birthTime || "Unknown"}
-- Sun Sign: ${context.zodiacSign} (${context.element} element)${cuspLine}
-
-Calculate the most likely planetary placements based on their birth data. If birth time is unknown, note that house placements and Ascendant are approximate.
-
-Respond with ONLY this JSON structure (no markdown):
-{
-  "placements": [
-    { "planet": "Ascendant", "symbol": "↑", "sign": "the zodiac sign", "house": null, "description": "2-3 sentences explaining what their Ascendant in this sign means practically — how they come across to others, first impressions." },
-    { "planet": "Sun", "symbol": "☉", "sign": "the zodiac sign", "house": number or null, "description": "2-3 sentences about their core identity and ego with this Sun placement. What drives them." },
-    { "planet": "Moon", "symbol": "☽", "sign": "the zodiac sign", "house": number or null, "description": "2-3 sentences about their emotional nature and inner self with this Moon placement." },
-    { "planet": "Mercury", "symbol": "☿", "sign": "the zodiac sign", "house": number or null, "description": "2-3 sentences about how they think and communicate." },
-    { "planet": "Venus", "symbol": "♀", "sign": "the zodiac sign", "house": number or null, "description": "2-3 sentences about love style and what they value." },
-    { "planet": "Mars", "symbol": "♂", "sign": "the zodiac sign", "house": number or null, "description": "2-3 sentences about their drive, energy, and how they take action." },
-    { "planet": "Jupiter", "symbol": "♃", "sign": "the zodiac sign", "house": number or null, "description": "2-3 sentences about where they find luck and growth." },
-    { "planet": "Saturn", "symbol": "♄", "sign": "the zodiac sign", "house": number or null, "description": "2-3 sentences about their challenges and life lessons." },
-    { "planet": "Uranus", "symbol": "♅", "sign": "the zodiac sign", "house": number or null, "description": "1-2 sentences about where they break from convention." },
-    { "planet": "Neptune", "symbol": "♆", "sign": "the zodiac sign", "house": number or null, "description": "1-2 sentences about their imagination and ideals." },
-    { "planet": "Pluto", "symbol": "♇", "sign": "the zodiac sign", "house": number or null, "description": "1-2 sentences about transformation and power." }
-  ],
-  "summary": "A 2-3 sentence overall summary of their chart — their biggest strengths and what to watch out for. Practical."
-}`;
-
-    } else if (reading_type.startsWith("stars_")) {
-      const tabType = reading_type.replace("stars_", "");
-      const tabLabels: Record<string, string> = {
-        monthly: "monthly forecast",
-        yearly: `${new Date().getFullYear()} yearly overview`,
-        love: "love and relationships reading",
-        career: "career and purpose reading",
-      };
-      const label = tabLabels[tabType] || `${tabType} reading`;
-
-      systemPrompt = `You are a knowledgeable astrologer who gives practical, personalized readings in plain language.
-${TONE_RULES}
-You MUST respond with valid JSON only. No markdown, no code fences, just raw JSON.
-${langInstruction}`;
-
-      const cuspLine = context.cuspInfo ? `\n- Cusp Placement: ${context.cuspInfo}` : "";
-
-      userPrompt = `Generate a detailed ${label} for ${context.name}.
-
-Profile:
-- Sun Sign: ${context.zodiacSign} (${context.element} element)${cuspLine}
-- Life Path Number: ${context.lifePath}
-- Chinese Zodiac: ${context.chineseZodiac}
-- Date of Birth: ${context.dateOfBirth || "Unknown"}
-- Current Date: ${context.date}
-- Birth Place: ${context.birthPlace || "Unknown"}
-- Birth Time: ${context.birthTime || "Unknown"}
-
-Respond with ONLY this JSON structure (no markdown):
-{
-  "title": "A clear 2-4 word title",
-  "subtitle": "A brief context line",
-  "reading": "A detailed 3-4 paragraph ${label}. Be practical and solution-based. Give specific actions and advice. Plain language.${context.cuspInfo ? " Blend both cusp signs throughout." : ""}",
-  "cosmicAdvice": "One clear sentence of practical advice."
-}`;
-
-    } else if (reading_type === "numbers_today") {
-      systemPrompt = `You are a skilled numerologist who explains number meanings in plain, practical language.
-${TONE_RULES}
-Write in second person. No greeting, no sign-off. 3-5 sentences. End with a specific action for today.
-${langInstruction}`;
-
-      userPrompt = `Generate today's numerology reading for ${context.name}.
-- Life Path: ${context.lifePath} (${context.lifePathName})
-- Personal Day: ${context.personalDay}
-- Universal Day: ${context.universalDay}
-- Personal Month: ${context.personalMonth}
-- Personal Year: ${context.personalYear}
-- Sun Sign: ${context.zodiacSign}
-- Birth Place: ${context.birthPlace || "Unknown"}
-- Birth Time: ${context.birthTime || "Unknown"}
-- Date: ${context.date}
-
-Tell them what today's numbers mean in plain terms and give them one specific thing to focus on or do today.`;
-
-    } else if (reading_type === "numbers_life_path") {
-      systemPrompt = `You are a skilled numerologist who explains life path numbers in plain, practical language.
-${TONE_RULES}
-Write in second person. No greeting, no sign-off. 2-3 paragraphs.
-${langInstruction}`;
-
-      userPrompt = `Generate a Life Path reading for ${context.name}.
-- Life Path: ${context.lifePath} (${context.lifePathName})
-- Expression Number: ${context.expressionNum}
-- Soul Urge: ${context.soulUrgeNum}
-- Personality: ${context.personalityNum}
-- Sun Sign: ${context.zodiacSign} (${context.element})
-- Chinese Zodiac: ${context.chineseZodiac}
-- Birth Place: ${context.birthPlace || "Unknown"}
-- Birth Time: ${context.birthTime || "Unknown"}
-
-Explain what Life Path ${context.lifePath} means in practical terms — their natural strengths, what they're built for, their main challenge, and how to work with it. Include specific, actionable advice.`;
-
-    } else if (reading_type === "frequency_reading") {
-      systemPrompt = `You are a consciousness coach who uses the Hawkins scale to give practical self-development advice.
-${TONE_RULES}
-You MUST respond with valid JSON only. No markdown, no code fences, just raw JSON.
-${langInstruction}`;
-
-      const answersDetail = context.answers ? JSON.stringify(context.answers) : "[]";
-
-      userPrompt = `Generate a consciousness frequency reading for ${context.name}.
-
-Their profile:
-- Birth Place: ${context.birthPlace || "Unknown"}
-- Birth Time: ${context.birthTime || "Unknown"}
-- Date of Birth: ${context.dateOfBirth || "Unknown"}
-
-Their quiz results:
-- Consciousness Level: ${context.level} (${context.emotion})
-- Calibration: ${context.calibration}
-- Total Score: ${context.totalScore}/50
-- Category Scores: ${answersDetail}
-- Next Level: ${context.nextLevel} (${context.pointsToNext} points away)
-
-Respond with ONLY this JSON structure (no markdown):
-{
-  "reading": "A practical 1-2 paragraph explanation of where they are on the Hawkins scale. Reference their specific score and what it means in everyday terms. Give them a specific daily practice or mindset shift to raise their level. Use 'you' voice. Plain language.",
-  "shadow": "A short paragraph about the main trap or risk at the ${context.level} level — what could hold them back. Include a practical way to avoid it.",
-  "gift": "A short paragraph about the strength of being at ${context.level} — what they naturally bring to the table and how to use it more."
-}`;
-
-    } else if (reading_type === "oracle_daily") {
-      systemPrompt = `You are a wise guide who gives practical daily advice based on someone's profile.
-${TONE_RULES}
-Write in second person. No greeting, no sign-off. 4-6 sentences. End with a clear action step.
-${langInstruction}`;
-
-      userPrompt = `Generate today's guidance for ${context.name}.
-- Sun Sign: ${context.zodiacSign} (${context.element})
-- Life Path: ${context.lifePath}
-- Chinese Zodiac: ${context.chineseZodiac}
-- Birth Place: ${context.birthPlace || "Unknown"}
-- Birth Time: ${context.birthTime || "Unknown"}
-- Universal Day: ${context.universalDay}
-- Personal Day: ${context.personalDay}
-- Date: ${context.date}
-
-Give them a practical, personal message about today. What's the energy like, what should they focus on, and what's one specific thing they can do to make the most of it.`;
-
-    } else if (reading_type === "oracle_chat") {
-      systemPrompt = `You are a wise guide with deep knowledge of astrology, numerology, and Chinese zodiac. You give practical, solution-based answers.
-${TONE_RULES}
-
-The person you're talking to:
-- Name: ${context.name}
-- Sun Sign: ${context.zodiacSign} (${context.element})
-- Life Path: ${context.lifePath}
-- Chinese Zodiac: ${context.chineseZodiac}
-- Birth Place: ${context.birthPlace}
-- Birth Time: ${context.birthTime}
-
-Use their profile when relevant. Speak in second person. Keep responses to 2-4 paragraphs. No greeting formulas. Always give practical advice — never leave them with just a problem.
-${langInstruction}`;
-
-      userPrompt = context.conversationHistory
-        ? `Previous conversation:\n${context.conversationHistory}\n\nThey now ask: ${context.userMessage}`
-        : context.userMessage;
-
-    } else if (reading_type === "dynasty_profile") {
-      systemPrompt = `You are a knowledgeable Chinese astrology reader who explains things in plain, practical language.
-${TONE_RULES}
-Write in second person. No greeting, no sign-off. 2-3 paragraphs.
-${langInstruction}`;
-
-      userPrompt = `Generate a Chinese zodiac profile reading for ${context.name}.
-- Animal: ${context.animal}
-- Year Element: ${context.yearElement}
-- Fixed Element: ${context.fixedElement}
-- Yin/Yang: ${context.yinYang}
-- Core Traits: ${context.traits}
-- Western Sun Sign: ${context.zodiacSign}
-- Life Path: ${context.lifePath}
-- Birth Place: ${context.birthPlace || "Unknown"}
-- Birth Time: ${context.birthTime || "Unknown"}
-
-Explain how the ${context.animal} and ${context.yearElement} element shape their personality and strengths in practical terms. Include how their Western sign (${context.zodiacSign}) adds to the picture. Give actionable advice on how to use these strengths.`;
-
-    } else if (reading_type === "dynasty_year") {
-      systemPrompt = `You are a knowledgeable Chinese astrology reader who gives practical yearly forecasts.
-${TONE_RULES}
-Write 2-3 paragraphs, second person, no greeting. Always solution-based.
-${langInstruction}`;
-
-      userPrompt = `Generate a ${context.currentYear} forecast for ${context.name}, a ${context.yearElement} ${context.animal}.
-- Birth Place: ${context.birthPlace || "Unknown"}
-- Birth Time: ${context.birthTime || "Unknown"}
-What does ${context.currentYear} look like for the ${context.animal}? Give practical advice on what to focus on and how to handle any challenges.`;
-
-    } else if (reading_type === "dynasty_forecast") {
-      systemPrompt = `You are a knowledgeable Chinese astrology reader who gives practical multi-year forecasts.
-${TONE_RULES}
-You MUST respond with valid JSON only. No markdown, no code fences, just raw JSON.
-${langInstruction}`;
-
-      userPrompt = `Generate a 5-year forecast (${context.startYear} to ${context.startYear + 4}) for ${context.name}, a ${context.yearElement} ${context.animal}. Birth Place: ${context.birthPlace || "Unknown"}. Birth Time: ${context.birthTime || "Unknown"}.
-
-Respond with ONLY this JSON structure (no markdown):
-{
-  "years": [
-    { "year": ${context.startYear}, "title": "2-4 word theme", "rating": 1-5, "summary": "3-4 sentences — practical forecast with specific advice for this year" },
-    { "year": ${context.startYear + 1}, "title": "2-4 word theme", "rating": 1-5, "summary": "3-4 sentences — practical forecast with advice" },
-    { "year": ${context.startYear + 2}, "title": "2-4 word theme", "rating": 1-5, "summary": "3-4 sentences — practical forecast with advice" },
-    { "year": ${context.startYear + 3}, "title": "2-4 word theme", "rating": 1-5, "summary": "3-4 sentences — practical forecast with advice" },
-    { "year": ${context.startYear + 4}, "title": "2-4 word theme", "rating": 1-5, "summary": "3-4 sentences — practical forecast with advice" }
-  ]
-}`;
-
-    } else if (reading_type === "maps_decode") {
-      systemPrompt = `You are a numerology expert who explains the energy of places in practical terms.
-${TONE_RULES}
-Write in second person. 3-4 sentences.
-${langInstruction}`;
-
-      userPrompt = `Decode the numerological energy of "${context.locationName}" (number ${context.locationNumber}: ${context.meaning}) for ${context.name}. Birth Place: ${context.birthPlace || "Unknown"}. Birth Time: ${context.birthTime || "Unknown"}. Date of Birth: ${context.dateOfBirth || "Unknown"}. What does this place's energy mean for them practically? Is it good for work, rest, creativity, relationships? Give specific advice.`;
-
-    } else if (reading_type === "maps_address") {
-      systemPrompt = `You are a numerology expert who explains address energy in practical terms.
-${TONE_RULES}
-Write in second person. 3-4 sentences.
-${langInstruction}`;
-
-      userPrompt = `Decode the numerological energy of address "${context.address}" (number ${context.addressNumber}: ${context.meaning}) for ${context.name}. Birth Place: ${context.birthPlace || "Unknown"}. Birth Time: ${context.birthTime || "Unknown"}. Date of Birth: ${context.dateOfBirth || "Unknown"}. How does this number affect their living space? Give practical tips on how to make the most of it.`;
-
-    } else if (reading_type === "sacred_code") {
-      systemPrompt = `You are an expert in Grabovoi healing codes and number sequences. You explain them in plain, practical language.
-${TONE_RULES}
-You MUST respond with valid JSON only. No markdown, no code fences, just raw JSON.
-${langInstruction}`;
-
-      userPrompt = `The person ${context.name} wants a Grabovoi code for this intention: "${context.intention}".
-Birth Place: ${context.birthPlace || "Unknown"}. Birth Time: ${context.birthTime || "Unknown"}. Date of Birth: ${context.dateOfBirth || "Unknown"}.
-
-Find the best Grabovoi number sequence for this intention. Use a well-known code if one exists, otherwise find one that fits.
-
-Respond with ONLY this JSON structure (no markdown):
-{
-  "title": "A clear 2-5 word name for this code",
-  "code": "The Grabovoi number sequence (digits only, 6-12 digits)",
-  "description": "2-3 plain sentences explaining what this code does and why it works. No flowery language.",
-  "ritual": "A specific 1-2 sentence instruction for how to use this code in practice."
-}`;
-
-    } else {
-      systemPrompt = `You are a knowledgeable guide providing personalized readings. Be practical and solution-based. ${TONE_RULES} ${langInstruction}`;
-      userPrompt = `Generate a ${reading_type} reading with the following context: ${JSON.stringify(context)}`;
+    let geminiResponse: Response;
+    try {
+      geminiResponse = await fetch(geminiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.9,
+            maxOutputTokens: 8192,
+          },
+        }),
+        signal: controller.signal,
+      });
+    } catch (err: unknown) {
+      clearTimeout(timeoutId);
+      if (err instanceof Error && err.name === "AbortError") {
+        return new Response(
+          JSON.stringify({ error: "The AI request timed out." }),
+          { status: 408, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+      throw err;
+    } finally {
+      clearTimeout(timeoutId);
     }
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        temperature: 0.9,
-        max_tokens: reading_type === "daily_horoscope" ? 600 : 1200,
-      }),
-    });
-
-    if (!response.ok) {
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: "Rate limited. Please try again in a moment." }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "AI credits exhausted. Please add funds." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
+    if (!geminiResponse.ok) {
+      const errText = await geminiResponse.text();
       return new Response(
-        JSON.stringify({ error: "AI generation failed", details: errorText }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: `Gemini API error ${geminiResponse.status}: ${errText}` }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
-    const data = await response.json();
-    const content =
-      data.choices?.[0]?.message?.content || "Readings are temporarily unavailable. Try again shortly.";
+    const data = await geminiResponse.json();
+    let reading: string =
+      data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ??
+      "Your reading is temporarily unavailable. Please try again shortly.";
+
+    // Strip markdown code fences so JSON-expecting chambers can parse cleanly
+    reading = reading.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/i, "").trim();
 
     return new Response(
-      JSON.stringify({ content }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ reading }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
-  } catch (e) {
-    console.error("generate-reading error:", e);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Unexpected server error.";
     return new Response(
-      JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }),
-      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      JSON.stringify({ error: message }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   }
 });

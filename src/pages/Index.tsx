@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import dcodeLogo from "@/assets/dcode-logo.jpeg";
 import {
   MessageCircle,
@@ -14,10 +14,11 @@ import {
   Zap,
   Shield,
   LogOut,
+  Sparkles,
 } from "lucide-react";
 import { BentoCard } from "@/components/BentoCard";
 import { DailyBriefing } from "@/components/DailyBriefing";
-import { SchumannResonance } from "@/components/SchumannResonance";
+
 import { OnboardingModal } from "@/components/OnboardingModal";
 import { useAuth } from "@/hooks/use-auth";
 import { OracleChamber } from "@/components/chambers/OracleChamber";
@@ -46,8 +47,20 @@ const CHAMBER_COMPONENTS: Record<string, React.ComponentType<{ onBack: () => voi
 
 export default function Index() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { profile, isLoading, signOut, user } = useAuth();
   const [activeChamber, setActiveChamber] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleOpenChamber = (e: Event) => {
+      const chamberId = (e as CustomEvent<string>).detail;
+      if (chamberId && CHAMBER_COMPONENTS[chamberId]) {
+        setActiveChamber(chamberId);
+      }
+    };
+    window.addEventListener("openChamber", handleOpenChamber);
+    return () => window.removeEventListener("openChamber", handleOpenChamber);
+  }, []);
 
   const FEATURED = [
     { id: "palm-cta", chamberId: "palm", title: t("chambers.scanYourPalm"), subtitle: t("chambers.palmReading"), icon: Fingerprint, accent: "hsl(280, 40%, 55%)" },
@@ -97,33 +110,40 @@ export default function Index() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="px-5 pt-6 pb-2 flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
-          <img src={dcodeLogo} alt="DCode" className="w-9 h-9 rounded-lg" />
-          <h1 className="font-display text-xl font-bold text-foreground tracking-tight">
-            DCode
-          </h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2 bg-muted/30 rounded-full px-3 py-1.5">
-            <span className="text-sm">🌊</span>
-            <span className="text-sm font-display font-bold text-foreground">{firstName}</span>
+      <header className="px-5 pt-6 pb-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <img src={dcodeLogo} alt="DCode" className="w-9 h-9 rounded-lg" />
+            <h1 className="font-display text-xl font-bold text-foreground tracking-tight">
+              DCode
+            </h1>
           </div>
-          <LanguageSwitcher />
-          {user && (
+          <div className="flex items-center gap-2">
             <button
-              onClick={signOut}
-              className="w-8 h-8 rounded-lg bg-muted/30 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-              title={t("header.signOut")}
+              onClick={() => navigate("/pricing")}
+              className="flex items-center gap-1.5 bg-primary/20 text-primary rounded-full px-3 py-1.5 text-sm font-medium hover:bg-primary/30 transition-colors"
             >
-              <LogOut className="w-4 h-4" />
+              <Sparkles className="w-3.5 h-3.5" />
+              Upgrade
             </button>
-          )}
+            {user && (
+              <button
+                onClick={signOut}
+                className="w-8 h-8 rounded-lg bg-muted/30 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                title={t("header.signOut")}
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+        <div className="mt-3 flex items-center gap-2">
+          <span className="text-lg">🌊</span>
+          <span className="font-display text-lg text-foreground">Welcome, <span className="text-primary font-bold">{firstName}</span></span>
         </div>
       </header>
 
       <main className="px-5 pb-10 space-y-5 max-w-lg mx-auto">
-        <SchumannResonance />
         <DailyBriefing dob={dob} name={profile.fullName} birthPlace={profile.birthPlace} birthTime={profile.birthTime} onOpenStars={() => setActiveChamber("stars")} />
 
         <div className="space-y-3">

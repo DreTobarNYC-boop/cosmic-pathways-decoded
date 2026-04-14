@@ -7,8 +7,8 @@
     "signOut": "Sair"
   },
   "onboarding": {
-    "title": "Complete Seu Mapa Cósmico",
-    "subtitle": "Para decodificar sua identidade cósmica, precisamos dos seus dados de nascimento.",
+    "title": "Decodifique Seu Mapa",
+    "subtitle": "A simulação deixou pistas nos seus dados de nascimento. Vamos lê-las.",
     "fullName": "Nome Completo de Nascimento",
     "fullNamePlaceholder": "Seu nome completo de nascimento",
     "fullNameHint": "Usado para numerologia — números de expressão, desejo da alma e personalidade",
@@ -18,14 +18,14 @@
     "birthPlaceHint": "Necessário para posições precisas das casas no seu mapa natal",
     "birthTime": "Hora de Nascimento",
     "birthTimeHint": "Para ascendente e cálculos de casas — verifique sua certidão de nascimento",
-    "submit": "Desbloqueie Seu Mapa Cósmico",
+    "submit": "Começar a Decodificar",
     "submitting": "Decodificando..."
   },
   "auth": {
-    "signUpTitle": "Entre Nas Câmaras",
+    "signUpTitle": "Entre Na Matrix",
     "signInTitle": "Bem-Vindo de Volta",
-    "signUpSubtitle": "Crie sua conta para desbloquear seu mapa cósmico.",
-    "signInSubtitle": "Faça login para acessar suas câmaras.",
+    "signUpSubtitle": "Crie sua conta. Comece a decodificar.",
+    "signInSubtitle": "Faça login para continuar decodificando.",
     "email": "E-mail",
     "emailPlaceholder": "voce@exemplo.com",
     "password": "Senha",
@@ -122,6 +122,26 @@
     "sun": "SOL",
     "affirmation": "AFIRMAÇÃO DO DIA"
   },
+  "elements": {
+    "Air": "Ar",
+    "Fire": "Fogo",
+    "Earth": "Terra",
+    "Water": "Água"
+  },
+  "chineseAnimals": {
+    "Rat": "Rato",
+    "Ox": "Boi",
+    "Tiger": "Tigre",
+    "Rabbit": "Coelho",
+    "Dragon": "Dragão",
+    "Snake": "Serpente",
+    "Horse": "Cavalo",
+    "Goat": "Cabra",
+    "Monkey": "Macaco",
+    "Rooster": "Galo",
+    "Dog": "Cão",
+    "Pig": "Porco"
+  },
   "universalDayMeanings": {
     "1": "Novos começos e iniciativa",
     "2": "Cooperação e equilíbrio",
@@ -152,12 +172,12 @@
   },
   "palm": {
     "title": "A Palma",
-    "subtitle": "Análise de Mão com IA",
+    "subtitle": "Leitura de Palma",
     "needsAccess": "DCode precisa de acesso à câmera",
-    "privacyNote": "Sua câmera é usada para escanear as linhas da sua palma. A imagem fica no seu dispositivo e nunca é compartilhada.",
+    "privacyNote": "A imagem da sua palma fica no seu dispositivo. Nunca é compartilhada, nunca é armazenada.",
     "openCamera": "Abrir Câmera",
     "uploadInstead": "Enviar uma foto em vez disso",
-    "scanYourPalm": "Escaneie sua palma",
+    "scanYourPalm": "Decodifique Sua Palma",
     "activatingCamera": "Ativando câmera...",
     "positionHand": "Posicione sua palma dentro do guia",
     "cancel": "Cancelar",
