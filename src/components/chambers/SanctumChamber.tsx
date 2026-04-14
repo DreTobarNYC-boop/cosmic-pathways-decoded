@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { ChamberLayout } from "@/components/ChamberLayout";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Plus, Trash2, Lock, BookOpen, Calendar } from "lucide-react";
+import { Plus, Trash2, BookOpen, Calendar } from "lucide-react";
 import { toast } from "sonner";
 
 /* ─── Local-only encrypted journal ─── */
@@ -86,7 +86,7 @@ export function SanctumChamber({ onBack }: { onBack: () => void }) {
       {/* Header */}
       <div className="flex items-center gap-3 mb-4">
         <div className="w-10 h-10 rounded-full bg-muted/30 flex items-center justify-center">
-          <Lock className="w-5 h-5 text-primary" />
+          <BookOpen className="w-5 h-5 text-primary" />
         </div>
         <div>
           <p className="text-xs text-muted-foreground">{entries.length} entries · Stored locally on your device</p>

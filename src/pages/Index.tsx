@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import dcodeLogo from "@/assets/dcode-logo.jpeg";
 import {
@@ -14,7 +13,6 @@ import {
   Zap,
   Shield,
   LogOut,
-  Sparkles,
 } from "lucide-react";
 import { BentoCard } from "@/components/BentoCard";
 import { DailyBriefing } from "@/components/DailyBriefing";
@@ -47,7 +45,6 @@ const CHAMBER_COMPONENTS: Record<string, React.ComponentType<{ onBack: () => voi
 
 export default function Index() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const { profile, isLoading, signOut, user } = useAuth();
   const [activeChamber, setActiveChamber] = useState<string | null>(null);
 
@@ -119,13 +116,6 @@ export default function Index() {
             </h1>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => navigate("/pricing")}
-              className="flex items-center gap-1.5 bg-primary/20 text-primary rounded-full px-3 py-1.5 text-sm font-medium hover:bg-primary/30 transition-colors"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              Upgrade
-            </button>
             {user && (
               <button
                 onClick={signOut}
