@@ -307,7 +307,7 @@ serve(async (req) => {
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
             temperature: 0.9,
-            maxOutputTokens: 1200,
+            maxOutputTokens: 2048,
           },
         }),
         signal: controller.signal,
