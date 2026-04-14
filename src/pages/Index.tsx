@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import dcodeLogo from "@/assets/dcode-logo.jpeg";
@@ -50,6 +50,17 @@ export default function Index() {
   const navigate = useNavigate();
   const { profile, isLoading, signOut, user } = useAuth();
   const [activeChamber, setActiveChamber] = useState<string | null>(null);
+
+  useEffect(() => {
+    const handleOpenChamber = (e: Event) => {
+      const chamberId = (e as CustomEvent<string>).detail;
+      if (chamberId && CHAMBER_COMPONENTS[chamberId]) {
+        setActiveChamber(chamberId);
+      }
+    };
+    window.addEventListener("openChamber", handleOpenChamber);
+    return () => window.removeEventListener("openChamber", handleOpenChamber);
+  }, []);
 
   const FEATURED = [
     { id: "palm-cta", chamberId: "palm", title: t("chambers.scanYourPalm"), subtitle: t("chambers.palmReading"), icon: Fingerprint, accent: "hsl(280, 40%, 55%)" },
