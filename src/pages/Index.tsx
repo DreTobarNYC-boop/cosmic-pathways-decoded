@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import dcodeLogo from "@/assets/dcode-logo.jpeg";
 import {
   MessageCircle,
@@ -116,7 +115,6 @@ export default function Index() {
               <Sparkles className="w-3.5 h-3.5" />
               Upgrade
             </button>
-            <LanguageSwitcher />
             {user && (
               <button
                 onClick={signOut}

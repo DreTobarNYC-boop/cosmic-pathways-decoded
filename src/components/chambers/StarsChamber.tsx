@@ -3,7 +3,15 @@ import { useTranslation } from "react-i18next";
 import { ChamberLayout } from "@/components/ChamberLayout";
 import { useAuth } from "@/hooks/use-auth";
 import { useCachedReading } from "@/hooks/use-cached-reading";
-import { getZodiacFromDOB } from "@/lib/daily";
+import {
+  getZodiacFromDOB,
+  getLifePath,
+  getChineseZodiac,
+  getUniversalDay,
+  getPersonalDay,
+  getCuspInfo,
+  formatDate,
+} from "@/lib/daily";
 import { normalizeLanguage } from "@/lib/language";
 import { Loader2 } from "lucide-react";
 
@@ -22,6 +30,7 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
   const [activeTab, setActiveTab] = useState("today");
 
   const language = normalizeLanguage(i18n.language);
+  const rawLang = i18n.language;
   const name = profile?.fullName || "Seeker";
   const dob = useMemo(
     () => (profile?.dateOfBirth ? new Date(profile.dateOfBirth + "T12:00:00") : null),
@@ -30,9 +39,33 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
   const zodiac = dob ? getZodiacFromDOB(dob) : null;
   const sign = zodiac?.sign || "Unknown";
 
-  const dateKey = new Date().toISOString().slice(0, 7); // YYYY-MM
-  const todayKey = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-  const yearKey = String(new Date().getFullYear());
+  const today = new Date();
+  const dateKey = today.toISOString().slice(0, 10); // YYYY-MM-DD
+  const dateKeyMonth = today.toISOString().slice(0, 7); // YYYY-MM
+  const yearKey = String(today.getFullYear());
+
+  // Rich context for the daily horoscope (mirrors DailyBriefing so they share the same cache)
+  const lifePath = dob ? getLifePath(dob) : undefined;
+  const chineseZodiac = dob ? getChineseZodiac(dob.getFullYear()) : undefined;
+  const universalDay = getUniversalDay(today);
+  const personalDay = dob ? getPersonalDay(dob, today) : undefined;
+  const cusp = dob ? getCuspInfo(dob.getMonth() + 1, dob.getDate()) : { onCusp: false };
+
+  // Context for daily horoscope — matches DailyBriefing's context shape so the cache entry is shared
+  const dailyContext = {
+    zodiacSign: sign,
+    element: zodiac?.element || "Unknown",
+    lifePath,
+    chineseZodiac,
+    date: formatDate(today, rawLang),
+    universalDay,
+    personalDay,
+    name,
+    birthPlace: profile?.birthPlace || "Unknown",
+    birthTime: profile?.birthTime || "Unknown",
+    cuspInfo: cusp.onCusp ? (cusp.cuspDescription ?? null) : null,
+    language: rawLang,
+  };
 
   const context = {
     name,
@@ -45,15 +78,16 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
     language,
   };
 
-  const today    = useCachedReading({ readingType: "stars_today",    cacheKey: `${sign}-today-${todayKey}-${language}`,  context });
-  const monthly  = useCachedReading({ readingType: "stars_monthly",  cacheKey: `${sign}-monthly-${dateKey}-${language}`, context });
+  // TODAY uses the same readingType + cacheKey as DailyBriefing so they share the cached reading
+  const todayReading = useCachedReading({ readingType: "daily_horoscope", cacheKey: `${dateKey}_${rawLang}`, context: dailyContext });
+  const monthly  = useCachedReading({ readingType: "stars_monthly",  cacheKey: `${sign}-monthly-${dateKeyMonth}-${language}`, context });
   const yearly   = useCachedReading({ readingType: "stars_yearly",   cacheKey: `${sign}-yearly-${yearKey}-${language}`,  context });
-  const love     = useCachedReading({ readingType: "stars_love",     cacheKey: `${sign}-love-${dateKey}-${language}`,    context });
-  const career   = useCachedReading({ readingType: "stars_career",   cacheKey: `${sign}-career-${dateKey}-${language}`,  context });
-  const wellness = useCachedReading({ readingType: "stars_wellness", cacheKey: `${sign}-wellness-${dateKey}-${language}`, context });
+  const love     = useCachedReading({ readingType: "stars_love",     cacheKey: `${sign}-love-${dateKeyMonth}-${language}`,    context });
+  const career   = useCachedReading({ readingType: "stars_career",   cacheKey: `${sign}-career-${dateKeyMonth}-${language}`,  context });
+  const wellness = useCachedReading({ readingType: "stars_wellness", cacheKey: `${sign}-wellness-${dateKeyMonth}-${language}`, context });
 
   const readings: Record<string, { content: string | null; isLoading: boolean; error: string | null }> = {
-    today, monthly, yearly, love, career, wellness,
+    today: todayReading, monthly, yearly, love, career, wellness,
   };
 
   const current = readings[activeTab];
