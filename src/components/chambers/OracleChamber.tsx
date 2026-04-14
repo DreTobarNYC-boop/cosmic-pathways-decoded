@@ -13,6 +13,7 @@ import {
   formatDate,
   reduceToSingle,
 } from "@/lib/daily";
+import { normalizeLanguage } from "@/lib/language";
 import { Send, Loader2, Sparkles, Triangle } from "lucide-react";
 
 /* ─── Grabovoi Codes ─── */
@@ -175,7 +176,7 @@ export function OracleChamber({ onBack }: { onBack: () => void }) {
       date: dateStr,
       birthPlace: profile?.birthPlace || "Unknown",
       birthTime: profile?.birthTime || "Unknown",
-      language: i18n.language,
+      language: normalizeLanguage(i18n.language),
     },
   });
 
@@ -225,8 +226,8 @@ export function OracleChamber({ onBack }: { onBack: () => void }) {
             chineseZodiac: chineseZodiac || "Unknown",
             birthPlace: profile?.birthPlace || "Unknown",
             birthTime: profile?.birthTime || "Unknown",
-            language: i18n.language,
-            userMessage: text,
+      language: normalizeLanguage(i18n.language),
+      userMessage: text,
             conversationHistory: newMessages.slice(-8).map(m => `${m.role}: ${m.content}`).join("\n"),
           },
         },

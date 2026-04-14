@@ -1,118 +1,103 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
+import { ChamberLayout } from "@/components/ChamberLayout";
+import { useAuth } from "@/hooks/use-auth";
+import { useCachedReading } from "@/hooks/use-cached-reading";
+import { getZodiacFromDOB } from "@/lib/daily";
+import { normalizeLanguage } from "@/lib/language";
+import { Loader2 } from "lucide-react";
 
-const translations = {
-  en: {
-    dailyHoroscope: "YOUR DAILY HOROSCOPE",
-    monthlyHoroscope: "MONTHLY HOROSCOPE",
-    yearlyHoroscope: "2026 FORECAST",
-    love: "LOVE & RELATIONSHIPS",
-    career: "CAREER & PURPOSE",
-    wellness: "WELLNESS & ENERGY",
-    compatibility: "COMPATIBILITY",
-    birthChart: "BIRTH CHART",
-    today: "TODAY",
-  },
-  es: {
-    dailyHoroscope: "TU HORÓSCOPO DIARIO",
-    monthlyHoroscope: "HORÓSCOPO MENSUAL",
-    yearlyHoroscope: "PRONÓSTICO 2026",
-    love: "AMOR Y RELACIONES",
-    career: "CARRERA Y PROPÓSITO",
-    wellness: "BIENESTAR Y ENERGÍA",
-    compatibility: "COMPATIBILIDAD",
-    birthChart: "CARTA NATAL",
-    today: "HOY",
-  },
-  pt: {
-    dailyHoroscope: "SEU HORÓSCOPO DIÁRIO",
-    monthlyHoroscope: "HORÓSCOPO MENSAL",
-    yearlyHoroscope: "PREVISÃO 2026",
-    love: "AMOR E RELACIONAMENTOS",
-    career: "CARREIRA E PROPÓSITO",
-    wellness: "BEM-ESTAR E ENERGIA",
-    compatibility: "COMPATIBILIDADE",
-    birthChart: "MAPA NATAL",
-    today: "HOJE",
-  },
-};
+const TABS = [
+  { key: "today",    label: "TODAY",    readingType: "stars_today" },
+  { key: "monthly",  label: "MONTHLY",  readingType: "stars_monthly" },
+  { key: "yearly",   label: "YEARLY",   readingType: "stars_yearly" },
+  { key: "love",     label: "LOVE",     readingType: "stars_love" },
+  { key: "career",   label: "CAREER",   readingType: "stars_career" },
+  { key: "wellness", label: "WELLNESS", readingType: "stars_wellness" },
+];
 
-function parseReading(raw: string): string {
-  if (!raw) return "";
-  try {
-    const parsed = JSON.parse(raw);
-    return parsed.content || parsed.text || parsed.reading || parsed.title || raw;
-  } catch {
-    return raw;
-  }
-}
-
-interface StarsChamberProps {
-  horoscope?: string;
-  monthlyReading?: string;
-  yearlyReading?: string;
-  loveReading?: string;
-  careerReading?: string;
-  wellnessReading?: string;
-  language?: "en" | "es" | "pt";
-}
-
-export function StarsChamber({
-    horoscope = "",
-  monthlyReading = "",
-  yearlyReading = "",
-  loveReading = "",
-  careerReading = "",
-  wellnessReading = "",
-  language = "en",
-}: StarsChamberProps) {
+export function StarsChamber({ onBack }: { onBack: () => void }) {
+  const { i18n } = useTranslation();
+  const { profile } = useAuth();
   const [activeTab, setActiveTab] = useState("today");
-  const t = translations[language] || translations.en;
 
-  const tabs = [
-    { key: "today", label: t.today },
-    { key: "monthly", label: t.monthlyHoroscope },
-    { key: "yearly", label: t.yearlyHoroscope },
-    { key: "love", label: t.love },
-    { key: "career", label: t.career },
-    { key: "wellness", label: t.wellness },
-  ];
+  const language = normalizeLanguage(i18n.language);
+  const name = profile?.fullName || "Seeker";
+  const dob = useMemo(
+    () => (profile?.dateOfBirth ? new Date(profile.dateOfBirth + "T12:00:00") : null),
+    [profile?.dateOfBirth],
+  );
+  const zodiac = dob ? getZodiacFromDOB(dob) : null;
+  const sign = zodiac?.sign || "Unknown";
 
-  const readings: Record<string, string> = {
-    today: parseReading(horoscope),
-    monthly: parseReading(monthlyReading),
-    yearly: parseReading(yearlyReading),
-    love: parseReading(loveReading),
-    career: parseReading(careerReading),
-    wellness: parseReading(wellnessReading),
+  const dateKey = new Date().toISOString().slice(0, 7); // YYYY-MM
+  const todayKey = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  const yearKey = String(new Date().getFullYear());
+
+  const context = {
+    name,
+    sign,
+    zodiacSign: sign,
+    element: zodiac?.element || "Unknown",
+    birthPlace: profile?.birthPlace || "Unknown",
+    birthTime: profile?.birthTime || "Unknown",
+    dateOfBirth: profile?.dateOfBirth || "Unknown",
+    language,
   };
 
+  const today    = useCachedReading({ readingType: "stars_today",    cacheKey: `${sign}-today-${todayKey}-${language}`,  context });
+  const monthly  = useCachedReading({ readingType: "stars_monthly",  cacheKey: `${sign}-monthly-${dateKey}-${language}`, context });
+  const yearly   = useCachedReading({ readingType: "stars_yearly",   cacheKey: `${sign}-yearly-${yearKey}-${language}`,  context });
+  const love     = useCachedReading({ readingType: "stars_love",     cacheKey: `${sign}-love-${dateKey}-${language}`,    context });
+  const career   = useCachedReading({ readingType: "stars_career",   cacheKey: `${sign}-career-${dateKey}-${language}`,  context });
+  const wellness = useCachedReading({ readingType: "stars_wellness", cacheKey: `${sign}-wellness-${dateKey}-${language}`, context });
+
+  const readings: Record<string, { content: string | null; isLoading: boolean; error: string | null }> = {
+    today, monthly, yearly, love, career, wellness,
+  };
+
+  const current = readings[activeTab];
+
   return (
-    <div className="min-h-screen bg-[#0B1A1A] text-[#FFFDD0] p-4">
-      <h2 className="text-center text-[#F5D060] font-display text-sm tracking-widest mb-6">
-        {t.dailyHoroscope}
-      </h2>
+    <ChamberLayout
+      title="The Stars"
+      subtitle={zodiac ? `${zodiac.symbol} ${sign}` : undefined}
+      onBack={onBack}
+    >
+      <div className="space-y-5">
 
-      <div className="flex flex-wrap gap-2 justify-center mb-6">
-        {tabs.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`text-xs tracking-widest px-3 py-1 rounded-full border transition-all ${
-              activeTab === tab.key
-                ? "border-[#F5D060] text-[#F5D060] bg-[#F5D060]/10"
-                : "border-[#FFFDD0]/20 text-[#FFFDD0]/60"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+        {/* ─── Tab Navigation ─── */}
+        <div className="flex flex-wrap gap-2">
+          {TABS.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`text-xs tracking-widest px-3 py-1.5 rounded-full border transition-all ${
+                activeTab === tab.key
+                  ? "border-primary text-primary bg-primary/10"
+                  : "border-border text-muted-foreground hover:border-primary/50"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
-      <div className="max-w-xl mx-auto bg-[#2A1F0F]/30 border border-[#B87333]/20 rounded-2xl p-6 backdrop-blur-md">
-        <p className="text-[#FFFDD0] leading-relaxed text-sm whitespace-pre-wrap">
-          {readings[activeTab] || "Loading your reading..."}
-        </p>
+        {/* ─── Reading Card ─── */}
+        <div className="card-cosmic rounded-2xl p-5">
+          {current.isLoading ? (
+            <div className="flex items-center gap-2 text-muted-foreground text-sm py-4 justify-center">
+              <Loader2 className="w-4 h-4 animate-spin text-primary" />
+              <span>Reading the stars…</span>
+            </div>
+          ) : (
+            <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-line">
+              {current.content || "Your reading is preparing…"}
+            </p>
+          )}
+        </div>
+
       </div>
-    </div>
+    </ChamberLayout>
   );
 }

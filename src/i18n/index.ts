@@ -6,6 +6,8 @@ import en from "./en.json";
 import es from "./es.json";
 import ptBR from "./pt-BR.json";
 
+const LANG_STORAGE_KEY = "dcode_lang";
+
 i18n
   .use(LanguageDetector)
   .use(initReactI18next)
@@ -21,8 +23,10 @@ i18n
     fallbackLng: "en",
     interpolation: { escapeValue: false },
     detection: {
-      order: ["navigator", "htmlTag"],
-      caches: [],
+      order: ["localStorage", "navigator", "htmlTag"],
+      lookupLocalStorage: LANG_STORAGE_KEY,
+      caches: ["localStorage"],
+      excludeCacheFor: ["cimode"],
     },
   });
 
