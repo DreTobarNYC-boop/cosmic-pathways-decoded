@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useCachedReading } from "@/hooks/use-cached-reading";
 import { supabase } from "@/integrations/supabase/client";
 import { reduceToSingle, getLifePath, getZodiacFromDOB, getChineseZodiac } from "@/lib/daily";
+import { normalizeLanguage } from "@/lib/language";
 import { Globe, Search, Hash, Loader2, MapPin } from "lucide-react";
 
 /* ─── Location numerology ─── */
@@ -293,6 +294,8 @@ export function MapsChamber({ onBack }: { onBack: () => void }) {
     setAiReading(null);
     setIsLoading(true);
 
+    const language = normalizeLanguage(i18n.language);
+
     try {
       const { data, error } = await supabase.functions.invoke("generate-reading", {
         body: {
@@ -305,12 +308,12 @@ export function MapsChamber({ onBack }: { onBack: () => void }) {
             birthPlace: profile?.birthPlace || "Unknown",
             birthTime: profile?.birthTime || "Unknown",
             dateOfBirth: profile?.dateOfBirth || "Unknown",
-            language: i18n.language,
+            language,
           },
         },
       });
       if (error) throw error;
-      setAiReading(data?.content || null);
+      setAiReading(data?.reading ?? data?.content ?? null);
     } catch {
       setAiReading("The cosmic frequencies are disrupted. Try again shortly.");
     } finally {
@@ -325,6 +328,8 @@ export function MapsChamber({ onBack }: { onBack: () => void }) {
     setAddressReading(null);
     setIsAddressLoading(true);
 
+    const language = normalizeLanguage(i18n.language);
+
     try {
       const { data, error } = await supabase.functions.invoke("generate-reading", {
         body: {
@@ -337,12 +342,12 @@ export function MapsChamber({ onBack }: { onBack: () => void }) {
             birthPlace: profile?.birthPlace || "Unknown",
             birthTime: profile?.birthTime || "Unknown",
             dateOfBirth: profile?.dateOfBirth || "Unknown",
-            language: i18n.language,
+            language,
           },
         },
       });
       if (error) throw error;
-      setAddressReading(data?.content || null);
+      setAddressReading(data?.reading ?? data?.content ?? null);
     } catch {
       setAddressReading("The cosmic frequencies are disrupted. Try again shortly.");
     } finally {

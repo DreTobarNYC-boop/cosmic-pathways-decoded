@@ -13,9 +13,20 @@ const LANGUAGES = [
   { code: "pt-BR", label: "Português", flag: "🇧🇷" },
 ] as const;
 
+const LANG_STORAGE_KEY = "dcode_lang";
+
 export function LanguageSwitcher() {
   const { i18n } = useTranslation();
   const current = LANGUAGES.find((l) => i18n.language.startsWith(l.code)) || LANGUAGES[0];
+
+  function changeLanguage(code: string) {
+    i18n.changeLanguage(code);
+    try {
+      localStorage.setItem(LANG_STORAGE_KEY, code);
+    } catch {
+      // localStorage may be unavailable in some environments
+    }
+  }
 
   return (
     <DropdownMenu>
@@ -28,7 +39,7 @@ export function LanguageSwitcher() {
         {LANGUAGES.map((lang) => (
           <DropdownMenuItem
             key={lang.code}
-            onClick={() => i18n.changeLanguage(lang.code)}
+            onClick={() => changeLanguage(lang.code)}
             className={`flex items-center gap-2 cursor-pointer ${
               current.code === lang.code ? "text-primary font-bold" : "text-foreground"
             }`}

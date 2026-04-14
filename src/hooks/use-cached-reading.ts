@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
+import { normalizeLanguage } from "@/lib/language";
 
 interface UseCachedReadingOptions {
   readingType: string;
@@ -56,14 +57,16 @@ export function useCachedReading({
 
         // Build a clean context payload the edge function understands
         const ctx = contextRef.current;
+        const rawLang = String(ctx.selectedLanguage ?? ctx.language ?? "en");
+        const selectedLanguage = normalizeLanguage(rawLang);
         const body = {
           reading_type: readingType,
           readingType,
           sign: ctx.sign ?? ctx.zodiacSign ?? ctx.sunSign ?? "",
           name: ctx.name ?? ctx.firstName ?? "",
           birthDate: ctx.birthDate ?? ctx.dateOfBirth ?? "",
-          selectedLanguage: ctx.selectedLanguage ?? ctx.language ?? "en",
-          context: ctx,
+          selectedLanguage,
+          context: { ...ctx, language: selectedLanguage },
         };
 
         const { data: fnData, error: fnError } = await supabase.functions.invoke(
