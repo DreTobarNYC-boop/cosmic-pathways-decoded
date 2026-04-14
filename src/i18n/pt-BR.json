@@ -122,6 +122,26 @@
     "sun": "SOL",
     "affirmation": "AFIRMAÇÃO DO DIA"
   },
+  "elements": {
+    "Air": "Ar",
+    "Fire": "Fogo",
+    "Earth": "Terra",
+    "Water": "Água"
+  },
+  "chineseAnimals": {
+    "Rat": "Rato",
+    "Ox": "Boi",
+    "Tiger": "Tigre",
+    "Rabbit": "Coelho",
+    "Dragon": "Dragão",
+    "Snake": "Serpente",
+    "Horse": "Cavalo",
+    "Goat": "Cabra",
+    "Monkey": "Macaco",
+    "Rooster": "Galo",
+    "Dog": "Cão",
+    "Pig": "Porco"
+  },
   "universalDayMeanings": {
     "1": "Novos começos e iniciativa",
     "2": "Cooperação e equilíbrio",

@@ -123,11 +123,11 @@ export function DailyBriefing({ dob, name, birthPlace, birthTime, onOpenStars }:
         )}
 
         <div className="flex items-center gap-2 mt-4 text-xs text-muted-foreground">
-          <span>{t("briefing.elementSign", { element: zodiac.element })}</span>
+          <span>{t("briefing.elementSign", { element: t(`elements.${zodiac.element}`, zodiac.element) })}</span>
           <span className="text-muted-foreground/30">·</span>
           <span className="text-primary/80">{t("briefing.path", { number: lifePath })}</span>
           <span className="text-muted-foreground/30">·</span>
-          <span>{chineseZodiac}</span>
+          <span>{t(`chineseAnimals.${chineseZodiac}`, chineseZodiac)}</span>
           <ChevronRight className="w-3 h-3 ml-auto text-muted-foreground/40" />
         </div>
       </button>
