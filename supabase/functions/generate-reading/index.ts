@@ -215,54 +215,54 @@ serve(async (req) => {
       stars_monthly: buildPrompt(
         "monthly horoscope",
         "Personal, direct, and insightful.",
-        "5-6 sentences",
+        "3 full paragraphs of at least 10 sentences total",
       ),
       stars_yearly: buildPrompt(
         "2026 yearly forecast",
         "Visionary, empowering, and forward-looking.",
-        "6-7 sentences",
+        "3 full paragraphs of at least 10 sentences total",
       ),
       stars_love: buildPrompt(
         "love and relationships",
         "Warm, honest, and deeply personal.",
-        "4-5 sentences",
+        "3 full paragraphs of at least 10 sentences total",
       ),
       stars_career: buildPrompt(
         "career and purpose",
         "Empowering, direct, and specific.",
-        "4-5 sentences",
+        "3 full paragraphs of at least 10 sentences total",
       ),
       stars_wellness: buildPrompt(
         "wellness and energy",
         "Grounding, nurturing, and supportive.",
-        "4-5 sentences",
+        "3 full paragraphs of at least 10 sentences total",
       ),
 
       // Legacy / alternate keys
       monthly: buildPrompt(
         "monthly horoscope",
         "Personal, direct, and insightful.",
-        "5-6 sentences",
+        "3 full paragraphs of at least 10 sentences total",
       ),
       yearly: buildPrompt(
         "2026 yearly forecast",
         "Visionary, empowering, and forward-looking.",
-        "6-7 sentences",
+        "3 full paragraphs of at least 10 sentences total",
       ),
       love: buildPrompt(
         "love and relationships",
         "Warm, honest, and deeply personal.",
-        "4-5 sentences",
+        "3 full paragraphs of at least 10 sentences total",
       ),
       career: buildPrompt(
         "career and purpose",
         "Empowering, direct, and specific.",
-        "4-5 sentences",
+        "3 full paragraphs of at least 10 sentences total",
       ),
       wellness: buildPrompt(
         "wellness and energy",
         "Grounding, nurturing, and supportive.",
-        "4-5 sentences",
+        "3 full paragraphs of at least 10 sentences total",
       ),
       compatibility: buildPrompt(
         "compatibility and relationship synergy",
