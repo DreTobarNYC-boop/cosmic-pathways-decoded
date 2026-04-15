@@ -234,7 +234,7 @@ export function OracleChamber({ onBack }: { onBack: () => void }) {
       });
 
       if (error) throw new Error(error.message);
-      setMessages(prev => [...prev, { role: "assistant", content: data?.content || "The veil is thick. Try again." }]);
+      setMessages(prev => [...prev, { role: "assistant", content: data?.reading || "The veil is thick. Try again." }]);
     } catch {
       setMessages(prev => [...prev, { role: "assistant", content: "The cosmic frequencies are disrupted. Please try again." }]);
     } finally {
