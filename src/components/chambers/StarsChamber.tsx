@@ -16,12 +16,13 @@ import { normalizeLanguage } from "@/lib/language";
 import { Loader2 } from "lucide-react";
 
 const TABS = [
-  { key: "today",    label: "TODAY",    readingType: "stars_today" },
-  { key: "monthly",  label: "MONTHLY",  readingType: "stars_monthly" },
-  { key: "yearly",   label: "YEARLY",   readingType: "stars_yearly" },
-  { key: "love",     label: "LOVE",     readingType: "stars_love" },
-  { key: "career",   label: "CAREER",   readingType: "stars_career" },
-  { key: "wellness", label: "WELLNESS", readingType: "stars_wellness" },
+  { key: "birthChart", label: "BIRTH CHART", readingType: "stars_birth_chart" },
+  { key: "today",      label: "TODAY",        readingType: "stars_today" },
+  { key: "monthly",    label: "MONTHLY",      readingType: "stars_monthly" },
+  { key: "yearly",     label: "YEARLY",       readingType: "stars_yearly" },
+  { key: "love",       label: "LOVE",         readingType: "stars_love" },
+  { key: "career",     label: "CAREER",       readingType: "stars_career" },
+  { key: "wellness",   label: "WELLNESS",     readingType: "stars_wellness" },
 ];
 
 export function StarsChamber({ onBack }: { onBack: () => void }) {
@@ -86,8 +87,19 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
   const career   = useCachedReading({ readingType: "stars_career",   cacheKey: `${sign}-career-${dateKeyMonth}-${language}`,  context });
   const wellness = useCachedReading({ readingType: "stars_wellness", cacheKey: `${sign}-wellness-${dateKeyMonth}-${language}`, context });
 
+  // Birth chart — permanent cache key based on birth data only (generated once per user)
+  const birthChartCacheKey = dob
+    ? `birth-chart-${profile?.dateOfBirth || ""}-${profile?.birthPlace || ""}-${profile?.birthTime || ""}-${language}`
+    : "";
+  const birthChart = useCachedReading({
+    readingType: "stars_birth_chart",
+    cacheKey: birthChartCacheKey,
+    context,
+    enabled: !!birthChartCacheKey,
+  });
+
   const readings: Record<string, { content: string | null; isLoading: boolean; error: string | null }> = {
-    today: todayReading, monthly, yearly, love, career, wellness,
+    birthChart, today: todayReading, monthly, yearly, love, career, wellness,
   };
 
   const current = readings[activeTab];

@@ -39,6 +39,9 @@ serve(async (req) => {
     const universalDay = ctx.universalDay != null ? String(ctx.universalDay) : "";
     const personalDay = ctx.personalDay != null ? String(ctx.personalDay) : "";
     const cuspInfo = ctx.cuspInfo ? String(ctx.cuspInfo) : null;
+    const dateOfBirth = String(ctx.dateOfBirth || body.birthDate || "");
+    const birthPlace = String(ctx.birthPlace || "");
+    const birthTime = String(ctx.birthTime || "");
 
     const nameStr = name ? `, ${name}` : "";
     const cuspNote = cuspInfo ? ` (${cuspInfo})` : "";
@@ -237,6 +240,41 @@ serve(async (req) => {
         "Grounding, nurturing, and supportive.",
         "3 full paragraphs of at least 10 sentences total",
       ),
+
+      // Birth Chart — generated once and cached permanently per user
+      stars_birth_chart: [
+        `You are DCode, a master astrologer and spiritual oracle${nameStr}.`,
+        lang.langInstruction,
+        ``,
+        `Create a comprehensive, AI-powered natal birth chart interpretation for ${name || "the seeker"}.`,
+        ``,
+        `Birth data:`,
+        `- Date of Birth: ${dateOfBirth || "Unknown"}`,
+        `- Time of Birth: ${birthTime || "Unknown"}`,
+        `- Place of Birth: ${birthPlace || "Unknown"}`,
+        `- Sun Sign: ${sign}${element ? ` (${lang.elementLabel(element)})` : ""}`,
+        lifePath ? `- Life Path Number: ${lifePath}` : "",
+        chineseZodiac ? `- Chinese Zodiac: ${chineseZodiac}` : "",
+        cuspInfo ? `- Cusp: ${cuspInfo}` : "",
+        ``,
+        `Write a deeply personal natal chart reading with the following sections (use each section heading exactly as given, translated into ${lang.langName}):`,
+        ``,
+        `☀️ SUN SIGN — Core identity, ego, and life purpose. 2-3 sentences.`,
+        `🌙 MOON SIGN — Emotional world, instincts, and inner needs. 2-3 sentences. (Estimate based on birth date and time if available; otherwise describe the emotional archetype of ${sign}.)`,
+        `⬆️ RISING SIGN (ASCENDANT) — Outward personality and first impressions. 2-3 sentences. (Estimate from birth time and place if available; otherwise note it requires birth time.)`,
+        `🪐 KEY PLANETARY INFLUENCES — Describe the dominant planetary energies (Mercury, Venus, Mars) and how they shape personality, communication, love, and drive. 3-4 sentences.`,
+        `🏠 LIFE THEMES & HOUSES — The primary life areas highlighted by this chart (career, relationships, spirituality). 3-4 sentences.`,
+        `✨ COSMIC GIFTS & CHALLENGES — 2 innate gifts and 2 growth areas written as flowing prose. 3-4 sentences total.`,
+        `🔮 SOUL PURPOSE — The overarching soul mission and evolutionary lesson of this lifetime. 2-3 sentences.`,
+        ``,
+        `Rules:`,
+        `- Speak directly to the person using "you" and "your".`,
+        `- Be poetic, warm, specific, and empowering.`,
+        `- Do NOT use bullet points inside section content. Write flowing prose under each heading.`,
+        `- Do NOT add meta-commentary, confirmation text, or instruction echoes.`,
+        `- Write every single word — including all headings and labels — in ${lang.langName}.`,
+        `- Output ONLY the birth chart reading. Nothing before or after.`,
+      ].filter(Boolean).join("\n"),
 
       // Legacy / alternate keys
       monthly: buildPrompt(
