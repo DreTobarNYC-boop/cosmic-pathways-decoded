@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
 import { normalizeLanguage } from "@/lib/language";
@@ -19,10 +19,20 @@ export function useCachedReading({
   enabled = true,
 }: UseCachedReadingOptions) {
   const [content, setContent] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  // Start in loading state immediately when enabled + cacheKey are set to avoid a flash of
+  // "not loaded" content before the first useEffect fires.
+  const [isLoading, setIsLoading] = useState(() => enabled && !!cacheKey);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
   const contextRef = useRef(context);
   contextRef.current = context;
+
+  // Expose a retry function that clears state and forces a fresh fetch bypassing the DB cache.
+  const retry = useCallback(() => {
+    setContent(null);
+    setError(null);
+    setRetryCount((c) => c + 1);
+  }, []);
 
   useEffect(() => {
     if (!enabled || !cacheKey) return;
@@ -37,7 +47,8 @@ export function useCachedReading({
         const { data: authData } = await supabase.auth.getUser();
         const userId = authData?.user?.id;
 
-        if (userId) {
+        // Skip the DB cache on retry so we always call the edge function fresh.
+        if (retryCount === 0 && userId) {
           const { data: cached } = await supabase
             .from("cached_readings")
             .select("content")
@@ -138,7 +149,7 @@ export function useCachedReading({
 
     fetchReading();
     return () => { cancelled = true; };
-  }, [readingType, cacheKey, enabled, fallback]);
+  }, [readingType, cacheKey, enabled, fallback, retryCount]);
 
-  return { content, isLoading, error };
+  return { content, isLoading, error, retry };
 }

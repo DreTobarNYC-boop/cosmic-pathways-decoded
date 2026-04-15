@@ -13,7 +13,7 @@ import {
   formatDate,
 } from "@/lib/daily";
 import { normalizeLanguage } from "@/lib/language";
-import { Loader2 } from "lucide-react";
+import { Loader2, RefreshCw } from "lucide-react";
 
 const TABS = [
   { key: "today",    label: "TODAY",    readingType: "stars_today" },
@@ -28,6 +28,13 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
   const { i18n } = useTranslation();
   const { profile } = useAuth();
   const [activeTab, setActiveTab] = useState("today");
+  // Track which tabs have been activated so readings are fetched lazily.
+  const [enabledTabs, setEnabledTabs] = useState<Set<string>>(new Set(["today"]));
+
+  const handleTabChange = (key: string) => {
+    setActiveTab(key);
+    setEnabledTabs((prev) => (prev.has(key) ? prev : new Set([...prev, key])));
+  };
 
   const language = normalizeLanguage(i18n.language);
   const rawLang = i18n.language;
@@ -78,15 +85,16 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
     language,
   };
 
-  // TODAY uses the same readingType + cacheKey as DailyBriefing so they share the cached reading
+  // TODAY uses the same readingType + cacheKey as DailyBriefing so they share the cached reading.
+  // Other tabs are fetched lazily only when first activated to avoid simultaneous API calls.
   const todayReading = useCachedReading({ readingType: "daily_horoscope", cacheKey: `${dateKey}_${rawLang}`, context: dailyContext });
-  const monthly  = useCachedReading({ readingType: "stars_monthly",  cacheKey: `${sign}-monthly-${dateKeyMonth}-${language}`, context });
-  const yearly   = useCachedReading({ readingType: "stars_yearly",   cacheKey: `${sign}-yearly-${yearKey}-${language}`,  context });
-  const love     = useCachedReading({ readingType: "stars_love",     cacheKey: `${sign}-love-${dateKeyMonth}-${language}`,    context });
-  const career   = useCachedReading({ readingType: "stars_career",   cacheKey: `${sign}-career-${dateKeyMonth}-${language}`,  context });
-  const wellness = useCachedReading({ readingType: "stars_wellness", cacheKey: `${sign}-wellness-${dateKeyMonth}-${language}`, context });
+  const monthly  = useCachedReading({ readingType: "stars_monthly",  cacheKey: `${sign}-monthly-${dateKeyMonth}-${language}`, context, enabled: enabledTabs.has("monthly") });
+  const yearly   = useCachedReading({ readingType: "stars_yearly",   cacheKey: `${sign}-yearly-${yearKey}-${language}`,  context, enabled: enabledTabs.has("yearly") });
+  const love     = useCachedReading({ readingType: "stars_love",     cacheKey: `${sign}-love-${dateKeyMonth}-${language}`,    context, enabled: enabledTabs.has("love") });
+  const career   = useCachedReading({ readingType: "stars_career",   cacheKey: `${sign}-career-${dateKeyMonth}-${language}`,  context, enabled: enabledTabs.has("career") });
+  const wellness = useCachedReading({ readingType: "stars_wellness", cacheKey: `${sign}-wellness-${dateKeyMonth}-${language}`, context, enabled: enabledTabs.has("wellness") });
 
-  const readings: Record<string, { content: string | null; isLoading: boolean; error: string | null }> = {
+  const readings: Record<string, { content: string | null; isLoading: boolean; error: string | null; retry: () => void }> = {
     today: todayReading, monthly, yearly, love, career, wellness,
   };
 
@@ -105,7 +113,7 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
           {TABS.map((tab) => (
             <button
               key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
+              onClick={() => handleTabChange(tab.key)}
               className={`text-xs tracking-widest px-3 py-1.5 rounded-full border transition-all ${
                 activeTab === tab.key
                   ? "border-primary text-primary bg-primary/10"
@@ -123,6 +131,17 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
             <div className="flex items-center gap-2 text-muted-foreground text-sm py-4 justify-center">
               <Loader2 className="w-4 h-4 animate-spin text-primary" />
               <span>Reading the stars…</span>
+            </div>
+          ) : current.error ? (
+            <div className="flex flex-col items-center gap-3 py-4 text-center">
+              <p className="text-sm text-muted-foreground">Unable to load your reading.</p>
+              <button
+                onClick={current.retry}
+                className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+                Try again
+              </button>
             </div>
           ) : (
             <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-line">
