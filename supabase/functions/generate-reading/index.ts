@@ -177,7 +177,7 @@ serve(async (req) => {
       ``,
       `[Write 3 full paragraphs of flowing, empathetic prose — at least 10 sentences. Use "you" and "your". Be poetic, warm, and specific to ${sign}${element ? ` (${lang.elementLabel(element)})` : ""}${lifePath ? `, ${lang.pathLabel(lifePath)}` : ""}. Cover the cosmic climate, emotional landscape, practical guidance, and an uplifting close. No bullet points. No affirmation labels.]`,
       ``,
-      tagLine || `[${lang.elementLabel(element || "Sign")} • ${lang.pathLabel(lifePath || "?")}}]`,
+      tagLine || `[${lang.elementLabel(element || "Sign")} • ${lang.pathLabel(lifePath || "?")}]`,
       universalDaySection,
       personalDaySection,
       `---`,

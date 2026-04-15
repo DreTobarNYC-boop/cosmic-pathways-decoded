@@ -25,7 +25,7 @@ const TABS = [
 ];
 
 export function StarsChamber({ onBack }: { onBack: () => void }) {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { profile } = useAuth();
   const [activeTab, setActiveTab] = useState("today");
 
@@ -78,8 +78,8 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
     language,
   };
 
-  // TODAY uses the same readingType + cacheKey as DailyBriefing so they share the cached reading
-  const todayReading = useCachedReading({ readingType: "daily_horoscope", cacheKey: `${dateKey}_${rawLang}`, context: dailyContext });
+  // TODAY uses stars_today to match the TABS definition and get the full structured Stars chamber reading
+  const todayReading = useCachedReading({ readingType: "stars_today", cacheKey: `${sign}-today-${dateKey}-${language}`, context: dailyContext });
   const monthly  = useCachedReading({ readingType: "stars_monthly",  cacheKey: `${sign}-monthly-${dateKeyMonth}-${language}`, context });
   const yearly   = useCachedReading({ readingType: "stars_yearly",   cacheKey: `${sign}-yearly-${yearKey}-${language}`,  context });
   const love     = useCachedReading({ readingType: "stars_love",     cacheKey: `${sign}-love-${dateKeyMonth}-${language}`,    context });
@@ -122,8 +122,12 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
           {current.isLoading ? (
             <div className="flex items-center gap-2 text-muted-foreground text-sm py-4 justify-center">
               <Loader2 className="w-4 h-4 animate-spin text-primary" />
-              <span>Reading the stars…</span>
+              <span>{t("stars.consulting")}</span>
             </div>
+          ) : current.error && !current.content ? (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              {t("stars.noReading")}
+            </p>
           ) : (
             <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-line">
               {current.content || "Your reading is preparing…"}
