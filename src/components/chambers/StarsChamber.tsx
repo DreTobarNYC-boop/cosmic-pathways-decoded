@@ -95,7 +95,7 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
   // TODAY / MONTHLY / YEARLY / LOVE / CAREER / WELLNESS are fully isolated from
   // the Birth Chart — they use horoscopeContext (no natal-specific fields) and
   // their own readingType so the edge function never applies Birth Chart logic.
-  const todayReading = useCachedReading({ readingType: "stars_today",    cacheKey: `${sign}-today-${dateKey}-${language}`,        context: dailyContext });
+  const todayReading = useCachedReading({ readingType: "stars_today",    cacheKey: `${sign}-today-${dateKey}-${language}`,        context: horoscopeContext });
   const monthly      = useCachedReading({ readingType: "stars_monthly",  cacheKey: `${sign}-monthly-${dateKeyMonth}-${language}`, context: horoscopeContext });
   const yearly       = useCachedReading({ readingType: "stars_yearly",   cacheKey: `${sign}-yearly-${yearKey}-${language}`,       context: horoscopeContext });
   const love         = useCachedReading({ readingType: "stars_love",     cacheKey: `${sign}-love-${dateKeyMonth}-${language}`,    context: horoscopeContext });
@@ -150,11 +150,17 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
               → independent prose readings; Birth Chart logic is never applied.
         ─────────────────────────────────────────────────────────────────── */}
         {activeTab === "birthChart" ? (
-          <BirthChartContent
-            readingType="stars_birth_chart"
-            cacheKey={birthChartCacheKey}
-            context={context}
-          />
+          !profile?.dateOfBirth ? (
+            <div className="card-cosmic rounded-2xl p-5 text-center text-sm text-muted-foreground">
+              Add your date of birth in your profile to unlock your Birth Chart.
+            </div>
+          ) : (
+            <BirthChartContent
+              readingType="stars_birth_chart"
+              cacheKey={birthChartCacheKey}
+              context={context}
+            />
+          )
         ) : (
           /* ─── Other Reading Cards ─── */
           <div className="card-cosmic rounded-2xl p-5">
