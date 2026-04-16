@@ -457,7 +457,7 @@ serve(async (req) => {
       );
     }
 
-    const model = Deno.env.get("GEMINI_MODEL") || "gemini-2.0-flash-001";
+    const model = Deno.env.get("GEMINI_MODEL") || "gemini-2.5-flash";
     const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
 
     const controller = new AbortController();
