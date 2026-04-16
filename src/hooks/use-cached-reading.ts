@@ -21,6 +21,7 @@ export function useCachedReading({
   const [content, setContent] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
   const contextRef = useRef(context);
   contextRef.current = context;
 
@@ -38,20 +39,30 @@ export function useCachedReading({
         const userId = authData?.user?.id;
 
         if (userId) {
-          const { data: cached } = await supabase
-            .from("cached_readings")
-            .select("content")
-            .eq("user_id", userId)
-            .eq("reading_type", readingType)
-            .eq("cache_key", cacheKey)
-            .maybeSingle();
+          if (retryCount > 0) {
+            // Delete the stale cached entry so a fresh one is stored after generation
+            await supabase
+              .from("cached_readings")
+              .delete()
+              .eq("user_id", userId)
+              .eq("reading_type", readingType)
+              .eq("cache_key", cacheKey);
+          } else {
+            const { data: cached } = await supabase
+              .from("cached_readings")
+              .select("content")
+              .eq("user_id", userId)
+              .eq("reading_type", readingType)
+              .eq("cache_key", cacheKey)
+              .maybeSingle();
 
-          if (cached?.content) {
-            if (!cancelled) {
-              setContent(cached.content);
-              setIsLoading(false);
+            if (cached?.content) {
+              if (!cancelled) {
+                setContent(cached.content);
+                setIsLoading(false);
+              }
+              return;
             }
-            return;
           }
         }
 
@@ -86,9 +97,13 @@ export function useCachedReading({
 
         if (!generatedContent) throw new Error("No content returned");
 
-        // Strip any accidental JSON wrapping
+        // Strip any accidental JSON wrapping — but only for reading types that return prose.
+        // JSON-structured reading types (birth chart, etc.) must be passed through untouched.
+        // Note: this list intentionally mirrors the one in the edge function but lives here
+        // separately because the two run in different environments (Deno vs browser bundle).
+        const jsonPassthroughTypes = ["stars_birth_chart", "dynasty_forecast", "sacred_code", "frequency_reading"];
         let cleanContent = generatedContent.trim();
-        if (cleanContent.startsWith("{") || cleanContent.startsWith("[")) {
+        if (!jsonPassthroughTypes.includes(readingType) && (cleanContent.startsWith("{") || cleanContent.startsWith("["))) {
           try {
             const parsed = JSON.parse(cleanContent);
             cleanContent =
@@ -138,7 +153,13 @@ export function useCachedReading({
 
     fetchReading();
     return () => { cancelled = true; };
-  }, [readingType, cacheKey, enabled, fallback]);
+  }, [readingType, cacheKey, enabled, fallback, retryCount]);
 
-  return { content, isLoading, error };
+  function retry() {
+    setContent(null);
+    setError(null);
+    setRetryCount((c) => c + 1);
+  }
+
+  return { content, isLoading, error, retry };
 }

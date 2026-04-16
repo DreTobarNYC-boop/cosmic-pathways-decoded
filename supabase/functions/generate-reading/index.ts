@@ -242,7 +242,7 @@ serve(async (req) => {
       ),
 
       // Birth Chart — generated once and cached permanently per user
-      // Returns structured JSON: { placements[], interpretations[] }
+      // Returns structured JSON: { placements[], interpretation }
       stars_birth_chart: [
         `You are DCode, a master astrologer and spiritual oracle${nameStr}.`,
         ``,
@@ -261,37 +261,29 @@ serve(async (req) => {
         `Required JSON structure (fill every field, do not omit any planet):`,
         `{`,
         `  "placements": [`,
-        `    { "planet": "Sun",       "symbol": "☉", "sign": "...", "house": 1, "degree": 0 },`,
-        `    { "planet": "Moon",      "symbol": "☽", "sign": "...", "house": 1, "degree": 0 },`,
-        `    { "planet": "Ascendant", "symbol": "↑", "sign": "...", "house": 1, "degree": 0 },`,
-        `    { "planet": "Mercury",   "symbol": "☿", "sign": "...", "house": 1, "degree": 0 },`,
-        `    { "planet": "Venus",     "symbol": "♀", "sign": "...", "house": 1, "degree": 0 },`,
-        `    { "planet": "Mars",      "symbol": "♂", "sign": "...", "house": 1, "degree": 0 },`,
-        `    { "planet": "Jupiter",   "symbol": "♃", "sign": "...", "house": 1, "degree": 0 },`,
-        `    { "planet": "Saturn",    "symbol": "♄", "sign": "...", "house": 1, "degree": 0 },`,
-        `    { "planet": "Uranus",    "symbol": "⛢", "sign": "...", "house": 1, "degree": 0 },`,
-        `    { "planet": "Neptune",   "symbol": "♆", "sign": "...", "house": 1, "degree": 0 },`,
-        `    { "planet": "Pluto",     "symbol": "♇", "sign": "...", "house": 1, "degree": 0 }`,
+        `    { "planet": "Sun",       "sign": "...", "house": 1, "degree": 0, "description": "2-3 sentences for Sun placement in ${lang.langName}." },`,
+        `    { "planet": "Moon",      "sign": "...", "house": 1, "degree": 0, "description": "..." },`,
+        `    { "planet": "Ascendant", "sign": "...", "house": 1, "degree": 0, "description": "..." },`,
+        `    { "planet": "Mercury",   "sign": "...", "house": 1, "degree": 0, "description": "..." },`,
+        `    { "planet": "Venus",     "sign": "...", "house": 1, "degree": 0, "description": "..." },`,
+        `    { "planet": "Mars",      "sign": "...", "house": 1, "degree": 0, "description": "..." },`,
+        `    { "planet": "Jupiter",   "sign": "...", "house": 1, "degree": 0, "description": "..." },`,
+        `    { "planet": "Saturn",    "sign": "...", "house": 1, "degree": 0, "description": "..." },`,
+        `    { "planet": "Uranus",    "sign": "...", "house": 1, "degree": 0, "description": "..." },`,
+        `    { "planet": "Neptune",   "sign": "...", "house": 1, "degree": 0, "description": "..." },`,
+        `    { "planet": "Pluto",     "sign": "...", "house": 1, "degree": 0, "description": "..." }`,
         `  ],`,
-        `  "interpretations": [`,
-        `    {`,
-        `      "planet": "Sun",`,
-        `      "sign": "...",`,
-        `      "house": 1,`,
-        `      "title": "Sun in [Sign] — [Nth] House",`,
-        `      "description": "2-3 sentences written directly to the person using you/your. Poetic, warm, specific. Written entirely in ${lang.langName}."`,
-        `    }`,
-        `  ]`,
+        `  "interpretation": "3–4 paragraph overall natal chart reading for ${name || "the seeker"} in ${lang.langName}. Cover life themes, soul purpose, and cosmic gifts. Speak directly using you/your."`,
         `}`,
         ``,
         `Rules:`,
-        `- "degree" is the ecliptic longitude 0-359 where 0=Aries start, 30=Taurus start, 60=Gemini, 90=Cancer, 120=Leo, 150=Virgo, 180=Libra, 210=Scorpio, 240=Sagittarius, 270=Capricorn, 300=Aquarius, 330=Pisces.`,
+        `- "degree" is the ecliptic longitude 0-359 where 0=Aries, 30=Taurus, 60=Gemini, 90=Cancer, 120=Leo, 150=Virgo, 180=Libra, 210=Scorpio, 240=Sagittarius, 270=Capricorn, 300=Aquarius, 330=Pisces.`,
         `- Estimate accurate degrees from the date of birth: ${dateOfBirth || "Unknown"}.`,
         `- Sun sign is confirmed as ${sign} — use a degree consistent with that sign.`,
         `- "house" is an integer 1-12. Use null only if birth time is completely unknown.`,
         `- ${birthTime && birthTime !== "Unknown" ? `Birth time ${birthTime} and place ${birthPlace || "Unknown"} are provided — calculate Ascendant and house cusps accordingly.` : `Birth time not provided — estimate houses based on sun sign and date; set Ascendant house to 1.`}`,
-        `- The "interpretations" array must include one entry per planet (11 total, including Ascendant).`,
-        `- Write all "description" and "title" text entirely in ${lang.langName}.`,
+        `- "description" for each placement: 2-3 sentences in ${lang.langName}, speaking directly to ${name || "the person"} using "you/your". Poetic and specific.`,
+        `- "interpretation": 3-4 flowing paragraphs in ${lang.langName}. No bullet points.`,
         `- Output ONLY the JSON object. Nothing before or after. No markdown. No code fences.`,
       ].filter(Boolean).join("\n"),
 
@@ -524,6 +516,21 @@ serve(async (req) => {
 
     // Strip markdown code fences so JSON-expecting chambers can parse cleanly
     reading = reading.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/i, "").trim();
+
+    // For birth chart and other JSON-returning reading types, try harder to extract
+    // a clean JSON object in case the model added surrounding prose or nested fences.
+    const jsonReadingTypes = ["stars_birth_chart", "dynasty_forecast", "sacred_code", "frequency_reading"];
+    if (jsonReadingTypes.includes(readingType) && !reading.startsWith("{") && !reading.startsWith("[")) {
+      const jsonMatch = reading.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          JSON.parse(jsonMatch[0]);
+          reading = jsonMatch[0];
+        } catch {
+          // keep as-is; parse errors will surface in the client
+        }
+      }
+    }
 
     return new Response(
       JSON.stringify({ reading }),

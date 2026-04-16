@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Loader2, Star } from "lucide-react";
+import { Loader2, RefreshCw, Star } from "lucide-react";
 import { useCachedReading } from "@/hooks/use-cached-reading";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,13 +9,15 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Placement {
   planet: string;
-  symbol: string;
+  symbol?: string;        // optional — filled in from PLANET_SYMBOLS if absent
   sign: string;
-  house: number | null;
+  house: number | string | null;  // accept numeric (10) or ordinal string ("11th")
   degree: number;
+  description?: string;   // per-planet interpretation (new format)
 }
 
-interface Interpretation {
+// Legacy per-planet entry kept for backward-compatible cache reads
+interface LegacyInterpretation {
   planet: string;
   sign: string;
   house: number | null;
@@ -24,8 +26,9 @@ interface Interpretation {
 }
 
 interface BirthChart {
-  placements: Placement[];
-  interpretations: Interpretation[];
+  placements: Placement[];         // normalized on parse (symbol added, house as number)
+  interpretation: string;          // new: single overall prose
+  interpretations?: LegacyInterpretation[]; // old: per-planet array (backward compat)
 }
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -41,7 +44,19 @@ const SIGN_ABBR: Record<string, string> = {
   Sagittarius: "SAG", Capricorn: "CAP", Aquarius: "AQU", Pisces: "PIS",
 };
 
+const PLANET_SYMBOLS: Record<string, string> = {
+  Sun: "☉", Moon: "☽", Ascendant: "↑", Mercury: "☿", Venus: "♀",
+  Mars: "♂", Jupiter: "♃", Saturn: "♄", Uranus: "⛢", Neptune: "♆", Pluto: "♇",
+};
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function parseHouse(h: number | string | null | undefined): number | null {
+  if (h == null) return null;
+  if (typeof h === "number") return h;
+  const n = parseInt(h, 10);
+  return isNaN(n) ? null : n;
+}
 
 function parseBirthChart(raw: string | null): BirthChart | null {
   if (!raw) return null;
@@ -49,11 +64,9 @@ function parseBirthChart(raw: string | null): BirthChart | null {
     const cleaned = raw.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
     const parsed = JSON.parse(cleaned);
     if (
-      Array.isArray(parsed.placements) &&
-      parsed.placements.length > 0 &&
-      Array.isArray(parsed.interpretations) &&
-      parsed.interpretations.length > 0 &&
-      parsed.placements.every(
+      !Array.isArray(parsed.placements) ||
+      parsed.placements.length === 0 ||
+      !parsed.placements.every(
         (p: unknown) =>
           p !== null &&
           typeof p === "object" &&
@@ -61,9 +74,27 @@ function parseBirthChart(raw: string | null): BirthChart | null {
           typeof (p as Record<string, unknown>).sign === "string",
       )
     ) {
-      return parsed as BirthChart;
+      return null;
     }
-    return null;
+
+    // Normalise placements: fill in symbol from map, parse house to number
+    const placements: Placement[] = parsed.placements.map((p: Placement) => ({
+      ...p,
+      symbol: p.symbol ?? PLANET_SYMBOLS[p.planet] ?? "✦",
+      house: parseHouse(p.house),
+    }));
+
+    // Accept interpretation (new format), prose (alias used by some prompts), or the old
+    // per-planet interpretations array for backward-compatible cache reads.
+    const interpretation: string =
+      (typeof parsed.interpretation === "string" ? parsed.interpretation : "") ||
+      (typeof parsed.prose === "string" ? parsed.prose : "");
+
+    return {
+      placements,
+      interpretation,
+      interpretations: Array.isArray(parsed.interpretations) ? parsed.interpretations : undefined,
+    };
   } catch {
     return null;
   }
@@ -145,13 +176,13 @@ function TableView({
 }) {
   return (
     <div className="card-cosmic rounded-xl overflow-hidden">
-      {/* Column headers */}
-      <div className="grid grid-cols-[1fr_auto_auto] px-4 py-2.5 border-b border-border/30">
+      {/* Column headers: Sign | Planet | House */}
+      <div className="grid grid-cols-[1fr_1fr_auto] px-4 py-2.5 border-b border-border/30">
+        <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">
+          Sign
+        </span>
         <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold">
           Planet
-        </span>
-        <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold w-28 text-center">
-          Sign
         </span>
         <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground font-semibold w-14 text-right">
           House
@@ -161,40 +192,40 @@ function TableView({
       {/* Rows */}
       {placements.map((p) => {
         const isActive = selected === p.planet;
+        const symbol = p.symbol ?? PLANET_SYMBOLS[p.planet] ?? "✦";
+        const house = parseHouse(p.house);
         return (
           <button
             key={p.planet}
             onClick={() => onSelect(p.planet)}
             className={[
-              "grid grid-cols-[1fr_auto_auto] w-full px-4 py-3 border-b border-border/20",
+              "grid grid-cols-[1fr_1fr_auto] w-full px-4 py-3 border-b border-border/20",
               "text-left transition-colors",
-              isActive
-                ? "bg-primary/10"
-                : "hover:bg-primary/5",
+              isActive ? "bg-primary/10" : "hover:bg-primary/5",
             ].join(" ")}
           >
+            {/* Sign */}
+            <span className="text-sm text-muted-foreground font-display self-center">
+              {p.sign}
+            </span>
+
             {/* Planet symbol + name */}
-            <span className="flex items-center gap-2.5">
+            <span className="flex items-center gap-2.5 self-center">
               <span
                 className={`text-lg leading-none w-5 text-center ${isActive ? "text-primary" : "text-primary/70"}`}
               >
-                {p.symbol}
+                {symbol}
               </span>
               <span
-                className={`text-sm font-display tracking-wide ${isActive ? "text-foreground" : "text-foreground/80"}`}
+                className={`text-sm font-display tracking-wide uppercase ${isActive ? "text-foreground" : "text-foreground/80"}`}
               >
                 {p.planet}
               </span>
             </span>
 
-            {/* Sign */}
-            <span className="w-28 text-center text-sm text-muted-foreground font-display">
-              {p.sign}
-            </span>
-
             {/* House */}
-            <span className="w-14 text-right font-display text-sm text-foreground/60">
-              {p.house != null ? ordinal(p.house) : "—"}
+            <span className="w-14 text-right font-display text-sm text-foreground/60 self-center">
+              {house != null ? ordinal(house) : "—"}
             </span>
           </button>
         );
@@ -361,45 +392,74 @@ function ChartView({
 }
 
 function InsightCards({
-  interpretations,
+  chart,
   selected,
   onSelect,
 }: {
-  interpretations: Interpretation[];
+  chart: BirthChart;
   selected: string | null;
   onSelect: (planet: string) => void;
 }) {
   return (
     <div className="space-y-3">
-      {interpretations.map((interp) => {
-        const isActive = selected === interp.planet;
+      {chart.placements.map((p) => {
+        const isActive = selected === p.planet;
+        const house = parseHouse(p.house);
+        const symbol = p.symbol ?? PLANET_SYMBOLS[p.planet] ?? "✦";
+
+        // Prefer per-placement description (new format); fall back to legacy interpretations array
+        const legacyInterp = chart.interpretations?.find((i) => i.planet === p.planet);
+        const description = p.description ?? legacyInterp?.description ?? "";
+        const title = legacyInterp?.title ?? `${p.planet} in ${p.sign}`;
+
         return (
           <Card
-            key={interp.planet}
-            onClick={() => onSelect(interp.planet)}
+            key={p.planet}
+            onClick={() => onSelect(p.planet)}
             className={[
               "cursor-pointer transition-all border-border/30 bg-card/30 backdrop-blur-sm",
               isActive ? "border-primary/50 ring-1 ring-primary/20" : "hover:border-border/60",
             ].join(" ")}
           >
             <CardHeader className="pb-2 pt-4 px-5">
-              <CardTitle className="text-base font-display font-semibold text-foreground/90 leading-snug">
-                {interp.title}
+              <CardTitle className="text-base font-display font-semibold text-foreground/90 leading-snug flex items-center gap-2">
+                <span className={`text-lg leading-none ${isActive ? "text-primary" : "text-primary/70"}`}>
+                  {symbol}
+                </span>
+                {title}
               </CardTitle>
-              {interp.house != null && (
+              {house != null && (
                 <p className="text-[10px] uppercase tracking-[0.15em] text-primary/60 font-semibold mt-0.5">
-                  {interp.sign} · {ordinal(interp.house)} House
+                  {p.sign} · {ordinal(house)} House
                 </p>
               )}
             </CardHeader>
-            <CardContent className="px-5 pb-4">
-              <p className="text-sm text-foreground/75 leading-relaxed font-display">
-                {interp.description}
-              </p>
-            </CardContent>
+            {description && (
+              <CardContent className="px-5 pb-4">
+                <p className="text-sm text-foreground/75 leading-relaxed font-display">
+                  {description}
+                </p>
+              </CardContent>
+            )}
           </Card>
         );
       })}
+
+      {/* Overall natal chart interpretation (new format) */}
+      {chart.interpretation && (
+        <Card className="border-primary/20 bg-card/40 backdrop-blur-sm">
+          <CardHeader className="pb-2 pt-4 px-5">
+            <CardTitle className="text-[10px] uppercase tracking-[0.2em] text-primary/70 font-semibold">
+              Your Natal Chart Reading
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-5 pb-5">
+            <p className="text-sm text-foreground/80 leading-relaxed whitespace-pre-line font-display">
+              {chart.interpretation}
+            </p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
@@ -417,7 +477,7 @@ export function BirthChartContent({
 }) {
   const [selected, setSelected] = useState<string | null>(null);
 
-  const { content, isLoading } = useCachedReading({
+  const { content, isLoading, retry } = useCachedReading({
     readingType,
     cacheKey,
     context,
@@ -425,6 +485,18 @@ export function BirthChartContent({
   });
 
   const chart = parseBirthChart(content);
+
+  // ── No birth data ──
+  if (!cacheKey) {
+    return (
+      <div className="card-cosmic rounded-2xl p-8 text-center mt-4">
+        <Star className="w-8 h-8 mx-auto text-primary/40 mb-3" />
+        <p className="text-sm text-muted-foreground">
+          Add your date of birth in your profile to generate your birth chart.
+        </p>
+      </div>
+    );
+  }
 
   // ── Loading ──
   if (isLoading) {
@@ -443,7 +515,14 @@ export function BirthChartContent({
     return (
       <div className="card-cosmic rounded-2xl p-8 text-center mt-4">
         <Star className="w-8 h-8 mx-auto text-primary/40 mb-3" />
-        <p className="text-sm text-muted-foreground">Could not generate birth chart. Try again.</p>
+        <p className="text-sm text-muted-foreground mb-4">Could not generate birth chart.</p>
+        <button
+          onClick={retry}
+          className="inline-flex items-center gap-1.5 text-xs tracking-widest px-4 py-2 rounded-full border border-primary/40 text-primary hover:border-primary transition-all"
+        >
+          <RefreshCw className="w-3 h-3" />
+          TRY AGAIN
+        </button>
       </div>
     );
   }
@@ -491,21 +570,19 @@ export function BirthChartContent({
         </TabsContent>
       </Tabs>
 
-      {/* ── INSIGHT CARDS (always visible below the toggle view) ── */}
-      {chart.interpretations?.length > 0 && (
-        <div>
-          <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-semibold px-1 mb-3">
-            Planetary Insights
-          </p>
-          <ScrollArea className="h-[30rem] pr-1">
-            <InsightCards
-              interpretations={chart.interpretations}
-              selected={selected}
-              onSelect={toggle}
-            />
-          </ScrollArea>
-        </div>
-      )}
+      {/* ── INSIGHT CARDS (placements + overall interpretation) ── */}
+      <div>
+        <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-semibold px-1 mb-3">
+          Planetary Insights
+        </p>
+        <ScrollArea className="h-[30rem] pr-1">
+          <InsightCards
+            chart={chart}
+            selected={selected}
+            onSelect={toggle}
+          />
+        </ScrollArea>
+      </div>
     </div>
   );
 }
