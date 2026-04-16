@@ -448,7 +448,7 @@ serve(async (req) => {
 
     const prompt = prompts[readingType] ?? prompts["daily_horoscope"];
 
-    // ── Gemini API call with automatic model fallback ──────────────────────
+    // ── Gemini API call with dynamic model selection ───────────────────────
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     if (!GEMINI_API_KEY) {
       return new Response(
@@ -457,72 +457,103 @@ serve(async (req) => {
       );
     }
 
-    // Build the model priority list. The env override, if set, is tried first.
-    // Remaining entries are tried in order when a model returns 404 (not found /
-    // deprecated) or 400 (invalid model name), ensuring we never hard-fail just
-    // because a specific model version has been retired.
+    // Resolve which model to use. If GEMINI_MODEL env var is set, use it
+    // directly. Otherwise, query the Gemini models list API and pick the
+    // newest available Flash model — this means when Gemini 3.0 Flash (or
+    // beyond) is released and earlier versions are retired, the function
+    // automatically advances to the newest generation without any code changes.
     const envModel = Deno.env.get("GEMINI_MODEL");
-    const MODEL_FALLBACKS = [
-      ...(envModel ? [envModel] : []),
-      "gemini-2.5-flash",
-      "gemini-2.0-flash",
-      "gemini-1.5-flash",
-    ].filter((m, i, arr) => arr.indexOf(m) === i); // deduplicate
+    let selectedModel: string;
 
-    const requestBody = JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: 0.9,
-        maxOutputTokens: 8192,
-      },
-    });
-
-    let geminiResponse: Response | null = null;
-    let lastModelTried = MODEL_FALLBACKS[0];
-
-    for (const model of MODEL_FALLBACKS) {
-      lastModelTried = model;
-      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 25000);
-
-      let resp: Response;
+    if (envModel) {
+      selectedModel = envModel;
+    } else {
+      // Fetch all available models and choose the newest Flash variant.
+      // "Newest" is determined by sorting the major.minor version number
+      // embedded in model names (e.g. gemini-2.5-flash → [2,5]).
+      // Fall back to a known-good model name if the list API is unavailable.
+      const FALLBACK_MODEL = "gemini-2.5-flash";
       try {
-        resp = await fetch(geminiUrl, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: requestBody,
-          signal: controller.signal,
-        });
-      } catch (err: unknown) {
-        clearTimeout(timeoutId);
-        if (err instanceof Error && err.name === "AbortError") {
-          return new Response(
-            JSON.stringify({ error: "The AI request timed out." }),
-            { status: 408, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        const listResp = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}&pageSize=100`,
+        );
+        if (listResp.ok) {
+          const listData = await listResp.json();
+          const models: Array<{ name: string; supportedGenerationMethods?: string[] }> =
+            listData?.models ?? [];
+
+          // Keep only Flash models that support generateContent.
+          const flashModels = models.filter(
+            (m) =>
+              /gemini-\d/.test(m.name) &&
+              m.name.includes("flash") &&
+              (m.supportedGenerationMethods ?? []).includes("generateContent"),
           );
+
+          // Extract the version tuple [major, minor] from names like
+          // "models/gemini-2.5-flash" or "models/gemini-2.5-flash-001".
+          // Models without a parseable version sort last.
+          const versioned = flashModels.map((m) => {
+            const shortName = m.name.replace(/^models\//, "");
+            const match = shortName.match(/gemini-(\d+)\.(\d+)-flash/);
+            const version: [number, number] = match
+              ? [parseInt(match[1], 10), parseInt(match[2], 10)]
+              : [-1, -1];
+            return { shortName, version };
+          });
+
+          // Sort newest-first (highest major then highest minor).
+          versioned.sort((a, b) =>
+            b.version[0] !== a.version[0]
+              ? b.version[0] - a.version[0]
+              : b.version[1] - a.version[1],
+          );
+
+          selectedModel = versioned[0]?.shortName ?? FALLBACK_MODEL;
+        } else {
+          selectedModel = FALLBACK_MODEL;
         }
-        throw err;
-      } finally {
-        clearTimeout(timeoutId);
+      } catch {
+        selectedModel = FALLBACK_MODEL;
       }
-
-      // 404 = model not found / deprecated; 400 may also indicate an invalid model
-      // name — try the next fallback in both cases.
-      if (resp.status === 404 || resp.status === 400) {
-        continue;
-      }
-
-      geminiResponse = resp;
-      break;
     }
 
-    if (!geminiResponse || !geminiResponse.ok) {
-      const errText = geminiResponse ? await geminiResponse.text() : "All model fallbacks exhausted.";
-      const errStatus = geminiResponse?.status ?? 500;
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${GEMINI_API_KEY}`;
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 25000);
+
+    let geminiResponse: Response;
+    try {
+      geminiResponse = await fetch(geminiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            temperature: 0.9,
+            maxOutputTokens: 8192,
+          },
+        }),
+        signal: controller.signal,
+      });
+    } catch (err: unknown) {
+      clearTimeout(timeoutId);
+      if (err instanceof Error && err.name === "AbortError") {
+        return new Response(
+          JSON.stringify({ error: "The AI request timed out." }),
+          { status: 408, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+      throw err;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+
+    if (!geminiResponse.ok) {
+      const errText = await geminiResponse.text();
       return new Response(
-        JSON.stringify({ error: `Gemini API error ${errStatus} (model: ${lastModelTried}): ${errText}` }),
+        JSON.stringify({ error: `Gemini API error ${geminiResponse.status} (model: ${selectedModel}): ${errText}` }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
