@@ -296,27 +296,27 @@ serve(async (req) => {
       monthly: buildPrompt(
         "monthly horoscope",
         "Personal, direct, and insightful.",
-        "3 full paragraphs of at least 10 sentences total",
+        "at least 5 full paragraphs and 300 words",
       ),
       yearly: buildPrompt(
         "2026 yearly forecast",
         "Visionary, empowering, and forward-looking.",
-        "3 full paragraphs of at least 10 sentences total",
+        "at least 5 full paragraphs and 300 words",
       ),
       love: buildPrompt(
         "love and relationships",
         "Warm, honest, and deeply personal.",
-        "3 full paragraphs of at least 10 sentences total",
+        "at least 5 full paragraphs and 300 words",
       ),
       career: buildPrompt(
         "career and purpose",
         "Empowering, direct, and specific.",
-        "3 full paragraphs of at least 10 sentences total",
+        "at least 5 full paragraphs and 300 words",
       ),
       wellness: buildPrompt(
         "wellness and energy",
         "Grounding, nurturing, and supportive.",
-        "3 full paragraphs of at least 10 sentences total",
+        "at least 5 full paragraphs and 300 words",
       ),
       compatibility: buildPrompt(
         "compatibility and relationship synergy",
@@ -553,8 +553,8 @@ serve(async (req) => {
     }
 
     return new Response(
-      JSON.stringify({ reading }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      reading,
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "text/plain" } },
     );
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Unexpected server error.";

@@ -46,15 +46,16 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
   const dateKeyMonth = today.toISOString().slice(0, 7); // YYYY-MM
   const yearKey = String(today.getFullYear());
 
-  // Rich context for the daily horoscope (mirrors DailyBriefing so they share the same cache)
+  // Rich context for the Today tab horoscope
   const lifePath = dob ? getLifePath(dob) : undefined;
   const chineseZodiac = dob ? getChineseZodiac(dob.getFullYear()) : undefined;
   const universalDay = getUniversalDay(today);
   const personalDay = dob ? getPersonalDay(dob, today) : undefined;
   const cusp = dob ? getCuspInfo(dob.getMonth() + 1, dob.getDate()) : { onCusp: false };
 
-  // Context for daily horoscope — matches DailyBriefing's context shape so the cache entry is shared
-  const dailyContext = {
+  const todayContext = {
+    name,
+    sign,
     zodiacSign: sign,
     element: zodiac?.element || "Unknown",
     lifePath,
@@ -62,9 +63,6 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
     date: formatDate(today, rawLang),
     universalDay,
     personalDay,
-    name,
-    birthPlace: profile?.birthPlace || "Unknown",
-    birthTime: profile?.birthTime || "Unknown",
     cuspInfo: cusp.onCusp ? (cusp.cuspDescription ?? null) : null,
     language: rawLang,
   };
@@ -92,10 +90,10 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
   };
 
   // ── Readings per tab ───────────────────────────────────────────────────────
-  // TODAY / MONTHLY / YEARLY / LOVE / CAREER / WELLNESS are fully isolated from
-  // the Birth Chart — they use horoscopeContext (no natal-specific fields) and
-  // their own readingType so the edge function never applies Birth Chart logic.
-  const todayReading = useCachedReading({ readingType: "stars_today",    cacheKey: `${sign}-today-${dateKey}-${language}`,        context: horoscopeContext });
+  // TODAY uses todayContext (rich numerology/astrology context for the edge function).
+  // MONTHLY / YEARLY / LOVE / CAREER / WELLNESS use horoscopeContext (sign + element only)
+  // and are fully isolated from Birth Chart logic.
+  const todayReading = useCachedReading({ readingType: "stars_today",    cacheKey: `${sign}-today-${dateKey}-${language}`,        context: todayContext });
   const monthly      = useCachedReading({ readingType: "stars_monthly",  cacheKey: `${sign}-monthly-${dateKeyMonth}-${language}`, context: horoscopeContext });
   const yearly       = useCachedReading({ readingType: "stars_yearly",   cacheKey: `${sign}-yearly-${yearKey}-${language}`,       context: horoscopeContext });
   const love         = useCachedReading({ readingType: "stars_love",     cacheKey: `${sign}-love-${dateKeyMonth}-${language}`,    context: horoscopeContext });
