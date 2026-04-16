@@ -14,6 +14,7 @@ import {
 } from "@/lib/daily";
 import { normalizeLanguage } from "@/lib/language";
 import { Loader2 } from "lucide-react";
+import { BirthChartContent } from "@/components/BirthChartContent";
 
 const TABS = [
   { key: "birthChart", label: "BIRTH CHART", readingType: "stars_birth_chart" },
@@ -129,23 +130,32 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
           ))}
         </div>
 
-        {/* ─── Reading Card ─── */}
-        <div className="card-cosmic rounded-2xl p-5">
-          {current.isLoading ? (
-            <div className="flex items-center gap-2 text-muted-foreground text-sm py-4 justify-center">
-              <Loader2 className="w-4 h-4 animate-spin text-primary" />
-              <span>{t("stars.consulting")}</span>
-            </div>
-          ) : current.error && !current.content ? (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              {t("stars.noReading")}
-            </p>
-          ) : (
-            <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-line">
-              {current.content || "Your reading is preparing…"}
-            </p>
-          )}
-        </div>
+        {/* ─── Birth Chart (structured TABLE/CIRCLE view) ─── */}
+        {activeTab === "birthChart" ? (
+          <BirthChartContent
+            readingType="stars_birth_chart"
+            cacheKey={birthChartCacheKey}
+            context={context}
+          />
+        ) : (
+          /* ─── Other Reading Cards ─── */
+          <div className="card-cosmic rounded-2xl p-5">
+            {current.isLoading ? (
+              <div className="flex items-center gap-2 text-muted-foreground text-sm py-4 justify-center">
+                <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                <span>{t("stars.consulting")}</span>
+              </div>
+            ) : current.error && !current.content ? (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                {t("stars.noReading")}
+              </p>
+            ) : (
+              <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-line">
+                {current.content || "Your reading is preparing…"}
+              </p>
+            )}
+          </div>
+        )}
 
       </div>
     </ChamberLayout>
