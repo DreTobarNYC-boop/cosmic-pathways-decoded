@@ -13,7 +13,7 @@ import {
   formatDate,
 } from "@/lib/daily";
 import { normalizeLanguage } from "@/lib/language";
-import { Loader2 } from "lucide-react";
+import { Loader2, RefreshCw } from "lucide-react";
 import { BirthChartContent } from "@/components/BirthChartContent";
 
 const TABS = [
@@ -99,7 +99,7 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
     enabled: !!birthChartCacheKey,
   });
 
-  const readings: Record<string, { content: string | null; isLoading: boolean; error: string | null }> = {
+  const readings: Record<string, { content: string | null; isLoading: boolean; error: string | null; retry: () => void }> = {
     birthChart, today: todayReading, monthly, yearly, love, career, wellness,
   };
 
@@ -146,9 +146,16 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
                 <span>{t("stars.consulting")}</span>
               </div>
             ) : current.error && !current.content ? (
-              <p className="text-sm text-muted-foreground text-center py-4">
-                {t("stars.noReading")}
-              </p>
+              <div className="text-center py-4 space-y-3">
+                <p className="text-sm text-muted-foreground">{t("stars.noReading")}</p>
+                <button
+                  onClick={current.retry}
+                  className="inline-flex items-center gap-1.5 text-xs tracking-widest px-4 py-2 rounded-full border border-primary/40 text-primary hover:border-primary transition-all"
+                >
+                  <RefreshCw className="w-3 h-3" />
+                  RETRY
+                </button>
+              </div>
             ) : (
               <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-line">
                 {current.content || "Your reading is preparing…"}
