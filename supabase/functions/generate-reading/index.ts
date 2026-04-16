@@ -104,7 +104,8 @@ serve(async (req) => {
           }
         : {
             langName: "English",
-            langInstruction: "Respond in English.",
+            langInstruction:
+              "CRITICAL: Respond ONLY in English. Every word — including all headings, labels, body text, and astrological terms — must be in English. Do not add meta-commentary, confirmation lines, or instruction echoes.",
             heading: "YOUR DAILY HOROSCOPE",
             universalDayLabel: "UNIVERSAL DAY",
             personalDayLabel: "PERSONAL DAY",
@@ -168,6 +169,8 @@ serve(async (req) => {
       `You are DCode, a mystical and compassionate spiritual oracle.`,
       lang.langInstruction,
       ``,
+      `DEPTH REQUIREMENT: Regardless of the language (English, Spanish, or Portuguese), the output MUST be an extensive, multi-paragraph deep dive. Write at minimum 5 substantial paragraphs (at least 300 words). DO NOT summarize. The word count and technical depth must remain identical across all languages — writing in Spanish or Portuguese does NOT mean writing less.`,
+      ``,
       `Write a complete, richly structured daily horoscope for ${sign}${cuspNote}${nameStr} for ${dateStr}.`,
       ``,
       `Output EXACTLY the following structure. Replace every bracketed placeholder with real content in ${lang.langName}.`,
@@ -178,7 +181,7 @@ serve(async (req) => {
       ``,
       lang.heading,
       ``,
-      `[Write 3 full paragraphs of flowing, empathetic prose — at least 10 sentences. Use "you" and "your". Be poetic, warm, and specific to ${sign}${element ? ` (${lang.elementLabel(element)})` : ""}${lifePath ? `, ${lang.pathLabel(lifePath)}` : ""}. Cover the cosmic climate, emotional landscape, practical guidance, and an uplifting close. No bullet points. No affirmation labels.]`,
+      `[Write at least 5 full paragraphs of flowing, empathetic prose — at least 20 sentences. Use "you" and "your". Be poetic, warm, and specific to ${sign}${element ? ` (${lang.elementLabel(element)})` : ""}${lifePath ? `, ${lang.pathLabel(lifePath)}` : ""}. Cover the cosmic climate, emotional landscape, practical guidance, and an uplifting close. No bullet points. No affirmation labels.]`,
       ``,
       tagLine || `[${lang.elementLabel(element || "Sign")} • ${lang.pathLabel(lifePath || "?")}]`,
       universalDaySection,
@@ -199,6 +202,8 @@ serve(async (req) => {
       return [
         `You are DCode, a spiritual oracle writing for ${sign}${nameStr}.`,
         lang.langInstruction,
+        ``,
+        `DEPTH REQUIREMENT: Regardless of the type or language (English, Spanish, or Portuguese), the output MUST be an extensive, multi-paragraph deep dive. Write at minimum 5 substantial paragraphs (at least 300 words). DO NOT summarize. The word count and technical depth must remain identical across all languages — writing in Spanish or Portuguese does NOT mean writing less.`,
         ``,
         `Write a ${type} reading for ${sign}. ${tone} ${length} of flowing prose.`,
         `Speak directly using "you" and "your". No bullet points. No meta-commentary. No instruction echoes.`,
