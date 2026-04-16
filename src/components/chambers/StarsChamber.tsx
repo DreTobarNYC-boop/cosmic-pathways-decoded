@@ -80,13 +80,27 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
     language,
   };
 
-  // TODAY uses stars_today to match the TABS definition and get the full structured Stars chamber reading
-  const todayReading = useCachedReading({ readingType: "stars_today", cacheKey: `${sign}-today-${dateKey}-${language}`, context: dailyContext });
-  const monthly  = useCachedReading({ readingType: "stars_monthly",  cacheKey: `${sign}-monthly-${dateKeyMonth}-${language}`, context });
-  const yearly   = useCachedReading({ readingType: "stars_yearly",   cacheKey: `${sign}-yearly-${yearKey}-${language}`,  context });
-  const love     = useCachedReading({ readingType: "stars_love",     cacheKey: `${sign}-love-${dateKeyMonth}-${language}`,    context });
-  const career   = useCachedReading({ readingType: "stars_career",   cacheKey: `${sign}-career-${dateKeyMonth}-${language}`,  context });
-  const wellness = useCachedReading({ readingType: "stars_wellness", cacheKey: `${sign}-wellness-${dateKeyMonth}-${language}`, context });
+  // ── Horoscope context (Today / Monthly / Yearly / Love / Career / Wellness) ──
+  // Intentionally excludes natal-only fields (dateOfBirth, birthPlace, birthTime)
+  // so these tabs are fully isolated from Birth Chart logic.
+  const horoscopeContext = {
+    name,
+    sign,
+    zodiacSign: sign,
+    element: zodiac?.element || "Unknown",
+    language,
+  };
+
+  // ── Readings per tab ───────────────────────────────────────────────────────
+  // TODAY / MONTHLY / YEARLY / LOVE / CAREER / WELLNESS are fully isolated from
+  // the Birth Chart — they use horoscopeContext (no natal-specific fields) and
+  // their own readingType so the edge function never applies Birth Chart logic.
+  const todayReading = useCachedReading({ readingType: "stars_today",    cacheKey: `${sign}-today-${dateKey}-${language}`,        context: dailyContext });
+  const monthly      = useCachedReading({ readingType: "stars_monthly",  cacheKey: `${sign}-monthly-${dateKeyMonth}-${language}`, context: horoscopeContext });
+  const yearly       = useCachedReading({ readingType: "stars_yearly",   cacheKey: `${sign}-yearly-${yearKey}-${language}`,       context: horoscopeContext });
+  const love         = useCachedReading({ readingType: "stars_love",     cacheKey: `${sign}-love-${dateKeyMonth}-${language}`,    context: horoscopeContext });
+  const career       = useCachedReading({ readingType: "stars_career",   cacheKey: `${sign}-career-${dateKeyMonth}-${language}`,  context: horoscopeContext });
+  const wellness     = useCachedReading({ readingType: "stars_wellness", cacheKey: `${sign}-wellness-${dateKeyMonth}-${language}`, context: horoscopeContext });
 
   // Birth chart — permanent cache key based on birth data only (generated once per user)
   const birthChartCacheKey = dob
@@ -130,7 +144,11 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
           ))}
         </div>
 
-        {/* ─── Birth Chart (structured TABLE/CIRCLE view) ─── */}
+        {/* ─── Tab Content ─────────────────────────────────────────────────
+              Birth Chart → structured natal layout (BirthChartContent).
+              All other tabs (Today / Monthly / Yearly / Love / Career / Wellness)
+              → independent prose readings; Birth Chart logic is never applied.
+        ─────────────────────────────────────────────────────────────────── */}
         {activeTab === "birthChart" ? (
           <BirthChartContent
             readingType="stars_birth_chart"
