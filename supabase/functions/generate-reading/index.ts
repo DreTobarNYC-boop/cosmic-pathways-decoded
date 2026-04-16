@@ -86,7 +86,7 @@ serve(async (req) => {
         ? {
             langName: "Brazilian Portuguese",
             langInstruction:
-              "CRÍTICO: Responda SOMENTE em português do Brasil. Cada palavra — incluindo todos os títulos, rótulos, texto do corpo e termos astrológicos — deve estar em português. Não use nenhuma palavra em inglês. Não adicione comentários meta, linhas de confirmação ou ecos de instrução.",
+              "CRÍTICO: Responda SOMENTE em português do Brasil. Cada palavra — incluindo todos os títulos, rótulos, texto do corpo e termos astrológicos — deve estar em português. Não use nenhuma palavra em inglês. Não adicione comentários meta, linhas de confirmação como '* Portuguese only? Yes', ou ecos de instrução.",
             heading: "SEU HORÓSCOPO DIÁRIO",
             universalDayLabel: "DIA UNIVERSAL",
             personalDayLabel: "DIA PESSOAL",
@@ -105,7 +105,7 @@ serve(async (req) => {
         : {
             langName: "English",
             langInstruction:
-              "CRITICAL: Respond ONLY in English. Every word — including all headings, labels, body text, and astrological terms — must be in English. Do not add meta-commentary, confirmation lines, or instruction echoes.",
+              "CRITICAL: Respond ONLY in English. Every word — including all headings, labels, body text, and astrological terms — must be in English. Do not add meta-commentary, confirmation lines like '* English only? Yes', or instruction echoes.",
             heading: "YOUR DAILY HOROSCOPE",
             universalDayLabel: "UNIVERSAL DAY",
             personalDayLabel: "PERSONAL DAY",
@@ -223,27 +223,27 @@ serve(async (req) => {
       stars_monthly: buildPrompt(
         "monthly horoscope",
         "Personal, direct, and insightful.",
-        "3 full paragraphs of at least 10 sentences total",
+        "at least 5 full paragraphs and 300 words",
       ),
       stars_yearly: buildPrompt(
         "2026 yearly forecast",
         "Visionary, empowering, and forward-looking.",
-        "3 full paragraphs of at least 10 sentences total",
+        "at least 5 full paragraphs and 300 words",
       ),
       stars_love: buildPrompt(
         "love and relationships",
         "Warm, honest, and deeply personal.",
-        "3 full paragraphs of at least 10 sentences total",
+        "at least 5 full paragraphs and 300 words",
       ),
       stars_career: buildPrompt(
         "career and purpose",
         "Empowering, direct, and specific.",
-        "3 full paragraphs of at least 10 sentences total",
+        "at least 5 full paragraphs and 300 words",
       ),
       stars_wellness: buildPrompt(
         "wellness and energy",
         "Grounding, nurturing, and supportive.",
-        "3 full paragraphs of at least 10 sentences total",
+        "at least 5 full paragraphs and 300 words",
       ),
 
       // Birth Chart — generated once and cached permanently per user
@@ -522,9 +522,24 @@ serve(async (req) => {
     // Strip markdown code fences so JSON-expecting chambers can parse cleanly
     reading = reading.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/i, "").trim();
 
+    // Prose bracket guard: if a prose reading type accidentally returns a JSON object,
+    // extract the `reading` or `content` key so no raw brackets reach the user.
+    const jsonReadingTypes = ["stars_birth_chart", "dynasty_forecast", "sacred_code", "frequency_reading"];
+    if (!jsonReadingTypes.includes(readingType) && reading.startsWith("{")) {
+      try {
+        const parsed = JSON.parse(reading);
+        if (typeof parsed.reading === "string") {
+          reading = parsed.reading;
+        } else if (typeof parsed.content === "string") {
+          reading = parsed.content;
+        }
+      } catch {
+        // keep as-is if JSON.parse fails
+      }
+    }
+
     // For birth chart and other JSON-returning reading types, try harder to extract
     // a clean JSON object in case the model added surrounding prose or nested fences.
-    const jsonReadingTypes = ["stars_birth_chart", "dynasty_forecast", "sacred_code", "frequency_reading"];
     if (jsonReadingTypes.includes(readingType) && !reading.startsWith("{") && !reading.startsWith("[")) {
       const jsonMatch = reading.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
