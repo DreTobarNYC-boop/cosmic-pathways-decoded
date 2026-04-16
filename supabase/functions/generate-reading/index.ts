@@ -131,7 +131,7 @@ serve(async (req) => {
       `Write a rich, deeply personal daily horoscope reading for ${sign}${cuspNote}${nameStr} for ${dateStr}.`,
       ``,
       `Instructions:`,
-      `- Write 3 to 4 full paragraphs of flowing, empathetic prose (at least 10 sentences total).`,
+      `- Write exactly 3 paragraphs of flowing, empathetic prose.`,
       `- Speak directly to the person using "you" and "your".`,
       `- Be poetic, warm, and specific to ${sign}${element ? ` (${lang.elementLabel(element)})` : ""}${lifePath ? `, ${lang.pathLabel(lifePath)}` : ""}.`,
       `- Weave in today's cosmic energies, emotional landscape, practical guidance, and an inspiring closing thought.`,
@@ -169,8 +169,6 @@ serve(async (req) => {
       `You are DCode, a mystical and compassionate spiritual oracle.`,
       lang.langInstruction,
       ``,
-      `DEPTH REQUIREMENT: Regardless of the language (English, Spanish, or Portuguese), the output MUST be an extensive, multi-paragraph deep dive. Write at minimum 5 substantial paragraphs (at least 300 words). DO NOT summarize. The word count and technical depth must remain identical across all languages — writing in Spanish or Portuguese does NOT mean writing less.`,
-      ``,
       `Write a complete, richly structured daily horoscope for ${sign}${cuspNote}${nameStr} for ${dateStr}.`,
       ``,
       `Output EXACTLY the following structure. Replace every bracketed placeholder with real content in ${lang.langName}.`,
@@ -181,7 +179,7 @@ serve(async (req) => {
       ``,
       lang.heading,
       ``,
-      `[Write at least 5 full paragraphs of flowing, empathetic prose — at least 20 sentences. Use "you" and "your". Be poetic, warm, and specific to ${sign}${element ? ` (${lang.elementLabel(element)})` : ""}${lifePath ? `, ${lang.pathLabel(lifePath)}` : ""}. Cover the cosmic climate, emotional landscape, practical guidance, and an uplifting close. No bullet points. No affirmation labels.]`,
+      `[Write exactly 3 paragraphs of flowing, empathetic prose. Use "you" and "your". Be poetic, warm, and specific to ${sign}${element ? ` (${lang.elementLabel(element)})` : ""}${lifePath ? `, ${lang.pathLabel(lifePath)}` : ""}. Cover the cosmic climate, emotional landscape, practical guidance, and an uplifting close. No bullet points. No affirmation labels.]`,
       ``,
       tagLine || `[${lang.elementLabel(element || "Sign")} • ${lang.pathLabel(lifePath || "?")}]`,
       universalDaySection,
@@ -197,15 +195,12 @@ serve(async (req) => {
     function buildPrompt(
       type: string,
       tone: string,
-      length: string,
     ): string {
       return [
         `You are DCode, a spiritual oracle writing for ${sign}${nameStr}.`,
         lang.langInstruction,
         ``,
-        `DEPTH REQUIREMENT: Regardless of the type or language (English, Spanish, or Portuguese), the output MUST be an extensive, multi-paragraph deep dive. Write at minimum 5 substantial paragraphs (at least 300 words). DO NOT summarize. The word count and technical depth must remain identical across all languages — writing in Spanish or Portuguese does NOT mean writing less.`,
-        ``,
-        `Write a ${type} reading for ${sign}. ${tone} ${length} of flowing prose.`,
+        `Write a ${type} reading for ${sign}. ${tone} Write exactly 3 paragraphs of flowing prose.`,
         `Speak directly using "you" and "your". No bullet points. No meta-commentary. No instruction echoes.`,
         `Output only the reading text in ${lang.langName}.`,
       ].join("\n");
@@ -223,27 +218,22 @@ serve(async (req) => {
       stars_monthly: buildPrompt(
         "monthly horoscope",
         "Personal, direct, and insightful.",
-        "at least 5 full paragraphs and 300 words",
       ),
       stars_yearly: buildPrompt(
         "2026 yearly forecast",
         "Visionary, empowering, and forward-looking.",
-        "at least 5 full paragraphs and 300 words",
       ),
       stars_love: buildPrompt(
         "love and relationships",
         "Warm, honest, and deeply personal.",
-        "at least 5 full paragraphs and 300 words",
       ),
       stars_career: buildPrompt(
         "career and purpose",
         "Empowering, direct, and specific.",
-        "at least 5 full paragraphs and 300 words",
       ),
       stars_wellness: buildPrompt(
         "wellness and energy",
         "Grounding, nurturing, and supportive.",
-        "at least 5 full paragraphs and 300 words",
       ),
 
       // Birth Chart — generated once and cached permanently per user
@@ -266,7 +256,7 @@ serve(async (req) => {
         `Required JSON structure (fill every field, do not omit any planet):`,
         `{`,
         `  "placements": [`,
-        `    { "planet": "Sun",       "sign": "...", "house": 1, "degree": 0, "description": "2-3 sentences for Sun placement in ${lang.langName}." },`,
+        `    { "planet": "Sun",       "sign": "...", "house": 1, "degree": 0, "description": "1-2 sentences for Sun placement in ${lang.langName}." },`,
         `    { "planet": "Moon",      "sign": "...", "house": 1, "degree": 0, "description": "..." },`,
         `    { "planet": "Ascendant", "sign": "...", "house": 1, "degree": 0, "description": "..." },`,
         `    { "planet": "Mercury",   "sign": "...", "house": 1, "degree": 0, "description": "..." },`,
@@ -278,7 +268,7 @@ serve(async (req) => {
         `    { "planet": "Neptune",   "sign": "...", "house": 1, "degree": 0, "description": "..." },`,
         `    { "planet": "Pluto",     "sign": "...", "house": 1, "degree": 0, "description": "..." }`,
         `  ],`,
-        `  "interpretation": "3–4 paragraph overall natal chart reading for ${name || "the seeker"} in ${lang.langName}. Cover life themes, soul purpose, and cosmic gifts. Speak directly using you/your."`,
+        `  "interpretation": "2-3 paragraph overall natal chart reading for ${name || "the seeker"} in ${lang.langName}. Cover life themes, soul purpose, and cosmic gifts. Speak directly using you/your."`,
         `}`,
         ``,
         `Rules:`,
@@ -287,8 +277,8 @@ serve(async (req) => {
         `- Sun sign is confirmed as ${sign} — use a degree consistent with that sign.`,
         `- "house" is an integer 1-12. Use null only if birth time is completely unknown.`,
         `- ${birthTime && birthTime !== "Unknown" ? `Birth time ${birthTime} and place ${birthPlace || "Unknown"} are provided — calculate Ascendant and house cusps accordingly.` : `Birth time not provided — estimate houses based on sun sign and date; set Ascendant house to 1.`}`,
-        `- "description" for each placement: 2-3 sentences in ${lang.langName}, speaking directly to ${name || "the person"} using "you/your". Poetic and specific.`,
-        `- "interpretation": 3-4 flowing paragraphs in ${lang.langName}. No bullet points.`,
+        `- "description" for each placement: 1-2 sentences in ${lang.langName}, speaking directly to ${name || "the person"} using "you/your". Poetic and specific.`,
+        `- "interpretation": 2-3 flowing paragraphs in ${lang.langName}. No bullet points.`,
         `- Output ONLY the JSON object. Nothing before or after. No markdown. No code fences.`,
       ].filter(Boolean).join("\n"),
 
@@ -296,32 +286,26 @@ serve(async (req) => {
       monthly: buildPrompt(
         "monthly horoscope",
         "Personal, direct, and insightful.",
-        "at least 5 full paragraphs and 300 words",
       ),
       yearly: buildPrompt(
         "2026 yearly forecast",
         "Visionary, empowering, and forward-looking.",
-        "at least 5 full paragraphs and 300 words",
       ),
       love: buildPrompt(
         "love and relationships",
         "Warm, honest, and deeply personal.",
-        "at least 5 full paragraphs and 300 words",
       ),
       career: buildPrompt(
         "career and purpose",
         "Empowering, direct, and specific.",
-        "at least 5 full paragraphs and 300 words",
       ),
       wellness: buildPrompt(
         "wellness and energy",
         "Grounding, nurturing, and supportive.",
-        "at least 5 full paragraphs and 300 words",
       ),
       compatibility: buildPrompt(
         "compatibility and relationship synergy",
         "Thoughtful, nuanced, and empathetic.",
-        "4-5 sentences",
       ),
 
       // Oracle chamber
@@ -538,9 +522,9 @@ serve(async (req) => {
       }
     }
 
-    // For birth chart and other JSON-returning reading types, try harder to extract
-    // a clean JSON object in case the model added surrounding prose or nested fences.
-    if (jsonReadingTypes.includes(readingType) && !reading.startsWith("{") && !reading.startsWith("[")) {
+    // For birth chart and other JSON-returning reading types, always try to extract
+    // the cleanest JSON object — handles trailing prose, leading explanation, etc.
+    if (jsonReadingTypes.includes(readingType)) {
       const jsonMatch = reading.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         try {
