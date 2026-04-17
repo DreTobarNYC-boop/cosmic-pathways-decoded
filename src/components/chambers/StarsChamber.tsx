@@ -1,192 +1,184 @@
 import { useState, useMemo } from "react";
-import { useTranslation } from "react-i18next";
 import { ChamberLayout } from "@/components/ChamberLayout";
+import { TodayReadingCard } from "@/components/TodayReadingCard";
 import { useAuth } from "@/hooks/use-auth";
 import { useCachedReading } from "@/hooks/use-cached-reading";
-import {
-  getZodiacFromDOB,
-  getLifePath,
-  getChineseZodiac,
-  getUniversalDay,
-  getPersonalDay,
-  getCuspInfo,
-  formatDate,
-} from "@/lib/daily";
-import { normalizeLanguage } from "@/lib/language";
-import { Loader2, RefreshCw } from "lucide-react";
-import { BirthChartContent } from "@/components/BirthChartContent";
+import { getZodiacFromDOB, getUniversalDay, getUniversalMonth, getPersonalDay, getLifePath, getChineseZodiac } from "@/lib/daily";
+import { calculateNatalChart } from "@/lib/natal-chart";
+import { getNumerologyProfile } from "@/lib/numerology-deep";
 
 const TABS = [
-  { key: "birthChart", label: "BIRTH CHART", readingType: "stars_birth_chart" },
-  { key: "today",      label: "TODAY",        readingType: "stars_today" },
-  { key: "monthly",    label: "MONTHLY",      readingType: "stars_monthly" },
-  { key: "yearly",     label: "YEARLY",       readingType: "stars_yearly" },
-  { key: "love",       label: "LOVE",         readingType: "stars_love" },
-  { key: "career",     label: "CAREER",       readingType: "stars_career" },
-  { key: "wellness",   label: "WELLNESS",     readingType: "stars_wellness" },
+  { id: "birth_chart",   label: "Birth Chart" },
+  { id: "today",         label: "Today" },
+  { id: "monthly",       label: "Monthly" },
+  { id: "yearly",        label: "2026" },
+  { id: "love",          label: "Love" },
+  { id: "career",        label: "Career" },
+  { id: "wellness",      label: "Wellness" },
+  { id: "compatibility", label: "Compatibility" },
 ];
 
-export function StarsChamber({ onBack }: { onBack: () => void }) {
-  const { t, i18n } = useTranslation();
-  const { profile } = useAuth();
-  const [activeTab, setActiveTab] = useState("today");
+const TAB_READING_TYPE: Record<string, string> = {
+  today:         "daily_horoscope",
+  monthly:       "stars_monthly",
+  yearly:        "stars_yearly",
+  love:          "stars_love",
+  career:        "stars_career",
+  wellness:      "stars_wellness",
+  compatibility: "compatibility",
+};
 
-  const language = normalizeLanguage(i18n.language);
-  const rawLang = i18n.language;
-  const name = profile?.fullName || "Seeker";
-  const dob = useMemo(
-    () => (profile?.dateOfBirth ? new Date(profile.dateOfBirth + "T12:00:00") : null),
-    [profile?.dateOfBirth],
-  );
-  const zodiac = dob ? getZodiacFromDOB(dob) : null;
-  const sign = zodiac?.sign || "Unknown";
+export default function StarsChamber() {
+  const [activeTab, setActiveTab] = useState("today");
+  const { profile } = useAuth();
+
+  const dob = useMemo(() =>
+    profile?.dateOfBirth ? new Date(profile.dateOfBirth + "T12:00:00") : null,
+  [profile?.dateOfBirth]);
 
   const today = new Date();
-  const dateKey = today.toISOString().slice(0, 10); // YYYY-MM-DD
-  const dateKeyMonth = today.toISOString().slice(0, 7); // YYYY-MM
-  const yearKey = String(today.getFullYear());
+  const dateKey = today.toISOString().slice(0, 10);
 
-  // Rich context for the Today tab horoscope
-  const lifePath = dob ? getLifePath(dob) : undefined;
-  const chineseZodiac = dob ? getChineseZodiac(dob.getFullYear()) : undefined;
-  const universalDay = getUniversalDay(today);
-  const personalDay = dob ? getPersonalDay(dob, today) : undefined;
-  const cusp = dob ? getCuspInfo(dob.getMonth() + 1, dob.getDate()) : { onCusp: false };
+  const zodiac     = dob ? getZodiacFromDOB(dob) : null;
+  const natal      = dob ? calculateNatalChart(dob) : null;
+  const numerology = (dob && profile?.fullName)
+    ? getNumerologyProfile(profile.fullName, dob)
+    : null;
+  const lifePath      = dob ? getLifePath(dob) : null;
+  const personalDay   = dob ? getPersonalDay(dob) : null;
+  const universalDay  = getUniversalDay();
+  const chineseZodiac = dob ? getChineseZodiac(dob.getFullYear()) : null;
 
-  const todayContext = {
-    name,
-    sign,
-    zodiacSign: sign,
-    element: zodiac?.element || "Unknown",
-    lifePath,
-    chineseZodiac,
-    date: formatDate(today, rawLang),
+  const richContext = useMemo(() => ({
+    name:          profile?.fullName ?? "Seeker",
+    sign:          zodiac?.sign ?? "Unknown",
+    sunSign:       natal?.sun.sign ?? zodiac?.sign ?? "Unknown",
+    sunDegree:     natal?.sun.degree ?? 0,
+    moonSign:      natal?.moon.sign ?? "Unknown",
+    moonDegree:    natal?.moon.degree ?? 0,
+    mercurySign:   natal?.mercury.sign ?? "Unknown",
+    venusSign:     natal?.venus.sign ?? "Unknown",
+    marsSign:      natal?.mars.sign ?? "Unknown",
+    lifePath:      lifePath ?? 0,
+    personalDay:   personalDay ?? 0,
     universalDay,
-    personalDay,
-    cuspInfo: cusp.onCusp ? (cusp.cuspDescription ?? null) : null,
-    language: rawLang,
-  };
+    expression:    numerology?.expression ?? 0,
+    soulUrge:      numerology?.soulUrge ?? 0,
+    personality:   numerology?.personality ?? 0,
+    cuspStatus:    zodiac?.cusp ? (zodiac.cuspSign ?? "Cusp") : "None",
+    chineseZodiac: chineseZodiac ?? "Unknown",
+    element:       zodiac?.element ?? "Unknown",
+  }), [zodiac, natal, numerology, lifePath, personalDay, universalDay, chineseZodiac, profile]);
 
-  const context = {
-    name,
-    sign,
-    zodiacSign: sign,
-    element: zodiac?.element || "Unknown",
-    birthPlace: profile?.birthPlace || "Unknown",
-    birthTime: profile?.birthTime || "Unknown",
-    dateOfBirth: profile?.dateOfBirth || "Unknown",
-    language,
-  };
+  const readingType = TAB_READING_TYPE[activeTab] ?? "daily_horoscope";
+  const cacheKey = `${readingType}_${dateKey}`;
 
-  // ── Horoscope context (Today / Monthly / Yearly / Love / Career / Wellness) ──
-  // Intentionally excludes natal-only fields (dateOfBirth, birthPlace, birthTime)
-  // so these tabs are fully isolated from Birth Chart logic.
-  const horoscopeContext = {
-    name,
-    sign,
-    zodiacSign: sign,
-    element: zodiac?.element || "Unknown",
-    language,
-  };
-
-  // ── Readings per tab ───────────────────────────────────────────────────────
-  // TODAY uses todayContext (rich numerology/astrology context for the edge function).
-  // MONTHLY / YEARLY / LOVE / CAREER / WELLNESS use horoscopeContext (sign + element only)
-  // and are fully isolated from Birth Chart logic.
-  const todayReading = useCachedReading({ readingType: "stars_today",    cacheKey: `${sign}-today-${dateKey}-${language}`,        context: todayContext });
-  const monthly      = useCachedReading({ readingType: "stars_monthly",  cacheKey: `${sign}-monthly-${dateKeyMonth}-${language}`, context: horoscopeContext });
-  const yearly       = useCachedReading({ readingType: "stars_yearly",   cacheKey: `${sign}-yearly-${yearKey}-${language}`,       context: horoscopeContext });
-  const love         = useCachedReading({ readingType: "stars_love",     cacheKey: `${sign}-love-${dateKeyMonth}-${language}`,    context: horoscopeContext });
-  const career       = useCachedReading({ readingType: "stars_career",   cacheKey: `${sign}-career-${dateKeyMonth}-${language}`,  context: horoscopeContext });
-  const wellness     = useCachedReading({ readingType: "stars_wellness", cacheKey: `${sign}-wellness-${dateKeyMonth}-${language}`, context: horoscopeContext });
-
-  // Birth chart — permanent cache key based on birth data only (generated once per user)
-  const birthChartCacheKey = dob
-    ? `birth-chart-${profile?.dateOfBirth || ""}-${profile?.birthPlace || ""}-${profile?.birthTime || ""}-${language}`
-    : "";
-  const birthChart = useCachedReading({
-    readingType: "stars_birth_chart",
-    cacheKey: birthChartCacheKey,
-    context,
-    enabled: !!birthChartCacheKey,
+  const { reading, isLoading, error } = useCachedReading({
+    readingType,
+    context: richContext,
+    cacheKey,
+    enabled: activeTab !== "birth_chart",
   });
 
-  const readings: Record<string, { content: string | null; isLoading: boolean; error: string | null; retry: () => void }> = {
-    birthChart, today: todayReading, monthly, yearly, love, career, wellness,
-  };
-
-  const current = readings[activeTab];
-
   return (
-    <ChamberLayout
-      title="The Stars"
-      subtitle={zodiac ? `${zodiac.symbol} ${sign}` : undefined}
-      onBack={onBack}
-    >
-      <div className="space-y-5">
-
-        {/* ─── Tab Navigation ─── */}
-        <div className="flex flex-wrap gap-2">
-          {TABS.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`text-xs tracking-widest px-3 py-1.5 rounded-full border transition-all ${
-                activeTab === tab.key
-                  ? "border-primary text-primary bg-primary/10"
-                  : "border-border text-muted-foreground hover:border-primary/50"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+    <ChamberLayout title="The Stars" subtitle="Birth Chart & Horoscopes">
+      {zodiac && (
+        <div className="flex gap-2 flex-wrap mb-4">
+          <span className="px-3 py-1 rounded-full border border-[#C5A059]/30 bg-[#C5A059]/10 text-[#C5A059] text-xs tracking-wider">
+            {zodiac.element} · {zodiac.sign}
+          </span>
+          {lifePath && (
+            <span className="px-3 py-1 rounded-full border border-[#C5A059]/30 bg-[#C5A059]/10 text-[#C5A059] text-xs tracking-wider">
+              Path {lifePath}
+            </span>
+          )}
+          {chineseZodiac && (
+            <span className="px-3 py-1 rounded-full border border-[#C5A059]/30 bg-[#C5A059]/10 text-[#C5A059] text-xs tracking-wider">
+              {chineseZodiac}
+            </span>
+          )}
+          {natal && (
+            <span className="px-3 py-1 rounded-full border border-[#C5A059]/20 bg-[#0B1A1A] text-[#FFFDD0]/50 text-[10px] tracking-wider w-full">
+              {natal.formatted}
+            </span>
+          )}
         </div>
+      )}
 
-        {/* ─── Tab Content ─────────────────────────────────────────────────
-              Birth Chart → structured natal layout (BirthChartContent).
-              All other tabs (Today / Monthly / Yearly / Love / Career / Wellness)
-              → independent prose readings; Birth Chart logic is never applied.
-        ─────────────────────────────────────────────────────────────────── */}
-        {activeTab === "birthChart" ? (
-          !profile?.dateOfBirth ? (
-            <div className="card-cosmic rounded-2xl p-5 text-center text-sm text-muted-foreground">
-              Add your date of birth in your profile to unlock your Birth Chart.
-            </div>
-          ) : (
-            <BirthChartContent
-              readingType="stars_birth_chart"
-              cacheKey={birthChartCacheKey}
-              context={context}
-            />
-          )
-        ) : (
-          /* ─── Other Reading Cards ─── */
-          <div className="card-cosmic rounded-2xl p-5">
-            {current.isLoading ? (
-              <div className="flex items-center gap-2 text-muted-foreground text-sm py-4 justify-center">
-                <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                <span>{t("stars.consulting")}</span>
-              </div>
-            ) : current.error && !current.content ? (
-              <div className="text-center py-4 space-y-3">
-                <p className="text-sm text-muted-foreground">{t("stars.noReading")}</p>
-                <button
-                  onClick={current.retry}
-                  className="inline-flex items-center gap-1.5 text-xs tracking-widest px-4 py-2 rounded-full border border-primary/40 text-primary hover:border-primary transition-all"
-                >
-                  <RefreshCw className="w-3 h-3" />
-                  RETRY
-                </button>
-              </div>
-            ) : (
-              <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-line">
-                {current.content || "Your reading is preparing…"}
-              </p>
-            )}
-          </div>
-        )}
-
+      <div className="flex gap-2 overflow-x-auto pb-2 mb-5 scrollbar-hide">
+        {TABS.map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`px-3 py-1.5 rounded-full text-xs tracking-wider whitespace-nowrap border transition-all ${
+              activeTab === tab.id
+                ? "border-[#C5A059] bg-[#C5A059]/20 text-[#C5A059]"
+                : "border-[#C5A059]/20 text-[#FFFDD0]/40 hover:text-[#FFFDD0]/70"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
+
+      {activeTab === "birth_chart" && natal && (
+        <div className="flex flex-col gap-4">
+          <div className="rounded-xl border border-[#C5A059]/20 bg-[#0B1A1A] p-5">
+            <p className="text-[#C5A059] text-[10px] tracking-[0.2em] uppercase mb-3">Natal Planets</p>
+            {[
+              { label: "☉ Sun",     value: `${natal.sun.sign} ${natal.sun.degree}° · House ${natal.sun.house}` },
+              { label: "☽ Moon",    value: `${natal.moon.sign} ${natal.moon.degree}° · House ${natal.moon.house}` },
+              { label: "☿ Mercury", value: `${natal.mercury.sign} ${natal.mercury.degree}° · House ${natal.mercury.house}` },
+              { label: "♀ Venus",   value: `${natal.venus.sign} ${natal.venus.degree}° · House ${natal.venus.house}` },
+              { label: "♂ Mars",    value: `${natal.mars.sign} ${natal.mars.degree}° · House ${natal.mars.house}` },
+            ].map(({ label, value }) => (
+              <div key={label} className="flex justify-between items-center py-2 border-b border-[#C5A059]/10 last:border-0">
+                <span className="text-[#C5A059] text-sm">{label}</span>
+                <span className="text-[#FFFDD0]/70 text-sm">{value}</span>
+              </div>
+            ))}
+          </div>
+          {numerology && (
+            <div className="rounded-xl border border-[#C5A059]/20 bg-[#0B1A1A] p-5">
+              <p className="text-[#C5A059] text-[10px] tracking-[0.2em] uppercase mb-3">Numerology</p>
+              {[
+                { label: "Life Path",   value: `${numerology.lifePath} · ${numerology.descriptions.lifePath}` },
+                { label: "Expression",  value: `${numerology.expression} · ${numerology.descriptions.expression}` },
+                { label: "Soul Urge",   value: `${numerology.soulUrge} · ${numerology.descriptions.soulUrge}` },
+                { label: "Personality", value: `${numerology.personality} · ${numerology.descriptions.personality}` },
+              ].map(({ label, value }) => (
+                <div key={label} className="flex justify-between items-start py-2 border-b border-[#C5A059]/10 last:border-0 gap-4">
+                  <span className="text-[#C5A059] text-sm shrink-0">{label}</span>
+                  <span className="text-[#FFFDD0]/70 text-xs text-right">{value}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="rounded-xl border border-[#C5A059]/20 bg-[#0B1A1A] p-5">
+            <p className="text-[#C5A059] text-[10px] tracking-[0.2em] uppercase mb-3">Daily Numbers</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="text-center">
+                <p className="text-[#FFFDD0]/40 text-[9px] tracking-wider uppercase mb-1">Universal Day</p>
+                <p className="text-[#C5A059] text-3xl font-['Libre_Baskerville']">{universalDay}</p>
+              </div>
+              {personalDay && (
+                <div className="text-center">
+                  <p className="text-[#FFFDD0]/40 text-[9px] tracking-wider uppercase mb-1">Personal Day</p>
+                  <p className="text-[#C5A059] text-3xl font-['Libre_Baskerville']">{personalDay}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab !== "birth_chart" && (
+        <TodayReadingCard
+          data={reading}
+          isLoading={isLoading}
+          error={error}
+        />
+      )}
     </ChamberLayout>
   );
 }
