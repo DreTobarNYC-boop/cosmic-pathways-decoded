@@ -28,7 +28,7 @@ const TAB_READING_TYPE: Record<string, string> = {
   compatibility: "compatibility",
 };
 
-export default function StarsChamber() {
+export function StarsChamber({ onBack }: { onBack: () => void }) {
   const [activeTab, setActiveTab] = useState("today");
   const { profile } = useAuth();
 
@@ -73,7 +73,7 @@ export default function StarsChamber() {
   const readingType = TAB_READING_TYPE[activeTab] ?? "daily_horoscope";
   const cacheKey = `${readingType}_${dateKey}`;
 
-  const { reading, isLoading, error } = useCachedReading({
+  const { content: reading, isLoading, error } = useCachedReading({
     readingType,
     context: richContext,
     cacheKey,
@@ -81,7 +81,7 @@ export default function StarsChamber() {
   });
 
   return (
-    <ChamberLayout title="The Stars" subtitle="Birth Chart & Horoscopes">
+    <ChamberLayout title="The Stars" subtitle="Birth Chart & Horoscopes" onBack={onBack}>
       {zodiac && (
         <div className="flex gap-2 flex-wrap mb-4">
           <span className="px-3 py-1 rounded-full border border-[#C5A059]/30 bg-[#C5A059]/10 text-[#C5A059] text-xs tracking-wider">
