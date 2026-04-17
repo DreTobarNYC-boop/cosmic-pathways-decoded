@@ -36,6 +36,37 @@ export function reduce(n: number): number {
   return n;
 }
 
+export function reduceToSingle(n: number): number {
+  while (n > 9) {
+    n = String(n).split("").reduce((a, c) => a + parseInt(c), 0);
+  }
+  return n;
+}
+
+export const UNIVERSAL_DAY_MEANINGS: Record<number, string> = {
+  1: "New beginnings, independence, leadership",
+  2: "Cooperation, balance, partnerships",
+  3: "Creativity, joy, self-expression",
+  4: "Stability, work, foundation-building",
+  5: "Change, freedom, adventure",
+  6: "Harmony, responsibility, nurturing",
+  7: "Reflection, wisdom, spiritual insight",
+  8: "Abundance, power, achievement",
+  9: "Completion, release, compassion",
+};
+
+export const PERSONAL_DAY_MEANINGS: Record<number, string> = {
+  1: "Start something new — your energy drives outcomes",
+  2: "Collaborate and listen — small steps matter",
+  3: "Express yourself — communicate and create",
+  4: "Organize and build — focus on structure",
+  5: "Embrace spontaneity — welcome change",
+  6: "Tend to loved ones — service brings reward",
+  7: "Go inward — meditate, research, reflect",
+  8: "Take charge — finances and ambitions are favored",
+  9: "Let go — close chapters and forgive",
+};
+
 export function getZodiacFromDOB(dob: Date): { sign: string; element: string; cusp: boolean; cuspSign?: string } {
   const m = dob.getMonth() + 1;
   const d = dob.getDate();
@@ -85,6 +116,16 @@ export function getChineseZodiac(year: number): string {
   return animals[(year - 1900) % 12];
 }
 
-export function formatDate(date: Date = new Date()): string {
-  return date.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+export function formatDate(date: Date = new Date(), lang?: string): string {
+  const locale = lang === "es" ? "es-ES" : lang === "pt" ? "pt-BR" : "en-US";
+  return date.toLocaleDateString(locale, { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+}
+
+export function getCuspInfo(month: number, day: number): { onCusp: boolean; cuspDescription: string; cuspSign?: string } {
+  const { cusp, cuspSign } = getZodiacFromDOB(new Date(2000, month - 1, day));
+  return {
+    onCusp: cusp,
+    cuspDescription: cuspSign ?? "",
+    cuspSign,
+  };
 }

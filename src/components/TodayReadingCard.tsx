@@ -14,7 +14,7 @@ interface TodayReading {
 interface Props {
   data: TodayReading | string | null;
   isLoading?: boolean;
-  error?: boolean;
+  error?: string | null | boolean;
 }
 
 export function TodayReadingCard({ data, isLoading, error }: Props) {
