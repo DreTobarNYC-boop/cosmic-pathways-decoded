@@ -91,12 +91,15 @@ export function useCachedReading({
         // shape with title/subtitle/reading/cosmicAdvice/…), preserve it as a JSON string so
         // TodayReadingCard can parse and render every field.  Only fall back to extracting a
         // single text field when the response really is a plain-text wrapper.
+        // Detect the structured horoscope response shape (title/reading/cosmicAdvice/…).
+        // A generic key-count would be too broad; checking known fields is explicit and safe.
+        const structuredKeys = ["title", "subtitle", "cosmicAdvice", "luckyNumber", "powerColor", "affirmation"];
         const isStructuredObject =
           fnData !== null &&
           typeof fnData === "object" &&
           !Array.isArray(fnData) &&
-          Object.keys(fnData as object).length > 1 &&
-          !("error" in (fnData as object));
+          !("error" in (fnData as object)) &&
+          structuredKeys.some((k) => k in (fnData as object));
 
         const generatedContent = isStructuredObject
           ? JSON.stringify(fnData)
