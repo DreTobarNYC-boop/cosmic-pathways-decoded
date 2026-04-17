@@ -87,21 +87,38 @@ export function useCachedReading({
 
         if (fnError) throw new Error(fnError.message);
 
-        // Accept whatever key the edge function returns
-        const generatedContent =
-          fnData?.reading ??
-          fnData?.content ??
-          fnData?.text ??
-          fnData?.message ??
-          (typeof fnData === "string" ? fnData : null);
+        // If the edge function returned a structured multi-field object (e.g. the daily horoscope
+        // shape with title/subtitle/reading/cosmicAdvice/…), preserve it as a JSON string so
+        // TodayReadingCard can parse and render every field.  Only fall back to extracting a
+        // single text field when the response really is a plain-text wrapper.
+        // Detect the structured horoscope response shape (title/reading/cosmicAdvice/…).
+        // A generic key-count would be too broad; checking known fields is explicit and safe.
+        const structuredKeys = ["title", "subtitle", "cosmicAdvice", "luckyNumber", "powerColor", "affirmation"];
+        const isStructuredObject =
+          fnData !== null &&
+          typeof fnData === "object" &&
+          !Array.isArray(fnData) &&
+          !("error" in (fnData as object)) &&
+          structuredKeys.some((k) => k in (fnData as object));
+
+        const generatedContent = isStructuredObject
+          ? JSON.stringify(fnData)
+          : fnData?.reading ??
+            fnData?.content ??
+            fnData?.text ??
+            fnData?.message ??
+            (typeof fnData === "string" ? fnData : null);
 
         if (!generatedContent) throw new Error("No content returned");
 
         // Strip any accidental JSON wrapping — but only for reading types that return prose.
-        // JSON-structured reading types (birth chart, etc.) must be passed through untouched.
-        // Note: this list intentionally mirrors the one in the edge function but lives here
-        // separately because the two run in different environments (Deno vs browser bundle).
-        const jsonPassthroughTypes = ["stars_birth_chart", "dynasty_forecast", "sacred_code", "frequency_reading"];
+        // JSON-structured reading types must be passed through untouched.
+        // Horoscope types now return a structured object and must also be preserved.
+        const jsonPassthroughTypes = [
+          "stars_birth_chart", "dynasty_forecast", "sacred_code", "frequency_reading",
+          "daily_horoscope", "stars_today", "stars_monthly", "stars_yearly",
+          "stars_love", "stars_career", "stars_wellness", "compatibility", "oracle_daily",
+        ];
         let cleanContent = generatedContent.trim();
         if (!jsonPassthroughTypes.includes(readingType) && (cleanContent.startsWith("{") || cleanContent.startsWith("["))) {
           try {
