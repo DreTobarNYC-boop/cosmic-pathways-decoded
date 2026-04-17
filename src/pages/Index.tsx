@@ -31,12 +31,13 @@ import { DynastyChamber } from "@/components/chambers/DynastyChamber";
 import { SanctumChamber } from "@/components/chambers/SanctumChamber";
 import { FrequencyChamber } from "@/components/chambers/FrequencyChamber";
 import { SacredCodesChamber } from "@/components/chambers/SacredCodesChamber";
+import { SonicAlchemyChamber } from "@/components/chambers/SonicAlchemyChamber";
 
 const CHAMBER_COMPONENTS: Record<string, React.ComponentType<{ onBack: () => void }>> = {
   oracle: OracleChamber,
   stars: StarsChamber,
   numbers: NumbersChamber,
-  vault: VaultChamber,
+  vault: SonicAlchemyChamber,
   palm: PalmChamber,
   maps: MapsChamber,
   dynasty: DynastyChamber,
