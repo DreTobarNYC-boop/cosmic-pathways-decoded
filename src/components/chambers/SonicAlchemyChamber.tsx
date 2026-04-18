@@ -253,4 +253,167 @@ function useSonicAlchemy(rootFrequency: number) {
     bassFilter.frequency.value = 220;
     const bassOsc = ctx.createOscillator();
     bassOsc.type = "sawtooth";
-    bassOsc
+    bassOsc.frequency.value = root / 4;
+    const bassGain = ctx.createGain();
+    bassGain.gain.setValueAtTime(0, t);
+    bassGain.gain.linearRampToValueAtTime(0.05, t + 4);
+    bassOsc.connect(bassFilter).connect(bassGain).connect(master);
+    bassOsc.start();
+    const subOsc = ctx.createOscillator();
+    subOsc.type = "sine";
+    subOsc.frequency.value = root / 4;
+    const subGain = ctx.createGain();
+    subGain.gain.setValueAtTime(0, t);
+    subGain.gain.linearRampToValueAtTime(0.12, t + 4);
+    subOsc.connect(subGain).connect(master);
+    subOsc.start();
+    nodes.push({ stop: () => { try { bassOsc.stop(); } catch(e){} try { subOsc.stop(); } catch(e){} } });
+    const merger = ctx.createChannelMerger(2);
+    const leftOsc = ctx.createOscillator();
+    leftOsc.type = "sine";
+    leftOsc.frequency.value = root;
+    const rightOsc = ctx.createOscillator();
+    rightOsc.type = "sine";
+    rightOsc.frequency.value = root + 7;
+    const leftGain = ctx.createGain();
+    leftGain.gain.setValueAtTime(0, t);
+    leftGain.gain.linearRampToValueAtTime(0.04, t + 3);
+    const rightGain = ctx.createGain();
+    rightGain.gain.setValueAtTime(0, t);
+    rightGain.gain.linearRampToValueAtTime(0.04, t + 3);
+    leftOsc.connect(leftGain).connect(merger, 0, 0);
+    rightOsc.connect(rightGain).connect(merger, 0, 1);
+    merger.connect(master);
+    leftOsc.start(); rightOsc.start();
+    nodes.push({ stop: () => { try { leftOsc.stop(); } catch(e){} try { rightOsc.stop(); } catch(e){} } });
+    activeNodesRef.current = nodes;
+  }, []);
+
+  const play = useCallback(async () => {
+    setIsLoading(true);
+    const ctx = await ensureContext();
+    stopAllTimers();
+    stopAllNodes();
+    buildLayers(rootFrequency, ctx, masterGainRef.current!);
+    const t = ctx.currentTime;
+    masterGainRef.current!.gain.cancelScheduledValues(t);
+    masterGainRef.current!.gain.setValueAtTime(0, t);
+    masterGainRef.current!.gain.linearRampToValueAtTime(0.9, t + 1.5);
+    isPlayingRef.current = true;
+    setIsPlaying(true);
+    schedulePulse(rootFrequency);
+    scheduleMelody(rootFrequency);
+    setTimeout(() => setIsLoading(false), 400);
+  }, [ensureContext, stopAllTimers, stopAllNodes, buildLayers, schedulePulse, scheduleMelody, rootFrequency]);
+
+  const stop = useCallback(() => {
+    stopAllTimers();
+    isPlayingRef.current = false;
+    const ctx = ctxRef.current;
+    if (!ctx) { setIsPlaying(false); return; }
+    const t = ctx.currentTime;
+    masterGainRef.current!.gain.cancelScheduledValues(t);
+    masterGainRef.current!.gain.setValueAtTime(masterGainRef.current!.gain.value, t);
+    masterGainRef.current!.gain.linearRampToValueAtTime(0, t + 0.8);
+    setTimeout(() => { stopAllNodes(); setIsPlaying(false); }, 900);
+  }, [stopAllTimers, stopAllNodes]);
+
+  useEffect(() => {
+    if (!isPlayingRef.current) return;
+    const ctx = ctxRef.current;
+    if (!ctx) return;
+    setIsLoading(true);
+    stopAllTimers();
+    const t = ctx.currentTime;
+    masterGainRef.current!.gain.cancelScheduledValues(t);
+    masterGainRef.current!.gain.setValueAtTime(masterGainRef.current!.gain.value, t);
+    masterGainRef.current!.gain.linearRampToValueAtTime(0.05, t + 0.3);
+    const tid = setTimeout(() => {
+      stopAllNodes();
+      buildLayers(rootFrequency, ctx, masterGainRef.current!);
+      const t2 = ctx.currentTime;
+      masterGainRef.current!.gain.cancelScheduledValues(t2);
+      masterGainRef.current!.gain.setValueAtTime(0.05, t2);
+      masterGainRef.current!.gain.linearRampToValueAtTime(0.9, t2 + 1.2);
+      schedulePulse(rootFrequency);
+      scheduleMelody(rootFrequency);
+      setIsLoading(false);
+    }, 350);
+    return () => clearTimeout(tid);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rootFrequency]);
+
+  useEffect(() => {
+    return () => {
+      stopAllTimers();
+      stopAllNodes();
+      try { ctxRef.current?.close(); } catch(e) {}
+    };
+  }, [stopAllTimers, stopAllNodes]);
+
+  return { isPlaying, isLoading, play, stop, analyser: analyserRef };
+}
+
+// ── Main Component ─────────────────────────────────────────────────────────
+export default function SonicAlchemyChamber() {
+  const [selected, setSelected] = useState(SOLFEGGIO[2]);
+  const { isPlaying, isLoading, play, stop, analyser } = useSonicAlchemy(selected.freq);
+
+  const handleToggle = async () => {
+    if (isPlaying) stop(); else await play();
+  };
+
+  return (
+    <div className="min-h-screen w-full flex flex-col items-center justify-start px-4 py-8 relative overflow-hidden" style={{ background: "#0B1A1A", color: "#FFFDD0" }}>
+      <div className="absolute inset-0 pointer-events-none" style={{ background: "radial-gradient(ellipse at 50% 40%, rgba(197,160,89,0.08) 0%, transparent 60%)" }} />
+      <div className="relative z-10 w-full max-w-lg flex flex-col items-center">
+        <div className="text-center mb-6">
+          <div className="text-[10px] uppercase tracking-[0.4em] mb-3" style={{ color: "#C5A059" }}>◦ Sonic Alchemy ◦</div>
+          <h1 className="text-3xl font-extralight tracking-wide" style={{ fontFamily: "serif", color: "#FFFDD0" }}>Tune the Resonance</h1>
+        </div>
+
+        <PulsingOrb analyserRef={analyser} isPlaying={isPlaying} />
+
+        <div className="text-center mt-4 mb-6">
+          <div className="text-5xl font-extralight tracking-tight transition-colors duration-500" style={{ color: isPlaying ? "#C5A059" : "#FFFDD0", fontFamily: "serif" }}>
+            {selected.freq}<span className="text-2xl ml-2 opacity-60">Hz</span>
+          </div>
+          <div className="text-xs uppercase tracking-[0.35em] mt-2" style={{ color: "#C5A059" }}>{selected.label}</div>
+        </div>
+
+        <div className="w-full mb-6 rounded-lg px-4 py-2" style={{ background: "rgba(255,253,208,0.02)", border: "1px solid rgba(197,160,89,0.1)" }}>
+          <WaveformVisualizer analyserRef={analyser} isPlaying={isPlaying} />
+        </div>
+
+        <button
+          onClick={handleToggle}
+          disabled={isLoading}
+          className="flex items-center justify-center gap-3 px-8 py-3 rounded-full transition-all duration-500 mb-8 disabled:opacity-60"
+          style={{
+            background: isPlaying ? "rgba(197,160,89,0.15)" : "linear-gradient(135deg, rgba(197,160,89,0.25), rgba(197,160,89,0.1))",
+            border: "1px solid #C5A059",
+            color: "#FFFDD0",
+            boxShadow: isPlaying ? "0 0 40px rgba(197,160,89,0.35)" : "0 0 20px rgba(197,160,89,0.15)",
+          }}
+        >
+          {isLoading ? <Loader2 className="w-5 h-5 animate-spin" style={{ color: "#C5A059" }} /> : isPlaying ? <Square className="w-5 h-5" style={{ color: "#C5A059" }} fill="#C5A059" /> : <Play className="w-5 h-5" style={{ color: "#C5A059" }} fill="#C5A059" />}
+          <span className="uppercase tracking-[0.3em] text-xs" style={{ color: "#FFFDD0" }}>{isLoading ? "Tuning" : isPlaying ? "Silence" : "Begin"}</span>
+        </button>
+
+        <div className="w-full">
+          <div className="text-[10px] uppercase tracking-[0.35em] text-center mb-4" style={{ color: "#C5A059", opacity: 0.7 }}>Solfeggio Frequencies</div>
+          <div className="grid grid-cols-4 gap-2">
+            {SOLFEGGIO.map(s => (
+              <FrequencyTile key={s.freq} freq={s.freq} label={s.label} isActive={selected.freq === s.freq} onClick={() => setSelected(s)} />
+            ))}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2 mt-8 text-[11px] uppercase tracking-[0.25em]" style={{ color: "rgba(255,253,208,0.5)" }}>
+          <Headphones className="w-3.5 h-3.5" />
+          <span>Headphones recommended · Binaural 7Hz Theta</span>
+        </div>
+      </div>
+    </div>
+  );
+}
