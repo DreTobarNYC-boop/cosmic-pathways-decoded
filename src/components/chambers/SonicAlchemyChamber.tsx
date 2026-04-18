@@ -355,7 +355,7 @@ function useSonicAlchemy(rootFrequency: number) {
 }
 
 // ── Main Component ─────────────────────────────────────────────────────────
-export default function SonicAlchemyChamber() {
+export function SonicAlchemyChamber({ onBack }: { onBack: () => void }) {
   const [selected, setSelected] = useState(SOLFEGGIO[2]);
   const { isPlaying, isLoading, play, stop, analyser } = useSonicAlchemy(selected.freq);
 
