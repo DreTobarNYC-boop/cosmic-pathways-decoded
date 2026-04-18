@@ -147,6 +147,25 @@ function useSonicAlchemy(rootFrequency: number) {
 
   useEffect(() => { isPlayingRef.current = isPlaying; }, [isPlaying]);
 
+  // iOS Safari requires AudioContext to be created synchronously inside the
+  // user-gesture handler. Call this first (no await) inside the onClick.
+  const initAudio = useCallback(() => {
+    if (!ctxRef.current) {
+      const AC = (window.AudioContext || (window as any).webkitAudioContext) as typeof AudioContext;
+      ctxRef.current = new AC();
+      const master = ctxRef.current.createGain();
+      master.gain.value = 0;
+      master.connect(ctxRef.current.destination);
+      masterGainRef.current = master;
+      const analyser = ctxRef.current.createAnalyser();
+      analyser.fftSize = 1024;
+      analyser.smoothingTimeConstant = 0.85;
+      master.connect(analyser);
+      analyserRef.current = analyser;
+    }
+    void ctxRef.current.resume();
+  }, []);
+
   const ensureContext = useCallback(async () => {
     if (!ctxRef.current) {
       const AC = (window.AudioContext || (window as any).webkitAudioContext) as typeof AudioContext;
@@ -351,16 +370,24 @@ function useSonicAlchemy(rootFrequency: number) {
     };
   }, [stopAllTimers, stopAllNodes]);
 
-  return { isPlaying, isLoading, play, stop, analyser: analyserRef };
+  return { isPlaying, isLoading, play, stop, analyser: analyserRef, initAudio };
 }
 
 // ── Main Component ─────────────────────────────────────────────────────────
 export function SonicAlchemyChamber({ onBack }: { onBack: () => void }) {
   const [selected, setSelected] = useState(SOLFEGGIO[2]);
-  const { isPlaying, isLoading, play, stop, analyser } = useSonicAlchemy(selected.freq);
+  const { isPlaying, isLoading, play, stop, analyser, initAudio } = useSonicAlchemy(selected.freq);
 
-  const handleToggle = async () => {
-    if (isPlaying) stop(); else await play();
+  const handleToggle = () => {
+    if (isPlaying) {
+      stop();
+    } else {
+      // iOS Safari requires AudioContext creation synchronously inside the user
+      // gesture handler. initAudio() is called with no await so the browser
+      // keeps the activation context alive for the new AudioContext() call.
+      initAudio();
+      void play();
+    }
   };
 
   return (
