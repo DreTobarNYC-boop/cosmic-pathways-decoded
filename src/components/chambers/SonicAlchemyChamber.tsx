@@ -133,6 +133,10 @@ function WaveformVisualizer({ analyserRef, isPlaying }: { analyserRef: React.Mut
   return <canvas ref={canvasRef} className="w-full h-20" style={{ display: "block" }} />;
 }
 
+// Shared helper so both initAudio and ensureContext use the same constructor lookup.
+const getAudioContextClass = () =>
+  (window.AudioContext || (window as any).webkitAudioContext) as typeof AudioContext;
+
 // ── useSonicAlchemy hook ───────────────────────────────────────────────────
 function useSonicAlchemy(rootFrequency: number) {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -151,7 +155,7 @@ function useSonicAlchemy(rootFrequency: number) {
   // user-gesture handler. Call this first (no await) inside the onClick.
   const initAudio = useCallback(() => {
     if (!ctxRef.current) {
-      const AC = (window.AudioContext || (window as any).webkitAudioContext) as typeof AudioContext;
+      const AC = getAudioContextClass();
       ctxRef.current = new AC();
       const master = ctxRef.current.createGain();
       master.gain.value = 0;
@@ -163,12 +167,12 @@ function useSonicAlchemy(rootFrequency: number) {
       master.connect(analyser);
       analyserRef.current = analyser;
     }
-    void ctxRef.current.resume();
+    if (ctxRef.current) void ctxRef.current.resume();
   }, []);
 
   const ensureContext = useCallback(async () => {
     if (!ctxRef.current) {
-      const AC = (window.AudioContext || (window as any).webkitAudioContext) as typeof AudioContext;
+      const AC = getAudioContextClass();
       ctxRef.current = new AC();
       const master = ctxRef.current.createGain();
       master.gain.value = 0;
