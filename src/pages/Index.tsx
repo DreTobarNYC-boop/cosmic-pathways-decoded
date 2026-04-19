@@ -24,7 +24,6 @@ import { useAuth } from "@/hooks/use-auth";
 import { OracleChamber } from "@/components/chambers/OracleChamber";
 import { StarsChamber } from "@/components/chambers/StarsChamber";
 import { NumbersChamber } from "@/components/chambers/NumbersChamber";
-import { VaultChamber } from "@/components/chambers/VaultChamber";
 import { PalmChamber } from "@/components/chambers/PalmChamber";
 import { MapsChamber } from "@/components/chambers/MapsChamber";
 import { DynastyChamber } from "@/components/chambers/DynastyChamber";

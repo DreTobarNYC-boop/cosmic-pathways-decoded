@@ -1,5 +1,11 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Play, Square, Loader2, Headphones } from "lucide-react";
+import {
+  startAudio,
+  play as enginePlay,
+  stop as engineStop,
+  dispose,
+} from "@/lib/sonic-engine";
 
 const SOLFEGGIO = [
   { freq: 396, label: "Liberation" },
@@ -133,234 +139,41 @@ function WaveformVisualizer({ analyserRef, isPlaying }: { analyserRef: React.Mut
   return <canvas ref={canvasRef} className="w-full h-20" style={{ display: "block" }} />;
 }
 
-// ── useSonicAlchemy hook ───────────────────────────────────────────────────
-function useSonicAlchemy(rootFrequency: number) {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const ctxRef = useRef<AudioContext | null>(null);
-  const masterGainRef = useRef<GainNode | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
-  const activeNodesRef = useRef<{ stop: () => void }[]>([]);
-  const pulseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const melodyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isPlayingRef = useRef(false);
-
-  useEffect(() => { isPlayingRef.current = isPlaying; }, [isPlaying]);
-
-  const ensureContext = useCallback(async () => {
-    if (!ctxRef.current) {
-      const AC = (window.AudioContext || (window as any).webkitAudioContext) as typeof AudioContext;
-      ctxRef.current = new AC();
-      const master = ctxRef.current.createGain();
-      master.gain.value = 0;
-      master.connect(ctxRef.current.destination);
-      masterGainRef.current = master;
-      const analyser = ctxRef.current.createAnalyser();
-      analyser.fftSize = 1024;
-      analyser.smoothingTimeConstant = 0.85;
-      master.connect(analyser);
-      analyserRef.current = analyser;
-    }
-    if (ctxRef.current.state === "suspended") await ctxRef.current.resume();
-    return ctxRef.current;
-  }, []);
-
-  const stopAllTimers = useCallback(() => {
-    if (pulseTimerRef.current) clearTimeout(pulseTimerRef.current);
-    if (melodyTimerRef.current) clearTimeout(melodyTimerRef.current);
-    pulseTimerRef.current = null;
-    melodyTimerRef.current = null;
-  }, []);
-
-  const stopAllNodes = useCallback(() => {
-    activeNodesRef.current.forEach(n => { try { n.stop(); } catch(e) {} });
-    activeNodesRef.current = [];
-  }, []);
-
-  const schedulePulse = useCallback((root: number) => {
-    const ctx = ctxRef.current;
-    const master = masterGainRef.current;
-    if (!ctx || !master) return;
-    const fire = () => {
-      if (!isPlayingRef.current) return;
-      const t = ctx.currentTime;
-      const osc = ctx.createOscillator();
-      osc.type = "sine";
-      osc.frequency.value = root / 8;
-      const g = ctx.createGain();
-      g.gain.setValueAtTime(0, t);
-      g.gain.linearRampToValueAtTime(0.35, t + 0.04);
-      g.gain.exponentialRampToValueAtTime(0.001, t + 1.2);
-      osc.connect(g).connect(master);
-      osc.start(t);
-      osc.stop(t + 1.3);
-      pulseTimerRef.current = setTimeout(fire, 2000 + Math.random() * 2000);
-    };
-    pulseTimerRef.current = setTimeout(fire, 1500);
-  }, []);
-
-  const scheduleMelody = useCallback((root: number) => {
-    const ctx = ctxRef.current;
-    const master = masterGainRef.current;
-    if (!ctx || !master) return;
-    const intervals = [1.5, 2, 2.5, 3, 4];
-    const fire = () => {
-      if (!isPlayingRef.current) return;
-      const t = ctx.currentTime;
-      const ratio = intervals[Math.floor(Math.random() * intervals.length)];
-      const osc = ctx.createOscillator();
-      osc.type = "triangle";
-      osc.frequency.value = root * ratio;
-      const dur = 2.5 + Math.random() * 2;
-      const g = ctx.createGain();
-      g.gain.setValueAtTime(0, t);
-      g.gain.linearRampToValueAtTime(0.07, t + 0.8);
-      g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-      const hp = ctx.createBiquadFilter();
-      hp.type = "highpass";
-      hp.frequency.value = 300;
-      osc.connect(hp).connect(g).connect(master);
-      osc.start(t);
-      osc.stop(t + dur + 0.2);
-      melodyTimerRef.current = setTimeout(fire, 5000 + Math.random() * 10000);
-    };
-    melodyTimerRef.current = setTimeout(fire, 4000);
-  }, []);
-
-  const buildLayers = useCallback((root: number, ctx: AudioContext, master: GainNode) => {
-    const t = ctx.currentTime;
-    const nodes: { stop: () => void }[] = [];
-    [1, 1.5, 2].forEach((ratio, i) => {
-      const osc = ctx.createOscillator();
-      osc.type = "sine";
-      osc.frequency.value = (root / 2) * ratio;
-      osc.detune.value = (i - 1) * 6;
-      const lfo = ctx.createOscillator();
-      lfo.type = "sine";
-      lfo.frequency.value = 0.03 + i * 0.017;
-      const lfoGain = ctx.createGain();
-      lfoGain.gain.value = 8 + i * 3;
-      lfo.connect(lfoGain).connect(osc.detune);
-      const gain = ctx.createGain();
-      gain.gain.setValueAtTime(0, t);
-      gain.gain.linearRampToValueAtTime(0.08, t + 3);
-      osc.connect(gain).connect(master);
-      osc.start(); lfo.start();
-      nodes.push({ stop: () => { try { osc.stop(); } catch(e){} try { lfo.stop(); } catch(e){} } });
-    });
-    const bassFilter = ctx.createBiquadFilter();
-    bassFilter.type = "lowpass";
-    bassFilter.frequency.value = 220;
-    const bassOsc = ctx.createOscillator();
-    bassOsc.type = "sawtooth";
-    bassOsc.frequency.value = root / 4;
-    const bassGain = ctx.createGain();
-    bassGain.gain.setValueAtTime(0, t);
-    bassGain.gain.linearRampToValueAtTime(0.05, t + 4);
-    bassOsc.connect(bassFilter).connect(bassGain).connect(master);
-    bassOsc.start();
-    const subOsc = ctx.createOscillator();
-    subOsc.type = "sine";
-    subOsc.frequency.value = root / 4;
-    const subGain = ctx.createGain();
-    subGain.gain.setValueAtTime(0, t);
-    subGain.gain.linearRampToValueAtTime(0.12, t + 4);
-    subOsc.connect(subGain).connect(master);
-    subOsc.start();
-    nodes.push({ stop: () => { try { bassOsc.stop(); } catch(e){} try { subOsc.stop(); } catch(e){} } });
-    const merger = ctx.createChannelMerger(2);
-    const leftOsc = ctx.createOscillator();
-    leftOsc.type = "sine";
-    leftOsc.frequency.value = root;
-    const rightOsc = ctx.createOscillator();
-    rightOsc.type = "sine";
-    rightOsc.frequency.value = root + 7;
-    const leftGain = ctx.createGain();
-    leftGain.gain.setValueAtTime(0, t);
-    leftGain.gain.linearRampToValueAtTime(0.04, t + 3);
-    const rightGain = ctx.createGain();
-    rightGain.gain.setValueAtTime(0, t);
-    rightGain.gain.linearRampToValueAtTime(0.04, t + 3);
-    leftOsc.connect(leftGain).connect(merger, 0, 0);
-    rightOsc.connect(rightGain).connect(merger, 0, 1);
-    merger.connect(master);
-    leftOsc.start(); rightOsc.start();
-    nodes.push({ stop: () => { try { leftOsc.stop(); } catch(e){} try { rightOsc.stop(); } catch(e){} } });
-    activeNodesRef.current = nodes;
-  }, []);
-
-  const play = useCallback(async () => {
-    setIsLoading(true);
-    const ctx = await ensureContext();
-    stopAllTimers();
-    stopAllNodes();
-    buildLayers(rootFrequency, ctx, masterGainRef.current!);
-    const t = ctx.currentTime;
-    masterGainRef.current!.gain.cancelScheduledValues(t);
-    masterGainRef.current!.gain.setValueAtTime(0, t);
-    masterGainRef.current!.gain.linearRampToValueAtTime(0.9, t + 1.5);
-    isPlayingRef.current = true;
-    setIsPlaying(true);
-    schedulePulse(rootFrequency);
-    scheduleMelody(rootFrequency);
-    setTimeout(() => setIsLoading(false), 400);
-  }, [ensureContext, stopAllTimers, stopAllNodes, buildLayers, schedulePulse, scheduleMelody, rootFrequency]);
-
-  const stop = useCallback(() => {
-    stopAllTimers();
-    isPlayingRef.current = false;
-    const ctx = ctxRef.current;
-    if (!ctx) { setIsPlaying(false); return; }
-    const t = ctx.currentTime;
-    masterGainRef.current!.gain.cancelScheduledValues(t);
-    masterGainRef.current!.gain.setValueAtTime(masterGainRef.current!.gain.value, t);
-    masterGainRef.current!.gain.linearRampToValueAtTime(0, t + 0.8);
-    setTimeout(() => { stopAllNodes(); setIsPlaying(false); }, 900);
-  }, [stopAllTimers, stopAllNodes]);
-
-  useEffect(() => {
-    if (!isPlayingRef.current) return;
-    const ctx = ctxRef.current;
-    if (!ctx) return;
-    setIsLoading(true);
-    stopAllTimers();
-    const t = ctx.currentTime;
-    masterGainRef.current!.gain.cancelScheduledValues(t);
-    masterGainRef.current!.gain.setValueAtTime(masterGainRef.current!.gain.value, t);
-    masterGainRef.current!.gain.linearRampToValueAtTime(0.05, t + 0.3);
-    const tid = setTimeout(() => {
-      stopAllNodes();
-      buildLayers(rootFrequency, ctx, masterGainRef.current!);
-      const t2 = ctx.currentTime;
-      masterGainRef.current!.gain.cancelScheduledValues(t2);
-      masterGainRef.current!.gain.setValueAtTime(0.05, t2);
-      masterGainRef.current!.gain.linearRampToValueAtTime(0.9, t2 + 1.2);
-      schedulePulse(rootFrequency);
-      scheduleMelody(rootFrequency);
-      setIsLoading(false);
-    }, 350);
-    return () => clearTimeout(tid);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rootFrequency]);
-
-  useEffect(() => {
-    return () => {
-      stopAllTimers();
-      stopAllNodes();
-      try { ctxRef.current?.close(); } catch(e) {}
-    };
-  }, [stopAllTimers, stopAllNodes]);
-
-  return { isPlaying, isLoading, play, stop, analyser: analyserRef };
-}
-
 // ── Main Component ─────────────────────────────────────────────────────────
 export function SonicAlchemyChamber({ onBack }: { onBack: () => void }) {
   const [selected, setSelected] = useState(SOLFEGGIO[2]);
-  const { isPlaying, isLoading, play, stop, analyser } = useSonicAlchemy(selected.freq);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  // analyserRef is null — PulsingOrb and WaveformVisualizer fall back to idle animations
+  const analyserRef = useRef<AnalyserNode | null>(null);
+
+  useEffect(() => {
+    return () => { dispose(); };
+  }, []);
 
   const handleToggle = async () => {
-    if (isPlaying) stop(); else await play();
+    if (isPlaying) {
+      engineStop();
+      setIsPlaying(false);
+    } else {
+      setIsLoading(true);
+      try {
+        await startAudio();
+        enginePlay(selected.freq);
+        setIsPlaying(true);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
+  const handleSelect = (s: typeof SOLFEGGIO[0]) => {
+    setSelected(s);
+    if (isPlaying) {
+      // Brief delay lets the engine fade out before starting the new frequency
+      engineStop();
+      setTimeout(() => enginePlay(s.freq), 150);
+    }
   };
 
   return (
@@ -372,7 +185,7 @@ export function SonicAlchemyChamber({ onBack }: { onBack: () => void }) {
           <h1 className="text-3xl font-extralight tracking-wide" style={{ fontFamily: "serif", color: "#FFFDD0" }}>Tune the Resonance</h1>
         </div>
 
-        <PulsingOrb analyserRef={analyser} isPlaying={isPlaying} />
+        <PulsingOrb analyserRef={analyserRef} isPlaying={isPlaying} />
 
         <div className="text-center mt-4 mb-6">
           <div className="text-5xl font-extralight tracking-tight transition-colors duration-500" style={{ color: isPlaying ? "#C5A059" : "#FFFDD0", fontFamily: "serif" }}>
@@ -382,7 +195,7 @@ export function SonicAlchemyChamber({ onBack }: { onBack: () => void }) {
         </div>
 
         <div className="w-full mb-6 rounded-lg px-4 py-2" style={{ background: "rgba(255,253,208,0.02)", border: "1px solid rgba(197,160,89,0.1)" }}>
-          <WaveformVisualizer analyserRef={analyser} isPlaying={isPlaying} />
+          <WaveformVisualizer analyserRef={analyserRef} isPlaying={isPlaying} />
         </div>
 
         <button
@@ -404,7 +217,7 @@ export function SonicAlchemyChamber({ onBack }: { onBack: () => void }) {
           <div className="text-[10px] uppercase tracking-[0.35em] text-center mb-4" style={{ color: "#C5A059", opacity: 0.7 }}>Solfeggio Frequencies</div>
           <div className="grid grid-cols-4 gap-2">
             {SOLFEGGIO.map(s => (
-              <FrequencyTile key={s.freq} freq={s.freq} label={s.label} isActive={selected.freq === s.freq} onClick={() => setSelected(s)} />
+              <FrequencyTile key={s.freq} freq={s.freq} label={s.label} isActive={selected.freq === s.freq} onClick={() => handleSelect(s)} />
             ))}
           </div>
         </div>
