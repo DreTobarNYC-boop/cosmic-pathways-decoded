@@ -1,11 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Play, Square, Loader2, Headphones } from "lucide-react";
-import {
-  startAudio,
-  play as enginePlay,
-  stop as engineStop,
-  dispose,
-} from "@/lib/sonic-engine";
 
 const SOLFEGGIO = [
   { freq: 396, label: "Liberation" },
@@ -16,6 +10,115 @@ const SOLFEGGIO = [
   { freq: 852, label: "Intuition" },
   { freq: 963, label: "Divine" },
 ];
+
+// ── useSonicAlchemy ────────────────────────────────────────────────────────
+function useSonicAlchemy() {
+  const ctxRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const gainRef = useRef<GainNode | null>(null);
+  const oscsRef = useRef<OscillatorNode[]>([]);
+
+  const ensureContext = useCallback(() => {
+    if (!ctxRef.current) {
+      const AC = (window as any).AudioContext || (window as any).webkitAudioContext;
+      ctxRef.current = new AC();
+    }
+    if (ctxRef.current.state === "suspended") {
+      ctxRef.current.resume();
+    }
+  }, []);
+
+  const startAudio = useCallback(async () => {
+    ensureContext();
+    const ctx = ctxRef.current!;
+    if (ctx.state === "suspended") await ctx.resume();
+
+    if (!analyserRef.current) {
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 2048;
+      analyser.connect(ctx.destination);
+      analyserRef.current = analyser;
+    }
+  }, [ensureContext]);
+
+  const stopOscillators = useCallback(() => {
+    const ctx = ctxRef.current;
+    if (gainRef.current && ctx) {
+      const gain = gainRef.current;
+      gain.gain.cancelScheduledValues(ctx.currentTime);
+      gain.gain.setValueAtTime(gain.gain.value, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.3);
+    }
+    const oscs = oscsRef.current;
+    const stopAt = ctxRef.current ? ctxRef.current.currentTime + 0.35 : 0;
+    oscs.forEach(o => { try { o.stop(stopAt); } catch (_) { /* already stopped */ } });
+    oscsRef.current = [];
+    gainRef.current = null;
+  }, []);
+
+  const play = useCallback((freq: number) => {
+    const ctx = ctxRef.current;
+    const analyser = analyserRef.current;
+    if (!ctx || !analyser) return;
+
+    stopOscillators();
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.28, ctx.currentTime + 0.5);
+    gain.connect(analyser);
+    gainRef.current = gain;
+
+    // Main carrier tone
+    const osc = ctx.createOscillator();
+    osc.type = "sine";
+    osc.frequency.value = freq;
+    osc.connect(gain);
+    osc.start();
+
+    // Binaural beat: 7 Hz theta offset for the right channel
+    const merger = ctx.createChannelMerger(2);
+    merger.connect(analyser);
+
+    const gainL = ctx.createGain();
+    gainL.gain.setValueAtTime(0, ctx.currentTime);
+    gainL.gain.linearRampToValueAtTime(0.12, ctx.currentTime + 0.5);
+    const gainR = ctx.createGain();
+    gainR.gain.setValueAtTime(0, ctx.currentTime);
+    gainR.gain.linearRampToValueAtTime(0.12, ctx.currentTime + 0.5);
+
+    const oscL = ctx.createOscillator();
+    oscL.type = "sine";
+    oscL.frequency.value = freq;
+    oscL.connect(gainL);
+    gainL.connect(merger, 0, 0);
+    oscL.start();
+
+    const oscR = ctx.createOscillator();
+    oscR.type = "sine";
+    oscR.frequency.value = freq + 7;
+    oscR.connect(gainR);
+    gainR.connect(merger, 0, 1);
+    oscR.start();
+
+    oscsRef.current = [osc, oscL, oscR];
+  }, [stopOscillators]);
+
+  const stop = useCallback(() => {
+    stopOscillators();
+  }, [stopOscillators]);
+
+  const dispose = useCallback(() => {
+    stopOscillators();
+    if (ctxRef.current) {
+      ctxRef.current.close();
+      ctxRef.current = null;
+    }
+    analyserRef.current = null;
+  }, [stopOscillators]);
+
+  return { analyserRef, startAudio, play, stop, dispose };
+}
 
 // ── FrequencyTile ──────────────────────────────────────────────────────────
 function FrequencyTile({ freq, label, isActive, onClick }: { freq: number; label: string; isActive: boolean; onClick: () => void }) {
@@ -144,22 +247,21 @@ export function SonicAlchemyChamber({ onBack }: { onBack: () => void }) {
   const [selected, setSelected] = useState(SOLFEGGIO[2]);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  // analyserRef is null — PulsingOrb and WaveformVisualizer fall back to idle animations
-  const analyserRef = useRef<AnalyserNode | null>(null);
+  const { analyserRef, startAudio, play, stop, dispose } = useSonicAlchemy();
 
   useEffect(() => {
     return () => { dispose(); };
-  }, []);
+  }, [dispose]);
 
   const handleToggle = async () => {
     if (isPlaying) {
-      engineStop();
+      stop();
       setIsPlaying(false);
     } else {
       setIsLoading(true);
       try {
         await startAudio();
-        enginePlay(selected.freq);
+        play(selected.freq);
         setIsPlaying(true);
       } finally {
         setIsLoading(false);
@@ -171,8 +273,8 @@ export function SonicAlchemyChamber({ onBack }: { onBack: () => void }) {
     setSelected(s);
     if (isPlaying) {
       // Brief delay lets the engine fade out before starting the new frequency
-      engineStop();
-      setTimeout(() => enginePlay(s.freq), 150);
+      stop();
+      setTimeout(() => play(s.freq), 150);
     }
   };
 
