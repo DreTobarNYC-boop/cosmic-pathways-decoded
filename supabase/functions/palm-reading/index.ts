@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
-    "Access-Control-Allow-Origin": "*",,
+    "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
@@ -34,8 +34,8 @@ serve(async (req) => {
     const timeoutId = setTimeout(() => controller.abort(), 8000);
 
     const requestBody = {
+      system_instruction: { parts: [{ text: systemPrompt }] },
       contents: [
-        { role: "system", parts: [{ text: systemPrompt }] },
         { role: "user", parts: [{ text: userPrompt }] },
       ],
       generationConfig: {
@@ -47,7 +47,7 @@ serve(async (req) => {
     let response;
     try {
       response = await fetch(
-        `https://generativelanguage.googleapis.com/v1/models/gemini-3-flash:generateContent?key=${GEMINI_API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
