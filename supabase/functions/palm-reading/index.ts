@@ -46,6 +46,7 @@ serve(async (req) => {
     const context = body.context || {};
     const image_base64 = body.image_base64 || null;
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    const GEMINI_MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-2.5-flash";
 
     if (!GEMINI_API_KEY) {
       return new Response(
@@ -196,7 +197,7 @@ If no special markings are visible, return an empty array for markings. Make the
     let response;
     try {
       response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
