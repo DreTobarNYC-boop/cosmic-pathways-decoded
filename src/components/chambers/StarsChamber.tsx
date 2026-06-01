@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useCachedReading } from "@/hooks/use-cached-reading";
 import { getZodiacFromDOB, getUniversalDay, getUniversalMonth, getPersonalDay, getLifePath, getChineseZodiac } from "@/lib/daily";
 import { calculateNatalChart } from "@/lib/natal-chart";
+import { NatalChartWheel } from "@/components/NatalChartWheel";
 import { getNumerologyProfile } from "@/lib/numerology-deep";
 
 const TABS = [
@@ -132,6 +133,9 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
 
       {activeTab === "birth_chart" && natal && (
         <div className="flex flex-col gap-4">
+          {/* Co-Star style natal wheel */}
+          <NatalChartWheel natal={natal} />
+
           <div className="rounded-xl border border-[#C5A059]/20 bg-[#0B1A1A] p-5">
             <p className="text-[#C5A059] text-[10px] tracking-[0.2em] uppercase mb-3">Natal Planets</p>
             {[
