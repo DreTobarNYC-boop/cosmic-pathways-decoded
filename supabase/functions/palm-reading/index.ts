@@ -1,13 +1,30 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
-    "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+function extractJSON(raw: string): Record<string, unknown> {
+  const cleaned = raw.replace(/```json|```/g, "").trim();
+  try {
+    return JSON.parse(cleaned);
+  } catch {
+    // Graceful fallback — wrap plain prose in the overview field
+    return {
+      handType: "Unknown",
+      element: "Unknown",
+      archetype: { name: "Palm Oracle", traits: [], summary: cleaned.slice(0, 200), shadow: "" },
+      reading: { overview: cleaned },
+      lines: {},
+      mounts: {},
+      markings: [],
+    };
+  }
+}
+
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -17,22 +34,51 @@ serve(async (req) => {
     const context = body.context || {};
     const image_base64 = body.image_base64 || null;
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+
     if (!GEMINI_API_KEY) {
       return new Response(
-        JSON.stringify({
-          error: "Server misconfiguration: GEMINI_API_KEY is missing.",
-        }),
+        JSON.stringify({ error: "Server misconfiguration: GEMINI_API_KEY is missing." }),
         { status: 500, headers: corsHeaders },
       );
     }
 
-    // Compose prompts for palm reading
-    const systemPrompt = `You are a knowledgeable palmist who interprets the lines and shapes of a person's palm to reveal insights into their personality, past, and future. Provide your reading in clear, concise language without markdown or code fences.`;
-    const userPromptText = image_base64
-      ? `Carefully examine this palm image and provide a detailed palm reading. Analyze the major lines (heart, head, life, fate), the mounts, finger shapes, and any notable markings. Offer specific insights about love, career, health, and personality. Context about this person: ${JSON.stringify(context)}.`
-      : `Please provide a palm reading based on the following context: ${JSON.stringify(context)}. Offer insights about love, career, health, and any unique markings.`;
+    const systemPrompt = `You are a master palmist and cosmic decoder. Analyze the palm and return ONLY a valid JSON object — no markdown, no backticks, no explanation outside the JSON. Use this exact structure:
+{
+  "handType": "Fire|Earth|Air|Water",
+  "element": "element name",
+  "archetype": {
+    "name": "2-3 word archetype title",
+    "traits": ["trait1", "trait2", "trait3"],
+    "summary": "2-3 sentence personality and destiny summary",
+    "shadow": "One sentence about their core challenge or shadow side"
+  },
+  "reading": {
+    "overview": "3-4 sentence holistic reading combining all elements observed"
+  },
+  "lines": {
+    "heart": { "strength": "strong|moderate|faint", "description": "2 sentence reading of this line" },
+    "head": { "strength": "strong|moderate|faint", "description": "2 sentence reading of this line" },
+    "life": { "strength": "strong|moderate|faint", "description": "2 sentence reading of this line" },
+    "fate": { "strength": "strong|moderate|faint|absent", "description": "2 sentence reading of this line" }
+  },
+  "mounts": {
+    "jupiter": { "prominence": "raised|flat|overdeveloped", "meaning": "1 sentence interpretation" },
+    "saturn": { "prominence": "raised|flat|overdeveloped", "meaning": "1 sentence interpretation" },
+    "apollo": { "prominence": "raised|flat|overdeveloped", "meaning": "1 sentence interpretation" },
+    "mercury": { "prominence": "raised|flat|overdeveloped", "meaning": "1 sentence interpretation" },
+    "venus": { "prominence": "raised|flat|overdeveloped", "meaning": "1 sentence interpretation" },
+    "moon": { "prominence": "raised|flat|overdeveloped", "meaning": "1 sentence interpretation" }
+  },
+  "markings": [
+    { "type": "marking type", "location": "location on palm", "meaning": "what this marking signifies" }
+  ]
+}
+If no special markings are visible, return an empty array for markings.`;
 
-    // Build the user parts — include image if provided
+    const userPromptText = image_base64
+      ? `Carefully examine this palm image. Identify the hand type, major lines, mounts, and any special markings. Return only the JSON object.${Object.keys(context).length > 0 ? ` Context: ${JSON.stringify(context)}` : ""}`
+      : `Provide a palm reading based on this context: ${JSON.stringify(context)}. Return only the JSON object.`;
+
     const userParts: unknown[] = [{ text: userPromptText }];
     if (image_base64) {
       userParts.unshift({
@@ -43,18 +89,15 @@ serve(async (req) => {
       });
     }
 
-    // Configure AbortController for an 8-second timeout
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000);
+    const timeoutId = setTimeout(() => controller.abort(), 20000);
 
     const requestBody = {
       system_instruction: { parts: [{ text: systemPrompt }] },
-      contents: [
-        { role: "user", parts: userParts },
-      ],
+      contents: [{ role: "user", parts: userParts }],
       generationConfig: {
-        temperature: 0.8,
-        maxOutputTokens: 800,
+        temperature: 0.75,
+        maxOutputTokens: 1500,
       },
     };
 
@@ -72,7 +115,7 @@ serve(async (req) => {
     } catch (error) {
       if (error.name === "AbortError") {
         return new Response(
-          JSON.stringify({ error: "The AI request timed out." }),
+          JSON.stringify({ error: "The reading timed out. Please try again with better lighting." }),
           { status: 408, headers: corsHeaders },
         );
       }
@@ -84,26 +127,30 @@ serve(async (req) => {
     if (!response.ok) {
       const errorText = await response.text();
       return new Response(
-        JSON.stringify({
-          error: `AI request failed with status ${response.status}: ${errorText}`,
-        }),
+        JSON.stringify({ error: `AI request failed: ${errorText}` }),
         { status: 500, headers: corsHeaders },
       );
     }
 
     const data = await response.json();
-    const content =
-      data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ||
-      "Readings are temporarily unavailable. Try again shortly.";
-    return new Response(JSON.stringify({ content }), {
+    const raw = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? "";
+
+    if (!raw) {
+      return new Response(
+        JSON.stringify({ error: "No reading was returned. Please try again." }),
+        { status: 500, headers: corsHeaders },
+      );
+    }
+
+    const parsed = extractJSON(raw);
+
+    return new Response(JSON.stringify(parsed), {
       status: 200,
-      headers: corsHeaders,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
     return new Response(
-      JSON.stringify({
-        error: error.message || "Unexpected server error.",
-      }),
+      JSON.stringify({ error: error.message || "Unexpected server error." }),
       { status: 500, headers: corsHeaders },
     );
   }

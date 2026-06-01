@@ -19,6 +19,7 @@ const TABS = [
 ];
 
 const TAB_READING_TYPE: Record<string, string> = {
+  birth_chart:   "stars_today",
   today:         "daily_horoscope",
   monthly:       "stars_monthly",
   yearly:        "stars_yearly",
@@ -77,7 +78,7 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
     readingType,
     context: richContext,
     cacheKey,
-    enabled: activeTab !== "birth_chart",
+    enabled: !!dob,
   });
 
   return (
@@ -105,7 +106,7 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
         </div>
       )}
 
-      <div className="flex gap-2 overflow-x-auto pb-2 mb-5 scrollbar-hide">
+      <div className="flex gap-2 overflow-x-auto pb-2 mb-5 no-scrollbar">
         {TABS.map(tab => (
           <button
             key={tab.id}
@@ -120,6 +121,14 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
           </button>
         ))}
       </div>
+
+      {activeTab === "birth_chart" && !natal && (
+        <div className="flex flex-col items-center justify-center text-center py-16 space-y-3">
+          <p className="text-4xl">✦</p>
+          <p className="font-display text-lg text-foreground">Your chart awaits your birth date</p>
+          <p className="text-sm text-muted-foreground max-w-xs">Enter your date of birth in your profile to unlock your full natal chart.</p>
+        </div>
+      )}
 
       {activeTab === "birth_chart" && natal && (
         <div className="flex flex-col gap-4">
@@ -172,13 +181,11 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
         </div>
       )}
 
-      {activeTab !== "birth_chart" && (
-        <TodayReadingCard
-          data={reading}
-          isLoading={isLoading}
-          error={error}
-        />
-      )}
+      <TodayReadingCard
+        data={reading}
+        isLoading={isLoading}
+        error={error}
+      />
     </ChamberLayout>
   );
 }

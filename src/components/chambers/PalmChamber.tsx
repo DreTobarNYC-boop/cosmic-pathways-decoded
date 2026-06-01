@@ -30,6 +30,12 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Guard against images that are too large for the edge function (~4MB limit)
+    if (file.size > 4 * 1024 * 1024) {
+      toast({ title: "Image too large", description: "Please use a photo under 4MB.", variant: "destructive" });
+      return;
+    }
+
     setImagePreview(URL.createObjectURL(file));
     setPhase("scanning");
     setReading(null);
@@ -43,7 +49,8 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
       if (error) throw new Error(error.message || "Reading failed");
       if (data?.error) throw new Error(data.error);
 
-      setReading(data.content);
+      // Edge function now returns the full structured object directly
+      setReading(data);
       setPhase("done");
     } catch (err: any) {
       console.error("Palm reading error:", err);
@@ -65,6 +72,7 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
         ref={fileRef}
         type="file"
         accept="image/*"
+        capture="environment"
         onChange={handleFile}
         className="hidden"
       />

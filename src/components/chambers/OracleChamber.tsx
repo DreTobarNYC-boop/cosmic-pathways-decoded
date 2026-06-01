@@ -271,7 +271,14 @@ export function OracleChamber({ onBack }: { onBack: () => void }) {
             <div className="space-y-3">
               <p className="text-sm font-bold text-primary">Your code is activated. Here's what it means.</p>
               <p className="text-sm text-foreground/90 leading-relaxed">
-                {oracleReading.content || "The Oracle is preparing your reading…"}
+                {(() => {
+                  const raw = oracleReading.content || "";
+                  if (!raw) return "The Oracle is preparing your reading…";
+                  if (raw.startsWith("{")) {
+                    try { return JSON.parse(raw)?.reading ?? raw; } catch { return raw; }
+                  }
+                  return raw;
+                })()}
               </p>
             </div>
           )}

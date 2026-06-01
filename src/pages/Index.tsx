@@ -47,6 +47,22 @@ export default function Index() {
     return () => window.removeEventListener("openChamber", handleOpenChamber);
   }, []);
 
+  // Push a history entry when a chamber opens so the OS back gesture
+  // closes the chamber instead of leaving the app entirely.
+  useEffect(() => {
+    if (activeChamber) {
+      window.history.pushState({ chamber: activeChamber }, "");
+    }
+  }, [activeChamber]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      if (activeChamber) setActiveChamber(null);
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [activeChamber]);
+
   const FEATURED = [
     { id: "palm-cta", chamberId: "palm", title: t("chambers.scanYourPalm"), subtitle: t("chambers.palmReading"), icon: Fingerprint, accent: "hsl(280, 40%, 55%)" },
     { id: "oracle", title: t("chambers.theOracle"), subtitle: t("chambers.aiGuide"), icon: MessageCircle, accent: "hsl(220, 30%, 62%)" },

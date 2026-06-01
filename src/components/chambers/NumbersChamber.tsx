@@ -254,7 +254,7 @@ export function NumbersChamber({ onBack }: { onBack: () => void }) {
             Life Path {dob ? `${dob.getDate()}/${lifePath}` : lifePath} · {lifePathName}
           </p>
           {zodiac && (
-            <p className="text-xs text-muted-foreground">{zodiac.symbol} {zodiac.sign} · {zodiac.element}</p>
+            <p className="text-xs text-muted-foreground">{zodiac.sign} · {zodiac.element}</p>
           )}
         </div>
       </div>
