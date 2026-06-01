@@ -72,7 +72,7 @@ function AIReadingBlock({ content, isLoading, error, label }: { content: string 
     );
   }
   if (error && !content) {
-    return <p className="text-sm text-destructive">{error}</p>;
+    return <p className="text-sm text-muted-foreground italic">Unable to load reading. Try again shortly.</p>;
   }
   if (!content) return null;
 
@@ -251,7 +251,7 @@ export function NumbersChamber({ onBack }: { onBack: () => void }) {
         <div>
           <p className="text-xs uppercase tracking-widest text-muted-foreground">{name.split(" ")[0].toUpperCase()}'S NUMEROLOGY</p>
           <p className="font-display text-lg font-bold text-foreground">
-            Life Path {dob ? `${dob.getDate()}/${lifePath}` : lifePath} · {lifePathName}
+            Life Path {lifePath} · {lifePathName}
           </p>
           {zodiac && (
             <p className="text-xs text-muted-foreground">{zodiac.sign} · {zodiac.element}</p>

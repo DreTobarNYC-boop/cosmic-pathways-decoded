@@ -61,12 +61,20 @@ DATA (pre-calculated, treat as fact):
     oracle_chat: "TASK: You are a wise Oracle answering a direct question. The user's message is in context.userMessage. Use their astrological and numerological data to give a grounded, specific, 2-3 paragraph answer. Do not be generic.",
     dynasty_profile: "TASK: Weave a CHINESE ZODIAC PROFILE reading. Focus on the Chinese Zodiac animal's core traits, elemental year energy, and what this person's animal sign means for their personality and life path. Reference the Chinese Zodiac animal provided.",
     dynasty_year: "TASK: Weave a YEAR AHEAD reading from a Chinese astrology perspective. What does the current year's energy mean for this person's Chinese zodiac animal? Be specific about opportunities and challenges.",
-    dynasty_forecast: "TASK: Weave a MONTHLY FORECAST from a Chinese astrology perspective. What energy does this month hold for this person's Chinese zodiac animal?",
+    dynasty_forecast: "TASK: Weave a 5-YEAR FORECAST from a Chinese astrology perspective for the years 2026-2030. For each year write a short title (3-5 words), a 1-2 sentence summary of the energy and key themes for this person's Chinese zodiac animal, and an energy rating from 1-5. You MUST return ONLY a JSON object in this exact format (no other keys): { \"years\": [ { \"year\": 2026, \"title\": \"...\", \"rating\": 4, \"summary\": \"...\" }, { \"year\": 2027, ... }, ... ] }",
     numbers_today: "TASK: Weave a TODAY numerology reading. Focus on the Personal Day number and Universal Day number and what they mean in combination for this person right now.",
     numbers_life_path: "TASK: Weave a LIFE PATH numerology reading. Deep-dive into the Life Path number — what it means for this person's purpose, natural talents, and life themes. Reference the Expression and Soul Urge numbers too.",
   };
 
   const task = tasks[type] ?? tasks.daily_horoscope;
+
+  // dynasty_forecast requires a different output schema — don't include the horoscope base
+  if (type === "dynasty_forecast") {
+    return `You are a master Chinese astrologer. Write in ${lang}.
+${data}
+
+${task}`;
+  }
 
   return `${base}\n${data}\n\n${task}`;
 }
