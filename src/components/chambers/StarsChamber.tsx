@@ -11,7 +11,7 @@ const TABS = [
   { id: "birth_chart",   label: "Birth Chart" },
   { id: "today",         label: "Today" },
   { id: "monthly",       label: "Monthly" },
-  { id: "yearly",        label: "2026" },
+  { id: "yearly",        label: String(new Date().getFullYear()) },
   { id: "love",          label: "Love" },
   { id: "career",        label: "Career" },
   { id: "wellness",      label: "Wellness" },

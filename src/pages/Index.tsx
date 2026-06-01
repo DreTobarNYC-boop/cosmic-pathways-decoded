@@ -85,7 +85,7 @@ export default function Index() {
     }
   }
 
-  const dob = new Date(profile.dateOfBirth + "T00:00:00");
+  const dob = new Date(profile.dateOfBirth + "T12:00:00");
   const firstName = profile.fullName.split(" ")[0];
 
   return (

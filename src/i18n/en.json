@@ -70,23 +70,13 @@
     "palmReading": "Palm Reading",
     "theOracle": "The Oracle",
     "aiGuide": "AI Guide",
-    "frequencyScanner": "Frequency Scanner",
-    "consciousness": "Consciousness",
     "theStars": "The Stars",
     "astrology": "Astrology",
     "theNumbers": "The Numbers",
     "numerology": "Numerology",
     "thePalm": "The Palm",
     "theDynasty": "The Dynasty",
-    "chineseZodiac": "Chinese Zodiac",
-    "sonicAlchemy": "Sonic Alchemy",
-    "sound": "Sound",
-    "theVault": "The Vault",
-    "sacredCodes": "Sacred Codes",
-    "theMaps": "The Maps",
-    "location": "Location",
-    "theSanctum": "The Sanctum",
-    "journal": "Journal"
+    "chineseZodiac": "Chinese Zodiac"
   },
   "chamberPages": {
     "stars": {
@@ -98,11 +88,6 @@
       "title": "Numbers",
       "subtitle": "Numerology Profile",
       "placeholder": "The Numbers chamber is computing. Full numerology profile coming soon."
-    },
-    "sanctum": {
-      "title": "Sanctum",
-      "subtitle": "Private Journal",
-      "placeholder": "Your encrypted private journal. Coming soon."
     }
   },
   "stars": {

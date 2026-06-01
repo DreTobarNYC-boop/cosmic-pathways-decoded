@@ -70,23 +70,13 @@
     "palmReading": "Lectura de Palma",
     "theOracle": "El Oráculo",
     "aiGuide": "Guía IA",
-    "frequencyScanner": "Escáner de Frecuencia",
-    "consciousness": "Consciencia",
     "theStars": "Las Estrellas",
     "astrology": "Astrología",
     "theNumbers": "Los Números",
     "numerology": "Numerología",
     "thePalm": "La Palma",
     "theDynasty": "La Dinastía",
-    "chineseZodiac": "Zodiaco Chino",
-    "sonicAlchemy": "Alquimia Sónica",
-    "sound": "Sonido",
-    "theVault": "La Bóveda",
-    "sacredCodes": "Códigos Sagrados",
-    "theMaps": "Los Mapas",
-    "location": "Ubicación",
-    "theSanctum": "El Santuario",
-    "journal": "Diario"
+    "chineseZodiac": "Zodiaco Chino"
   },
   "chamberPages": {
     "stars": {
@@ -98,11 +88,6 @@
       "title": "Números",
       "subtitle": "Perfil Numerológico",
       "placeholder": "La cámara de los Números está calculando."
-    },
-    "sanctum": {
-      "title": "Santuario",
-      "subtitle": "Diario Privado",
-      "placeholder": "Tu diario privado encriptado. Próximamente."
     }
   },
   "stars": {

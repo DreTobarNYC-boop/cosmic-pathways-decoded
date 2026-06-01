@@ -5,11 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
+import { AuthModal } from "@/components/AuthModal";
 import { toast } from "sonner";
 
 export function OnboardingModal({ open }: { open: boolean }) {
   const { t } = useTranslation();
   const { saveProfile } = useAuth();
+  const [showAuth, setShowAuth] = useState(false);
   const [name, setName] = useState("");
   const [dob, setDob] = useState("");
   const [birthPlace, setBirthPlace] = useState("");
@@ -35,6 +37,7 @@ export function OnboardingModal({ open }: { open: boolean }) {
   };
 
   return (
+    <>
     <Dialog open={open}>
       <DialogContent
         className="card-cosmic border-copper sm:max-w-md"
@@ -115,8 +118,21 @@ export function OnboardingModal({ open }: { open: boolean }) {
           >
             {loading ? t("onboarding.submitting") : t("onboarding.submit")}
           </Button>
+          <p className="text-center text-xs text-muted-foreground pt-1">
+            {t("auth.alreadyHaveAccount")}{" "}
+            <button
+              type="button"
+              onClick={() => setShowAuth(true)}
+              className="text-primary underline underline-offset-2 hover:text-primary/80 transition-colors"
+            >
+              {t("auth.signInLink")}
+            </button>
+          </p>
         </form>
       </DialogContent>
     </Dialog>
+
+    <AuthModal open={showAuth} onClose={() => setShowAuth(false)} />
+    </>
   );
 }
