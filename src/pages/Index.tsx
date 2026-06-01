@@ -6,13 +6,8 @@ import {
   MessageCircle,
   Star,
   Hash,
-  AudioLines,
   Fingerprint,
-  MapPin,
   Crown,
-  BookOpen,
-  Zap,
-  Shield,
   LogOut,
   Sparkles,
 } from "lucide-react";
@@ -25,24 +20,14 @@ import { OracleChamber } from "@/components/chambers/OracleChamber";
 import { StarsChamber } from "@/components/chambers/StarsChamber";
 import { NumbersChamber } from "@/components/chambers/NumbersChamber";
 import { PalmChamber } from "@/components/chambers/PalmChamber";
-import { MapsChamber } from "@/components/chambers/MapsChamber";
 import { DynastyChamber } from "@/components/chambers/DynastyChamber";
-import { SanctumChamber } from "@/components/chambers/SanctumChamber";
-import { FrequencyChamber } from "@/components/chambers/FrequencyChamber";
-import { SacredCodesChamber } from "@/components/chambers/SacredCodesChamber";
-import { SonicAlchemyChamber } from "@/components/chambers/SonicAlchemyChamber";
 
 const CHAMBER_COMPONENTS: Record<string, React.ComponentType<{ onBack: () => void }>> = {
   oracle: OracleChamber,
   stars: StarsChamber,
   numbers: NumbersChamber,
-  vault: SonicAlchemyChamber,
   palm: PalmChamber,
-  maps: MapsChamber,
   dynasty: DynastyChamber,
-  sanctum: SanctumChamber,
-  frequency: FrequencyChamber,
-  "sacred-codes": SacredCodesChamber,
 };
 
 export default function Index() {
@@ -65,7 +50,6 @@ export default function Index() {
   const FEATURED = [
     { id: "palm-cta", chamberId: "palm", title: t("chambers.scanYourPalm"), subtitle: t("chambers.palmReading"), icon: Fingerprint, accent: "hsl(280, 40%, 55%)" },
     { id: "oracle", title: t("chambers.theOracle"), subtitle: t("chambers.aiGuide"), icon: MessageCircle, accent: "hsl(220, 30%, 62%)" },
-    { id: "frequency", title: t("chambers.frequencyScanner"), subtitle: t("chambers.consciousness"), icon: Zap, accent: "hsl(170, 50%, 45%)" },
   ];
 
   const GRID_CHAMBERS = [
@@ -73,10 +57,6 @@ export default function Index() {
     { id: "numbers", title: t("chambers.theNumbers"), subtitle: t("chambers.numerology"), icon: Hash, accent: "hsl(43, 90%, 67%)" },
     { id: "palm", title: t("chambers.thePalm"), subtitle: t("chambers.palmReading"), icon: Fingerprint, accent: "hsl(280, 40%, 55%)" },
     { id: "dynasty", title: t("chambers.theDynasty"), subtitle: t("chambers.chineseZodiac"), icon: Crown, accent: "hsl(0, 60%, 50%)" },
-    { id: "vault", title: t("chambers.sonicAlchemy"), subtitle: t("chambers.sound"), icon: AudioLines, accent: "hsl(25, 50%, 45%)" },
-    { id: "sacred-codes", title: t("chambers.theVault"), subtitle: t("chambers.sacredCodes"), icon: Shield, accent: "hsl(43, 70%, 55%)" },
-    { id: "maps", title: t("chambers.theMaps"), subtitle: t("chambers.location"), icon: MapPin, accent: "hsl(160, 40%, 45%)" },
-    { id: "sanctum", title: t("chambers.theSanctum"), subtitle: t("chambers.journal"), icon: BookOpen, accent: "hsl(200, 30%, 50%)" },
   ];
 
   if (isLoading) {
