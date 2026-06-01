@@ -4,23 +4,24 @@ import { Button } from "@/components/ui/button";
 import { ChamberLayout } from "@/components/ChamberLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
+import { useTranslation } from "react-i18next";
 
 interface PalmChamberProps {
   onBack: () => void;
 }
 
-const SCAN_STEPS = [
-  "Mapping heart line trajectory",
-  "Analyzing head line depth",
-  "Tracing life line vitality",
-  "Detecting fate line origin",
-  "Reading Sun line potential",
-  "Scanning mount formations",
-  "Decoding finger ratios",
-  "Identifying sacred markings",
-  "Measuring thumb flexibility",
-  "Channeling cosmic signature",
-];
+const SCAN_STEP_KEYS = [
+  "palmScan.step1",
+  "palmScan.step2",
+  "palmScan.step3",
+  "palmScan.step4",
+  "palmScan.step5",
+  "palmScan.step6",
+  "palmScan.step7",
+  "palmScan.step8",
+  "palmScan.step9",
+  "palmScan.step10",
+] as const;
 
 const BIOMETRIC_POINTS = [
   { top: "22%", left: "38%" },
@@ -67,6 +68,7 @@ function StrengthBadge({ value }: { value: string }) {
 }
 
 export function PalmChamber({ onBack }: PalmChamberProps) {
+  const { t } = useTranslation();
   const [phase, setPhase] = useState<"idle" | "scanning" | "done">("idle");
   const [reading, setReading] = useState<any>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -286,19 +288,19 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
           {/* Status block */}
           <div className="w-full max-w-xs space-y-4">
             <p className="font-display text-base text-[#C5A059] animate-pulse">
-              Reading your palm...
+              {t("palmScan.reading")}
             </p>
 
             {/* Cycling scan steps */}
             <div className="flex flex-col items-center gap-1.5">
-              {SCAN_STEPS.map((text, i) => (
+              {SCAN_STEP_KEYS.map((key, i) => (
                 <div
-                  key={text}
+                  key={key}
                   className="flex items-center gap-2 text-xs text-muted-foreground animate-data-stream"
                   style={{ animationDelay: `${i * 0.3}s` }}
                 >
                   <div className="w-1 h-1 bg-[#C5A059]/60 rounded-full" />
-                  <span>{text}</span>
+                  <span>{t(key)}</span>
                 </div>
               ))}
             </div>
@@ -306,13 +308,13 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
             {/* HUD counters */}
             <div className="grid grid-cols-3 gap-2 pt-1">
               {[
-                { label: "Lines",   value: "6" },
-                { label: "Mounts",  value: "8" },
-                { label: "Markers", value: "…" },
-              ].map(({ label, value }) => (
-                <div key={label} className="text-center border border-[#C5A059]/20 rounded-lg p-2 bg-[#0B1A1A]">
+                { labelKey: "palmScan.lines",   value: "6" },
+                { labelKey: "palmScan.mounts",  value: "8" },
+                { labelKey: "palmScan.markers", value: "…" },
+              ].map(({ labelKey, value }) => (
+                <div key={labelKey} className="text-center border border-[#C5A059]/20 rounded-lg p-2 bg-[#0B1A1A]">
                   <div className="text-[#C5A059] text-xl font-['Libre_Baskerville'] animate-pulse">{value}</div>
-                  <div className="text-[9px] text-muted-foreground tracking-wider uppercase mt-0.5">{label}</div>
+                  <div className="text-[9px] text-muted-foreground tracking-wider uppercase mt-0.5">{t(labelKey)}</div>
                 </div>
               ))}
             </div>
@@ -339,7 +341,7 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
               <p className="text-sm text-[#FFFDD0]/80 max-w-sm mx-auto leading-relaxed">{reading.archetype.summary}</p>
               {reading.archetype.shadow && (
                 <p className="text-xs text-muted-foreground max-w-sm mx-auto italic border-l-2 border-[#C5A059]/30 pl-3 text-left">
-                  Shadow: {reading.archetype.shadow}
+                  {t("palmResult.shadow")}: {reading.archetype.shadow}
                 </p>
               )}
               {reading.archetype.hiddenGift && (
@@ -353,22 +355,22 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
           {/* ② Overall reading */}
           {reading.overallReading && (
             <ReadingCard>
-              <SectionHeader label="Your Life Reading" />
+              <SectionHeader label={t("palmResult.lifeReading")} />
               {reading.overallReading.lifeTheme && (
                 <div className="mb-3">
-                  <p className="text-[10px] text-[#C5A059]/60 uppercase tracking-wider mb-1">Life Theme</p>
+                  <p className="text-[10px] text-[#C5A059]/60 uppercase tracking-wider mb-1">{t("palmResult.lifeTheme")}</p>
                   <p className="text-sm text-[#FFFDD0]/80 leading-relaxed">{reading.overallReading.lifeTheme}</p>
                 </div>
               )}
               {reading.overallReading.currentChapter && (
                 <div className="mb-3">
-                  <p className="text-[10px] text-[#C5A059]/60 uppercase tracking-wider mb-1">Right Now</p>
+                  <p className="text-[10px] text-[#C5A059]/60 uppercase tracking-wider mb-1">{t("palmResult.rightNow")}</p>
                   <p className="text-sm text-[#FFFDD0]/80 leading-relaxed">{reading.overallReading.currentChapter}</p>
                 </div>
               )}
               {reading.overallReading.cosmicMessage && (
                 <div className="bg-[#C5A059]/10 border border-[#C5A059]/20 rounded-xl p-3">
-                  <p className="text-[10px] text-[#C5A059] uppercase tracking-wider mb-1">Cosmic Message</p>
+                  <p className="text-[10px] text-[#C5A059] uppercase tracking-wider mb-1">{t("palmResult.cosmicMessage")}</p>
                   <p className="text-sm text-[#FFFDD0]/90 leading-relaxed italic">{reading.overallReading.cosmicMessage}</p>
                 </div>
               )}
@@ -378,15 +380,20 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
           {/* ③ Major lines */}
           {reading.lines && Object.keys(reading.lines).filter(k => ["heart","head","life","fate"].includes(k)).length > 0 && (
             <div className="space-y-3">
-              <SectionHeader label="The Major Lines" />
+              <SectionHeader label={t("palmResult.majorLines")} />
               {(["heart","head","life","fate"] as const).map((key) => {
                 const line = reading.lines[key];
                 if (!line) return null;
-                const labels: Record<string, string> = { heart: "♡ Heart Line", head: "◎ Head Line", life: "✦ Life Line", fate: "↑ Fate Line" };
+                const lineLabels: Record<string, string> = {
+                  heart: t("palmResult.heartLine"),
+                  head:  t("palmResult.headLine"),
+                  life:  t("palmResult.lifeLine"),
+                  fate:  t("palmResult.fateLine"),
+                };
                 return (
                   <ReadingCard key={key}>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="font-display text-sm text-[#C5A059]">{labels[key]}</span>
+                      <span className="font-display text-sm text-[#C5A059]">{lineLabels[key]}</span>
                       <StrengthBadge value={line.strength} />
                     </div>
                     <p className="text-sm text-[#FFFDD0]/75 leading-relaxed mb-2">{line.description}</p>
@@ -404,12 +411,12 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
           {/* ④ Minor lines */}
           {reading.lines && (reading.lines.sun || reading.lines.mercury) && (
             <div className="space-y-3">
-              <SectionHeader label="The Minor Lines" />
+              <SectionHeader label={t("palmResult.minorLines")} />
               {reading.lines.sun && (
                 <ReadingCard>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="font-display text-sm text-[#C5A059]">☀ Sun Line</span>
-                    <StrengthBadge value={reading.lines.sun.present ? "present" : "absent"} />
+                    <span className="font-display text-sm text-[#C5A059]">{t("palmResult.sunLine")}</span>
+                    <StrengthBadge value={reading.lines.sun.present ? t("palmResult.present") : t("palmResult.absent")} />
                   </div>
                   <p className="text-sm text-[#FFFDD0]/75 leading-relaxed">{reading.lines.sun.description}</p>
                 </ReadingCard>
@@ -417,8 +424,8 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
               {reading.lines.mercury && (
                 <ReadingCard>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="font-display text-sm text-[#C5A059]">☿ Mercury Line</span>
-                    <StrengthBadge value={reading.lines.mercury.present ? "present" : "absent"} />
+                    <span className="font-display text-sm text-[#C5A059]">{t("palmResult.mercuryLine")}</span>
+                    <StrengthBadge value={reading.lines.mercury.present ? t("palmResult.present") : t("palmResult.absent")} />
                   </div>
                   <p className="text-sm text-[#FFFDD0]/75 leading-relaxed">{reading.lines.mercury.description}</p>
                 </ReadingCard>
@@ -429,7 +436,7 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
           {/* ⑤ Mounts */}
           {reading.mounts && Object.keys(reading.mounts).length > 0 && (
             <div className="space-y-3">
-              <SectionHeader label="The Mounts" />
+              <SectionHeader label={t("palmResult.mounts")} />
               <div className="grid grid-cols-2 gap-3">
                 {Object.entries(reading.mounts).map(([key, mount]: [string, any]) => (
                   <ReadingCard key={key}>
@@ -447,12 +454,12 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
           {/* ⑥ Fingers */}
           {reading.fingers && Object.keys(reading.fingers).length > 0 && (
             <ReadingCard>
-              <SectionHeader label="Fingers &amp; Thumb" />
+              <SectionHeader label={t("palmResult.fingers")} />
               <div className="space-y-3">
                 {Object.entries(reading.fingers).map(([key, finger]: [string, any]) => (
                   <div key={key} className="border-b border-[#C5A059]/10 pb-3 last:border-0 last:pb-0">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-[#C5A059] text-xs capitalize font-display">{key === "index" ? "Index Finger" : key === "middle" ? "Middle Finger" : key === "ring" ? "Ring Finger" : key === "pinky" ? "Pinky Finger" : "Thumb"}</span>
+                      <span className="text-[#C5A059] text-xs capitalize font-display">{key === "index" ? "Index" : key === "middle" ? "Middle" : key === "ring" ? "Ring" : key === "pinky" ? "Pinky" : "Thumb"}</span>
                       {finger.length && <StrengthBadge value={finger.length} />}
                       {finger.flexibility && <StrengthBadge value={finger.flexibility} />}
                     </div>
@@ -466,22 +473,22 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
           {/* ⑦ Love */}
           {reading.love && (
             <ReadingCard>
-              <SectionHeader label="Love &amp; Soul Connection" />
+              <SectionHeader label={t("palmResult.love")} />
               {reading.love.relationshipStyle && (
                 <div className="mb-3">
-                  <p className="text-[10px] text-[#C5A059]/60 uppercase tracking-wider mb-1">How You Love</p>
+                  <p className="text-[10px] text-[#C5A059]/60 uppercase tracking-wider mb-1">{t("palmResult.howYouLove")}</p>
                   <p className="text-sm text-[#FFFDD0]/75 leading-relaxed">{reading.love.relationshipStyle}</p>
                 </div>
               )}
               {reading.love.soulMateQualities && (
                 <div className="mb-3">
-                  <p className="text-[10px] text-[#C5A059]/60 uppercase tracking-wider mb-1">Your Soul Match</p>
+                  <p className="text-[10px] text-[#C5A059]/60 uppercase tracking-wider mb-1">{t("palmResult.soulMatch")}</p>
                   <p className="text-sm text-[#FFFDD0]/75 leading-relaxed">{reading.love.soulMateQualities}</p>
                 </div>
               )}
               {reading.love.currentLoveEnergy && (
                 <div className="mb-3">
-                  <p className="text-[10px] text-[#C5A059]/60 uppercase tracking-wider mb-1">Right Now</p>
+                  <p className="text-[10px] text-[#C5A059]/60 uppercase tracking-wider mb-1">{t("palmResult.rightNow")}</p>
                   <p className="text-sm text-[#FFFDD0]/75 leading-relaxed">{reading.love.currentLoveEnergy}</p>
                 </div>
               )}
@@ -496,22 +503,22 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
           {/* ⑧ Career */}
           {reading.career && (
             <ReadingCard>
-              <SectionHeader label="Career &amp; Destiny" />
+              <SectionHeader label={t("palmResult.career")} />
               {reading.career.naturalTalents && (
                 <div className="mb-3">
-                  <p className="text-[10px] text-[#C5A059]/60 uppercase tracking-wider mb-1">Natural Gifts</p>
+                  <p className="text-[10px] text-[#C5A059]/60 uppercase tracking-wider mb-1">{t("palmResult.naturalGifts")}</p>
                   <p className="text-sm text-[#FFFDD0]/75 leading-relaxed">{reading.career.naturalTalents}</p>
                 </div>
               )}
               {reading.career.successPotential && (
                 <div className="mb-3">
-                  <p className="text-[10px] text-[#C5A059]/60 uppercase tracking-wider mb-1">Success Potential</p>
+                  <p className="text-[10px] text-[#C5A059]/60 uppercase tracking-wider mb-1">{t("palmResult.successPotential")}</p>
                   <p className="text-sm text-[#FFFDD0]/75 leading-relaxed">{reading.career.successPotential}</p>
                 </div>
               )}
               {reading.career.timing && (
                 <div className="mb-3">
-                  <p className="text-[10px] text-[#C5A059]/60 uppercase tracking-wider mb-1">Timing</p>
+                  <p className="text-[10px] text-[#C5A059]/60 uppercase tracking-wider mb-1">{t("palmResult.timing")}</p>
                   <p className="text-sm text-[#FFFDD0]/75 leading-relaxed">{reading.career.timing}</p>
                 </div>
               )}
@@ -526,9 +533,9 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
           {/* ⑨ Health */}
           {reading.health && (
             <ReadingCard>
-              <SectionHeader label="Health &amp; Vitality" />
+              <SectionHeader label={t("palmResult.health")} />
               <div className="flex items-center gap-2 mb-3">
-                <span className="text-xs text-[#FFFDD0]/50">Vitality level</span>
+                <span className="text-xs text-[#FFFDD0]/50">{t("palmResult.vitalityLevel")}</span>
                 {reading.health.vitalityLevel && <StrengthBadge value={reading.health.vitalityLevel} />}
               </div>
               {reading.health.strengths && (
@@ -548,13 +555,13 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
           {/* ⑩ Past · Present · Future */}
           {reading.timeline && (
             <ReadingCard>
-              <SectionHeader label="Past · Present · Future" />
+              <SectionHeader label={t("palmResult.timeline")} />
               <div className="space-y-4">
                 {[
-                  { key: "past",    label: "Past",    color: "text-[#FFFDD0]/50" },
-                  { key: "present", label: "Present", color: "text-[#C5A059]" },
-                  { key: "future",  label: "Future",  color: "text-[#FFFDD0]/80" },
-                ].map(({ key, label, color }) => {
+                  { key: "past",    labelKey: "palmResult.past",    color: "text-[#FFFDD0]/50" },
+                  { key: "present", labelKey: "palmResult.present", color: "text-[#C5A059]" },
+                  { key: "future",  labelKey: "palmResult.future",  color: "text-[#FFFDD0]/80" },
+                ].map(({ key, labelKey, color }) => {
                   const val = (reading.timeline as any)[key];
                   if (!val) return null;
                   return (
@@ -564,7 +571,7 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
                         {key !== "future" && <div className="w-px flex-1 bg-[#C5A059]/15 mt-1" />}
                       </div>
                       <div className="pb-3">
-                        <p className={`text-[10px] uppercase tracking-wider font-semibold mb-1 ${color}`}>{label}</p>
+                        <p className={`text-[10px] uppercase tracking-wider font-semibold mb-1 ${color}`}>{t(labelKey)}</p>
                         <p className="text-sm text-[#FFFDD0]/70 leading-relaxed">{val}</p>
                       </div>
                     </div>
@@ -577,7 +584,7 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
           {/* ⑪ Markings */}
           {reading.markings && reading.markings.length > 0 && (
             <div className="space-y-3">
-              <SectionHeader label="Sacred Markings" />
+              <SectionHeader label={t("palmResult.markings")} />
               {reading.markings.map((m: any, i: number) => (
                 <ReadingCard key={i}>
                   <div className="flex items-center justify-between mb-1">
@@ -600,7 +607,7 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
                 boxShadow: "0 0 40px hsl(43 90% 67% / 0.08)",
               }}
             >
-              <p className="text-[10px] text-[#C5A059] uppercase tracking-[0.25em]">Your Cosmic Message</p>
+              <p className="text-[10px] text-[#C5A059] uppercase tracking-[0.25em]">{t("palmResult.cosmicClosing")}</p>
               <p className="font-display text-base text-[#FFFDD0] leading-relaxed">{reading.closingMessage}</p>
             </div>
           )}
@@ -609,7 +616,7 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
           <div className="flex justify-center pt-2">
             <Button variant="outline" onClick={handleReset} className="rounded-full border-[#C5A059]/30 text-[#C5A059]/70 hover:text-[#C5A059]">
               <RotateCcw className="w-4 h-4 mr-2" />
-              Scan Another Palm
+              {t("palmResult.scanAnother")}
             </Button>
           </div>
         </div>

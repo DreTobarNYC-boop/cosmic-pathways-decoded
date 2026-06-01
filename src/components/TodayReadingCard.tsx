@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 interface TodayReading {
   title?: string;
@@ -50,11 +51,13 @@ function parseReading(data: TodayReading | string | null): TodayReading {
 }
 
 export function TodayReadingCard({ data, isLoading, error, onRetry }: Props) {
+  const { t } = useTranslation();
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center gap-2 py-12 text-[#C5A059]">
         <span className="animate-spin text-xl">◌</span>
-        <span className="text-sm tracking-widest">Consulting the stars...</span>
+        <span className="text-sm tracking-widest">{t("reading.consultingStars")}</span>
       </div>
     );
   }
@@ -64,16 +67,16 @@ export function TodayReadingCard({ data, isLoading, error, onRetry }: Props) {
       <div className="flex flex-col items-center gap-3 py-12 text-center">
         <span className="text-3xl">☆</span>
         <p className="text-[#FFFDD0]/60 text-sm">
-          Unable to channel the stars right now.
+          {t("reading.unableToChannel")}
           <br />
-          Try again shortly.
+          {t("reading.tryAgainShortly")}
         </p>
         {onRetry && (
           <button
             onClick={onRetry}
             className="mt-2 px-4 py-1.5 rounded-full border border-[#C5A059]/30 text-[#C5A059]/70 text-xs tracking-wider hover:border-[#C5A059]/60 hover:text-[#C5A059] transition-colors"
           >
-            ↻ Try Again
+            {t("reading.tryAgain")}
           </button>
         )}
       </div>
@@ -116,7 +119,7 @@ export function TodayReadingCard({ data, isLoading, error, onRetry }: Props) {
       {cosmicAdvice && (
         <div className="rounded-xl border border-[#C5A059]/30 bg-[#C5A059]/5 p-5">
           <p className="text-[#C5A059] text-[10px] tracking-[0.2em] uppercase mb-2">
-            Cosmic Advice
+            {t("reading.cosmicAdvice")}
           </p>
           <p className="font-['Libre_Baskerville'] text-[#FFFDD0] italic text-base">
             "{cosmicAdvice}"
@@ -129,7 +132,7 @@ export function TodayReadingCard({ data, isLoading, error, onRetry }: Props) {
           {luckyNumber !== undefined && (
             <div className="rounded-xl border border-[#C5A059]/20 bg-[#0B1A1A] p-4 text-center">
               <p className="text-[#C5A059] text-[9px] tracking-[0.2em] uppercase mb-1">
-                Lucky #
+                {t("reading.luckyNumber")}
               </p>
               <p className="font-['Libre_Baskerville'] text-[#FFFDD0] text-2xl">
                 {luckyNumber}
@@ -139,7 +142,7 @@ export function TodayReadingCard({ data, isLoading, error, onRetry }: Props) {
           {powerColor && (
             <div className="rounded-xl border border-[#C5A059]/20 bg-[#0B1A1A] p-4 text-center">
               <p className="text-[#C5A059] text-[9px] tracking-[0.2em] uppercase mb-1">
-                Power Color
+                {t("reading.powerColor")}
               </p>
               <p className="text-[#FFFDD0] text-sm font-medium">{powerColor}</p>
             </div>
@@ -147,7 +150,7 @@ export function TodayReadingCard({ data, isLoading, error, onRetry }: Props) {
           {sunSign && (
             <div className="rounded-xl border border-[#C5A059]/20 bg-[#0B1A1A] p-4 text-center">
               <p className="text-[#C5A059] text-[9px] tracking-[0.2em] uppercase mb-1">
-                Sun
+                {t("reading.sun")}
               </p>
               <p className="text-[#FFFDD0] text-sm font-medium">{sunSign}</p>
             </div>
@@ -158,7 +161,7 @@ export function TodayReadingCard({ data, isLoading, error, onRetry }: Props) {
       {affirmation && (
         <div className="rounded-xl border border-[#C5A059]/10 bg-[#0B1A1A] p-5 text-center">
           <p className="text-[#C5A059] text-[10px] tracking-[0.2em] uppercase mb-2">
-            Today's Affirmation
+            {t("reading.todayAffirmation")}
           </p>
           <p className="font-['Libre_Baskerville'] text-[#FFFDD0] italic text-base">
             "{affirmation}"
