@@ -72,7 +72,26 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
   const [phase, setPhase] = useState<"idle" | "scanning" | "done">("idle");
   const [reading, setReading] = useState<any>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [scanSeconds, setScanSeconds] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const startTimer = () => {
+    setScanSeconds(0);
+    timerRef.current = setInterval(() => setScanSeconds(s => s + 1), 1000);
+  };
+  const stopTimer = () => {
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+    setScanSeconds(0);
+  };
+
+  const scanStatusMessage = scanSeconds < 10
+    ? t("palmScan.reading")
+    : scanSeconds < 22
+    ? "Decoding your lines..."
+    : scanSeconds < 35
+    ? "Channeling your reading..."
+    : "Deep readings take a moment — almost there...";
 
   const fileToBase64 = (file: File): Promise<string> =>
     new Promise((resolve, reject) => {
@@ -97,6 +116,7 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
     setImagePreview(URL.createObjectURL(file));
     setPhase("scanning");
     setReading(null);
+    startTimer();
 
     try {
       const base64 = await fileToBase64(file);
@@ -107,9 +127,11 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
       if (error) throw new Error(error.message || "Reading failed");
       if (data?.error) throw new Error(data.error);
 
+      stopTimer();
       setReading(data);
       setPhase("done");
     } catch (err: any) {
+      stopTimer();
       console.error("Palm reading error:", err);
       toast({ title: "Reading failed", description: err.message, variant: "destructive" });
       setPhase("idle");
@@ -117,6 +139,7 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
   };
 
   const handleReset = () => {
+    stopTimer();
     setPhase("idle");
     setReading(null);
     setImagePreview(null);
@@ -288,7 +311,7 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
           {/* Status block */}
           <div className="w-full max-w-xs space-y-4">
             <p className="font-display text-base text-[#C5A059] animate-pulse">
-              {t("palmScan.reading")}
+              {scanStatusMessage}
             </p>
 
             {/* Cycling scan steps */}
