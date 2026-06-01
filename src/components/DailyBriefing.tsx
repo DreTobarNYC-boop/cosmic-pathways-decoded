@@ -46,7 +46,7 @@ export function DailyBriefing({ dob, name, birthPlace, birthTime, onOpenStars }:
 
   const lang = i18n.language;
 
-  const { content: horoscope, isLoading, error } = useCachedReading({
+  const { content: horoscope, isLoading, error, retry } = useCachedReading({
     readingType: "daily_horoscope",
     cacheKey: `${dateKey}_${lang}`,
     context: {
@@ -128,9 +128,17 @@ export function DailyBriefing({ dob, name, birthPlace, birthTime, onOpenStars }:
         )}
 
         {error && !horoscope && (
-          <p className="text-xs text-destructive mt-2">
-            {t("briefing.errorMessage")}
-          </p>
+          <div className="flex items-center gap-3 mt-2">
+            <p className="text-xs text-muted-foreground italic">
+              {t("briefing.errorMessage")}
+            </p>
+            <button
+              onClick={retry}
+              className="text-xs text-[#C5A059]/70 hover:text-[#C5A059] transition-colors underline underline-offset-2"
+            >
+              Retry
+            </button>
+          </div>
         )}
 
         <div className="flex items-center gap-2 mt-4 text-xs text-muted-foreground">

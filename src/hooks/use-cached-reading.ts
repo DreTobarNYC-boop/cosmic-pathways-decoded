@@ -19,7 +19,9 @@ export function useCachedReading({
   enabled = true,
 }: UseCachedReadingOptions) {
   const [content, setContent] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  // Start in loading state when enabled so TodayReadingCard shows spinner
+  // on first render instead of the error state.
+  const [isLoading, setIsLoading] = useState(enabled);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const contextRef = useRef(context);

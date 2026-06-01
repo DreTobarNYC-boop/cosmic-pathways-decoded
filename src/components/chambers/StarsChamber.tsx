@@ -74,7 +74,7 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
   const readingType = TAB_READING_TYPE[activeTab] ?? "daily_horoscope";
   const cacheKey = `${readingType}_${dateKey}`;
 
-  const { content: reading, isLoading, error } = useCachedReading({
+  const { content: reading, isLoading, error, retry } = useCachedReading({
     readingType,
     context: richContext,
     cacheKey,
@@ -185,6 +185,7 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
         data={reading}
         isLoading={isLoading}
         error={error}
+        onRetry={retry}
       />
     </ChamberLayout>
   );

@@ -15,6 +15,7 @@ interface Props {
   data: TodayReading | string | null;
   isLoading?: boolean;
   error?: string | null | boolean;
+  onRetry?: () => void;
 }
 
 function parseReading(data: TodayReading | string | null): TodayReading {
@@ -48,7 +49,7 @@ function parseReading(data: TodayReading | string | null): TodayReading {
   return {};
 }
 
-export function TodayReadingCard({ data, isLoading, error }: Props) {
+export function TodayReadingCard({ data, isLoading, error, onRetry }: Props) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center gap-2 py-12 text-[#C5A059]">
@@ -67,6 +68,14 @@ export function TodayReadingCard({ data, isLoading, error }: Props) {
           <br />
           Try again shortly.
         </p>
+        {onRetry && (
+          <button
+            onClick={onRetry}
+            className="mt-2 px-4 py-1.5 rounded-full border border-[#C5A059]/30 text-[#C5A059]/70 text-xs tracking-wider hover:border-[#C5A059]/60 hover:text-[#C5A059] transition-colors"
+          >
+            ↻ Try Again
+          </button>
+        )}
       </div>
     );
   }
