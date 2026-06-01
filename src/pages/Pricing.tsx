@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const tiers = [
   {
@@ -73,9 +74,16 @@ const tiers = [
 
 export default function Pricing() {
   const [isAnnual, setIsAnnual] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-[#0B1A1A] text-[#FFFDD0] px-4 py-12">
+      <button
+        onClick={() => navigate(-1)}
+        className="flex items-center gap-2 text-[#FFFDD0]/50 hover:text-[#FFFDD0] text-sm mb-8 ml-2 transition-colors"
+      >
+        ← Back
+      </button>
       <h1 className="text-center font-display text-3xl text-[#F5D060] mb-2">
         Choose Your Sanctuary
       </h1>
@@ -152,6 +160,7 @@ export default function Pricing() {
             </ul>
 
             <button
+              onClick={() => alert("Payments launching soon! You'll be notified when available.")}
               className={`w-full py-3 rounded-xl text-sm font-semibold tracking-widest transition-all ${
                 tier.highlight
                   ? "bg-[#F5D060] text-[#0B1A1A] hover:bg-[#FFBF00]"
@@ -160,7 +169,7 @@ export default function Pricing() {
                   : "bg-[#FFFDD0]/10 text-[#FFFDD0] hover:bg-[#FFFDD0]/20"
               }`}
             >
-              {tier.cta}
+              {tier.variantId === null ? tier.cta : "Coming Soon"}
             </button>
           </div>
         ))}

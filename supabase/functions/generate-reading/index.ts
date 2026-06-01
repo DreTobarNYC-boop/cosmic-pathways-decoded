@@ -52,12 +52,18 @@ DATA (pre-calculated, treat as fact):
     daily_horoscope: "TASK: Weave a TODAY reading. Reference the interplay between the Personal Day number and the Sun/Moon positions specifically. Make it feel like a trusted advisor is speaking directly to this person.",
     stars_today: "TASK: Weave a TODAY stars reading using the planetary data above. Be specific about what the Sun and Moon positions mean for this person today.",
     stars_monthly: "TASK: Weave a MONTHLY reading. Focus on the longer arc — what themes will this person navigate this month given their natal placements.",
-    stars_yearly: "TASK: Weave a 2026 YEAR reading. What is the overarching energy of this year for this person based on their Life Path and planetary data.",
+    stars_yearly: "TASK: Weave a YEAR reading. What is the overarching energy of this year for this person based on their Life Path and planetary data.",
     stars_love: "TASK: Weave a LOVE reading. Reference Venus position and Soul Urge number specifically.",
     stars_career: "TASK: Weave a CAREER reading. Reference Mars position and Expression number specifically.",
     stars_wellness: "TASK: Weave a WELLNESS reading. Reference Moon position and Personal Day energy.",
     compatibility: "TASK: Weave a COMPATIBILITY overview based on the Sun sign and Venus position.",
     oracle_daily: "TASK: Channel a direct Oracle message for today. One paragraph, commanding and clear.",
+    oracle_chat: "TASK: You are a wise Oracle answering a direct question. The user's message is in context.userMessage. Use their astrological and numerological data to give a grounded, specific, 2-3 paragraph answer. Do not be generic.",
+    dynasty_profile: "TASK: Weave a CHINESE ZODIAC PROFILE reading. Focus on the Chinese Zodiac animal's core traits, elemental year energy, and what this person's animal sign means for their personality and life path. Reference the Chinese Zodiac animal provided.",
+    dynasty_year: "TASK: Weave a YEAR AHEAD reading from a Chinese astrology perspective. What does the current year's energy mean for this person's Chinese zodiac animal? Be specific about opportunities and challenges.",
+    dynasty_forecast: "TASK: Weave a MONTHLY FORECAST from a Chinese astrology perspective. What energy does this month hold for this person's Chinese zodiac animal?",
+    numbers_today: "TASK: Weave a TODAY numerology reading. Focus on the Personal Day number and Universal Day number and what they mean in combination for this person right now.",
+    numbers_life_path: "TASK: Weave a LIFE PATH numerology reading. Deep-dive into the Life Path number — what it means for this person's purpose, natural talents, and life themes. Reference the Expression and Soul Urge numbers too.",
   };
 
   const task = tasks[type] ?? tasks.daily_horoscope;

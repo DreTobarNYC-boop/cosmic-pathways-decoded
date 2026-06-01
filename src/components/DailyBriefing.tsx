@@ -21,6 +21,11 @@ interface DailyBriefingProps {
   onOpenStars?: () => void;
 }
 
+const ZODIAC_SYMBOLS: Record<string, string> = {
+  Aries: "♈", Taurus: "♉", Gemini: "♊", Cancer: "♋", Leo: "♌", Virgo: "♍",
+  Libra: "♎", Scorpio: "♏", Sagittarius: "♐", Capricorn: "♑", Aquarius: "♒", Pisces: "♓",
+};
+
 /** Truncate to roughly the first 2-3 sentences */
 function getPreview(text: string): string {
   const sentences = text.match(/[^.!?]+[.!?]+/g);
@@ -62,7 +67,13 @@ export function DailyBriefing({ dob, name, birthPlace, birthTime, onOpenStars }:
   });
 
   const formattedDate = formatDate(today, lang);
-  const preview = horoscope ? getPreview(horoscope) : "";
+
+  // Horoscope may be returned as a JSON string — extract the .reading field if so
+  let readingText = horoscope ?? "";
+  if (readingText.startsWith("{")) {
+    try { readingText = JSON.parse(readingText)?.reading ?? readingText; } catch {}
+  }
+  const preview = readingText ? getPreview(readingText) : "";
 
   return (
     <div className="space-y-4 animate-fade-up">
@@ -80,7 +91,7 @@ export function DailyBriefing({ dob, name, birthPlace, birthTime, onOpenStars }:
             {getZodiacImage(zodiac.sign) ? (
               <img src={getZodiacImage(zodiac.sign)} alt={zodiac.sign} className="w-6 h-6 object-contain" loading="lazy" />
             ) : (
-              <span className="text-sm">{zodiac.symbol}</span>
+              <span className="text-sm">{ZODIAC_SYMBOLS[zodiac.sign] ?? "✦"}</span>
             )}
             <span className="text-xs font-display font-bold text-primary uppercase tracking-wider">
               {zodiac.sign}
@@ -105,7 +116,7 @@ export function DailyBriefing({ dob, name, birthPlace, birthTime, onOpenStars }:
           <div>
             <p className="text-base text-foreground/90 leading-relaxed font-display">
               {preview}
-              {horoscope && horoscope.length > preview.length && (
+              {readingText && readingText.length > preview.length && (
                 <span className="text-primary/60">…</span>
               )}
             </p>

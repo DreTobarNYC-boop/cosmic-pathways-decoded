@@ -15,6 +15,7 @@ serve(async (req) => {
   try {
     const body = await req.json();
     const context = body.context || {};
+    const image_base64 = body.image_base64 || null;
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     if (!GEMINI_API_KEY) {
       return new Response(
@@ -27,7 +28,20 @@ serve(async (req) => {
 
     // Compose prompts for palm reading
     const systemPrompt = `You are a knowledgeable palmist who interprets the lines and shapes of a person's palm to reveal insights into their personality, past, and future. Provide your reading in clear, concise language without markdown or code fences.`;
-    const userPrompt = `Please analyze the following palm reading request: ${JSON.stringify(context)}. Offer insights about love, career, health, and any unique markings.`;
+    const userPromptText = image_base64
+      ? `Carefully examine this palm image and provide a detailed palm reading. Analyze the major lines (heart, head, life, fate), the mounts, finger shapes, and any notable markings. Offer specific insights about love, career, health, and personality. Context about this person: ${JSON.stringify(context)}.`
+      : `Please provide a palm reading based on the following context: ${JSON.stringify(context)}. Offer insights about love, career, health, and any unique markings.`;
+
+    // Build the user parts — include image if provided
+    const userParts: unknown[] = [{ text: userPromptText }];
+    if (image_base64) {
+      userParts.unshift({
+        inlineData: {
+          mimeType: "image/jpeg",
+          data: image_base64,
+        },
+      });
+    }
 
     // Configure AbortController for an 8-second timeout
     const controller = new AbortController();
@@ -36,11 +50,11 @@ serve(async (req) => {
     const requestBody = {
       system_instruction: { parts: [{ text: systemPrompt }] },
       contents: [
-        { role: "user", parts: [{ text: userPrompt }] },
+        { role: "user", parts: userParts },
       ],
       generationConfig: {
         temperature: 0.8,
-        maxOutputTokens: 600,
+        maxOutputTokens: 800,
       },
     };
 

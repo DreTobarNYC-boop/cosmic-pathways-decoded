@@ -68,18 +68,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session: s } }) => {
-      setSession(s);
-      setUser(s?.user ?? null);
-      if (s?.user) {
-        fetchProfile(s.user.id);
-      } else {
-        // Load guest profile from localStorage
+    supabase.auth.getSession()
+      .then(({ data: { session: s } }) => {
+        setSession(s);
+        setUser(s?.user ?? null);
+        if (s?.user) {
+          fetchProfile(s.user.id);
+        } else {
+          const guest = loadGuestProfile();
+          if (guest) setProfile(guest);
+        }
+      })
+      .catch(() => {
+        // Network error on startup — load guest profile so app isn't stuck
         const guest = loadGuestProfile();
         if (guest) setProfile(guest);
-      }
-      setIsLoading(false);
-    });
+      })
+      .finally(() => setIsLoading(false));
 
     return () => subscription.unsubscribe();
   }, []);
