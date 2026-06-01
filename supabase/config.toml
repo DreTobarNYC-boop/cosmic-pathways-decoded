@@ -1,1 +1,7 @@
 project_id = "zjfkilfnitzgtpmuvtuz"
+
+[functions.generate-reading]
+verify_jwt = false
+
+[functions.palm-reading]
+verify_jwt = false
