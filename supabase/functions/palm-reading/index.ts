@@ -179,7 +179,7 @@ Return empty array [] for markings if none visible. sun and mercury lines presen
       contents: [{ role: "user", parts: userParts }],
       generationConfig: {
         temperature: 0.8,
-        maxOutputTokens: 2500,
+        maxOutputTokens: 3000,
       },
     };
 
