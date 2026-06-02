@@ -13,12 +13,20 @@ const corsHeaders = {
 };
 
 function buildPrompt(type: string, context: Record<string, unknown>, language: string): string {
-  const lang = language?.startsWith("es") ? "Spanish" : language?.startsWith("pt") ? "Portuguese" : "English";
+  const langCode = language?.startsWith("es") ? "es" : language?.startsWith("pt") ? "pt" : "en";
+  const lang = langCode === "es" ? "Spanish" : langCode === "pt" ? "Portuguese" : "English";
+
+  // Strong language enforcement — inline and in the target language itself
+  const langEnforcement = langCode === "es"
+    ? "CRITICAL: Escribe TODA tu respuesta en ESPAÑOL. Cada palabra de cada campo JSON debe estar en español. NO uses inglés en ningún campo."
+    : langCode === "pt"
+    ? "CRITICAL: Escreva TODA a sua resposta em PORTUGUÊS BRASILEIRO. Cada palavra de cada campo JSON deve estar em português. NÃO use inglês em nenhum campo."
+    : "Write your entire response in English.";
 
   const base = `You are the Sovereign Oracle of DCode — a precision cosmic intelligence.
 You do NOT guess planetary positions. They are provided to you as calculated fact.
 You do NOT use generic horoscope language. You reference the specific interplay between the data points given.
-You write in ${lang}.
+${langEnforcement}
 Respond ONLY with a JSON object in this exact format, no markdown, no backticks:
 {
   "title": "3-5 word evocative title for today's energy",
@@ -70,13 +78,13 @@ DATA (pre-calculated, treat as fact):
 
   // dynasty_forecast requires a different output schema — don't include the horoscope base
   if (type === "dynasty_forecast") {
-    return `You are a master Chinese astrologer. Write in ${lang}.
+    return `You are a master Chinese astrologer. ${langEnforcement}
 ${data}
 
 ${task}`;
   }
 
-  return `${base}\n${data}\n\n${task}`;
+  return `${base}\n${data}\n\n${task}\n\nREMEMBER: ${langEnforcement}`;
 }
 
 function extractReading(raw: string): Record<string, unknown> {

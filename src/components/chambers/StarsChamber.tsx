@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { ChamberLayout } from "@/components/ChamberLayout";
 import { TodayReadingCard } from "@/components/TodayReadingCard";
 import { useAuth } from "@/hooks/use-auth";
@@ -33,6 +34,8 @@ const TAB_READING_TYPE: Record<string, string> = {
 export function StarsChamber({ onBack }: { onBack: () => void }) {
   const [activeTab, setActiveTab] = useState("today");
   const { profile } = useAuth();
+  const { i18n } = useTranslation();
+  const lang = i18n.language ?? "en";
 
   const dob = useMemo(() =>
     profile?.dateOfBirth ? new Date(profile.dateOfBirth + "T12:00:00") : null,
@@ -70,10 +73,11 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
     cuspStatus:    zodiac?.cusp ? (zodiac.cuspSign ?? "Cusp") : "None",
     chineseZodiac: chineseZodiac ?? "Unknown",
     element:       zodiac?.element ?? "Unknown",
-  }), [zodiac, natal, numerology, lifePath, personalDay, universalDay, chineseZodiac, profile]);
+    language:      lang,
+  }), [zodiac, natal, numerology, lifePath, personalDay, universalDay, chineseZodiac, profile, lang]);
 
   const readingType = TAB_READING_TYPE[activeTab] ?? "daily_horoscope";
-  const cacheKey = `${readingType}_${dateKey}`;
+  const cacheKey = `${readingType}_${dateKey}_${lang}`;
 
   const { content: reading, isLoading, error, retry } = useCachedReading({
     readingType,
