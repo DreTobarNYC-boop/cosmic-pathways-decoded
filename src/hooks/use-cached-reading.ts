@@ -78,7 +78,8 @@ export function useCachedReading({
           sign: ctx.sign ?? ctx.zodiacSign ?? ctx.sunSign ?? "",
           name: ctx.name ?? ctx.firstName ?? "",
           birthDate: ctx.birthDate ?? ctx.dateOfBirth ?? "",
-          selectedLanguage,
+          language: selectedLanguage,        // ← edge function reads this field
+          selectedLanguage,                  // ← keep for backward compat
           context: { ...ctx, language: selectedLanguage },
         };
 
