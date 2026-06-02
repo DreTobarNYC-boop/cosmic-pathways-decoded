@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -9,14 +9,37 @@ import { AuthModal } from "@/components/AuthModal";
 import { toast } from "sonner";
 
 export function OnboardingModal({ open }: { open: boolean }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { saveProfile } = useAuth();
   const [showAuth, setShowAuth] = useState(false);
   const [name, setName] = useState("");
-  const [dob, setDob] = useState("");
+  const [dobMonth, setDobMonth] = useState("");
+  const [dobDay, setDobDay]   = useState("");
+  const [dobYear, setDobYear] = useState("");
   const [birthPlace, setBirthPlace] = useState("");
   const [birthTime, setBirthTime] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Combine into YYYY-MM-DD for saveProfile
+  const dob = dobYear && dobMonth && dobDay
+    ? `${dobYear}-${dobMonth}-${dobDay}`
+    : "";
+
+  // Month names auto-translated via browser locale — no translation keys needed
+  const months = useMemo(() =>
+    Array.from({ length: 12 }, (_, i) => ({
+      value: String(i + 1).padStart(2, "0"),
+      label: new Intl.DateTimeFormat(i18n.language, { month: "long" })
+        .format(new Date(2000, i, 1)),
+    })),
+  [i18n.language]);
+
+  const days = Array.from({ length: 31 }, (_, i) =>
+    String(i + 1).padStart(2, "0"));
+
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: currentYear - 1919 }, (_, i) =>
+    String(currentYear - i));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,17 +92,49 @@ export function OnboardingModal({ open }: { open: boolean }) {
             </p>
           </div>
           <div>
-            <Label htmlFor="dob" className="text-sm text-muted-foreground">
+            <Label className="text-sm text-muted-foreground">
               {t("onboarding.dob")}
             </Label>
-            <Input
-              id="dob"
-              type="date"
-              value={dob}
-              onChange={(e) => setDob(e.target.value)}
-              className="bg-muted/30 border-copper text-foreground mt-1"
-              required
-            />
+            <div className="grid grid-cols-3 gap-2 mt-1">
+              {/* Month */}
+              <select
+                value={dobMonth}
+                onChange={(e) => setDobMonth(e.target.value)}
+                required
+                className="col-span-1 bg-muted/30 border border-input rounded-md px-2 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary appearance-none"
+              >
+                <option value="" disabled>MM</option>
+                {months.map((m) => (
+                  <option key={m.value} value={m.value}>{m.label}</option>
+                ))}
+              </select>
+
+              {/* Day */}
+              <select
+                value={dobDay}
+                onChange={(e) => setDobDay(e.target.value)}
+                required
+                className="bg-muted/30 border border-input rounded-md px-2 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary appearance-none"
+              >
+                <option value="" disabled>DD</option>
+                {days.map((d) => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
+
+              {/* Year */}
+              <select
+                value={dobYear}
+                onChange={(e) => setDobYear(e.target.value)}
+                required
+                className="bg-muted/30 border border-input rounded-md px-2 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary appearance-none"
+              >
+                <option value="" disabled>YYYY</option>
+                {years.map((y) => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </div>
           </div>
           <div>
             <Label htmlFor="birthPlace" className="text-sm text-muted-foreground">
