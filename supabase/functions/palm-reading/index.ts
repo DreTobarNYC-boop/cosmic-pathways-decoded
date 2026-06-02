@@ -6,34 +6,74 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+// Attempt to repair truncated JSON by closing open structures
+function repairJSON(json: string): string {
+  let result = json.trim();
+  let inString = false;
+  let escaped = false;
+  const stack: string[] = [];
+
+  for (let i = 0; i < result.length; i++) {
+    const c = result[i];
+    if (escaped) { escaped = false; continue; }
+    if (c === "\\" && inString) { escaped = true; continue; }
+    if (c === '"') { inString = !inString; continue; }
+    if (inString) continue;
+    if (c === "{" || c === "[") stack.push(c === "{" ? "}" : "]");
+    else if (c === "}" || c === "]") stack.pop();
+  }
+
+  // Close any mid-string truncation
+  if (inString) result += '"';
+  // Remove trailing incomplete key-value (dangling comma)
+  result = result.replace(/,\s*$/, "");
+  // Close all open structures in reverse
+  while (stack.length > 0) result += stack.pop();
+
+  return result;
+}
+
 function extractJSON(raw: string): Record<string, unknown> {
   const cleaned = raw.replace(/```json\s*/g, "").replace(/```/g, "").trim();
+
+  // 1. Try parsing as-is
+  try { return JSON.parse(cleaned); } catch { /* continue */ }
+
+  // 2. Try repairing truncated JSON
   try {
-    return JSON.parse(cleaned);
-  } catch {
-    // Graceful fallback — wrap plain prose in overview
-    return {
-      handType: "Unknown",
-      element: "Unknown",
-      archetype: {
-        name: "Palm Oracle",
-        traits: [],
-        summary: cleaned.slice(0, 300),
-        shadow: "",
-        hiddenGift: "",
-      },
-      overallReading: { lifeTheme: cleaned.slice(0, 200), currentChapter: "", cosmicMessage: "" },
-      lines: {},
-      mounts: {},
-      fingers: {},
-      love: {},
-      career: {},
-      health: {},
-      timeline: {},
-      markings: [],
-      closingMessage: cleaned.slice(0, 300),
-    };
-  }
+    const repaired = repairJSON(cleaned);
+    const parsed = JSON.parse(repaired);
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed) && Object.keys(parsed).length > 2) {
+      return parsed as Record<string, unknown>;
+    }
+  } catch { /* continue */ }
+
+  // 3. Clean fallback — never show raw JSON to the user
+  return {
+    handType: "Unknown",
+    element: "Unknown",
+    archetype: {
+      name: "Palm Oracle",
+      traits: [],
+      summary: "Your reading was received. Please scan your palm again for the full cosmic reading.",
+      shadow: "",
+      hiddenGift: "",
+    },
+    overallReading: {
+      lifeTheme: "",
+      currentChapter: "",
+      cosmicMessage: "Please scan your palm again — the Oracle has more to reveal.",
+    },
+    lines: {},
+    mounts: {},
+    fingers: {},
+    love: {},
+    career: {},
+    health: {},
+    timeline: {},
+    markings: [],
+    closingMessage: "Scan your palm again to receive your complete cosmic reading.",
+  };
 }
 
 serve(async (req) => {
@@ -179,7 +219,7 @@ Return empty array [] for markings if none visible. sun and mercury lines presen
       contents: [{ role: "user", parts: userParts }],
       generationConfig: {
         temperature: 0.8,
-        maxOutputTokens: 3000,
+        maxOutputTokens: 4000,
       },
     };
 
