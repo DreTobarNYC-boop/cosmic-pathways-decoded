@@ -10,14 +10,14 @@ import { NatalChartWheel } from "@/components/NatalChartWheel";
 import { getNumerologyProfile } from "@/lib/numerology-deep";
 
 const TABS = [
-  { id: "birth_chart",   label: "Birth Chart" },
-  { id: "today",         label: "Today" },
-  { id: "monthly",       label: "Monthly" },
-  { id: "yearly",        label: String(new Date().getFullYear()) },
-  { id: "love",          label: "Love" },
-  { id: "career",        label: "Career" },
-  { id: "wellness",      label: "Wellness" },
-  { id: "compatibility", label: "Compatibility" },
+  { id: "birth_chart",   labelKey: "stars.tabs.birthChart" },
+  { id: "today",         labelKey: "stars.tabs.today" },
+  { id: "monthly",       labelKey: "stars.tabs.monthly" },
+  { id: "yearly",        labelKey: "stars.tabs.yearly" },
+  { id: "love",          labelKey: "stars.tabs.love" },
+  { id: "career",        labelKey: "stars.tabs.career" },
+  { id: "wellness",      labelKey: "stars.tabs.wellness" },
+  { id: "compatibility", labelKey: "stars.tabs.compatibility" },
 ];
 
 const TAB_READING_TYPE: Record<string, string> = {
@@ -86,21 +86,23 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
     enabled: !!dob,
   });
 
+  const year = new Date().getFullYear();
+
   return (
-    <ChamberLayout title="The Stars" subtitle="Birth Chart & Horoscopes" onBack={onBack}>
+    <ChamberLayout title={t("chamberPages.stars.title")} subtitle={t("chamberPages.stars.subtitle")} onBack={onBack}>
       {zodiac && (
         <div className="flex gap-2 flex-wrap mb-4">
           <span className="px-3 py-1 rounded-full border border-[#C5A059]/30 bg-[#C5A059]/10 text-[#C5A059] text-xs tracking-wider">
-            {zodiac.element} · {zodiac.sign}
+            {t(`elements.${zodiac.element}`, zodiac.element)} · {zodiac.sign}
           </span>
           {lifePath && (
             <span className="px-3 py-1 rounded-full border border-[#C5A059]/30 bg-[#C5A059]/10 text-[#C5A059] text-xs tracking-wider">
-              Path {lifePath}
+              {t("briefing.path", { number: lifePath })}
             </span>
           )}
           {chineseZodiac && (
             <span className="px-3 py-1 rounded-full border border-[#C5A059]/30 bg-[#C5A059]/10 text-[#C5A059] text-xs tracking-wider">
-              {chineseZodiac}
+              {t(`chineseAnimals.${chineseZodiac}`, chineseZodiac)}
             </span>
           )}
           {natal && (
@@ -122,7 +124,7 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
                 : "border-[#C5A059]/20 text-[#FFFDD0]/40 hover:text-[#FFFDD0]/70"
             }`}
           >
-            {tab.label}
+            {t(tab.labelKey, tab.id === "yearly" ? { year } : undefined)}
           </button>
         ))}
       </div>
@@ -130,8 +132,8 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
       {activeTab === "birth_chart" && !natal && (
         <div className="flex flex-col items-center justify-center text-center py-16 space-y-3">
           <p className="text-4xl">✦</p>
-          <p className="font-display text-lg text-foreground">Your chart awaits your birth date</p>
-          <p className="text-sm text-muted-foreground max-w-xs">Enter your date of birth in your profile to unlock your full natal chart.</p>
+          <p className="font-display text-lg text-foreground">{t("stars.awaitsBirthDate")}</p>
+          <p className="text-sm text-muted-foreground max-w-xs">{t("stars.enterDOB")}</p>
         </div>
       )}
 
@@ -141,13 +143,13 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
           <NatalChartWheel natal={natal} />
 
           <div className="rounded-xl border border-[#C5A059]/20 bg-[#0B1A1A] p-5">
-            <p className="text-[#C5A059] text-[10px] tracking-[0.2em] uppercase mb-3">Natal Planets</p>
+            <p className="text-[#C5A059] text-[10px] tracking-[0.2em] uppercase mb-3">{t("stars.natalPlanets")}</p>
             {[
-              { label: "☉ Sun",     value: `${natal.sun.sign} ${natal.sun.degree}° · House ${natal.sun.house}` },
-              { label: "☽ Moon",    value: `${natal.moon.sign} ${natal.moon.degree}° · House ${natal.moon.house}` },
-              { label: "☿ Mercury", value: `${natal.mercury.sign} ${natal.mercury.degree}° · House ${natal.mercury.house}` },
-              { label: "♀ Venus",   value: `${natal.venus.sign} ${natal.venus.degree}° · House ${natal.venus.house}` },
-              { label: "♂ Mars",    value: `${natal.mars.sign} ${natal.mars.degree}° · House ${natal.mars.house}` },
+              { label: "☉ " + t("natalWheel.sun"),     value: `${natal.sun.sign} ${natal.sun.degree}° · House ${natal.sun.house}` },
+              { label: "☽ " + t("natalWheel.moon"),    value: `${natal.moon.sign} ${natal.moon.degree}° · House ${natal.moon.house}` },
+              { label: "☿ " + t("natalWheel.mercury"), value: `${natal.mercury.sign} ${natal.mercury.degree}° · House ${natal.mercury.house}` },
+              { label: "♀ " + t("natalWheel.venus"),   value: `${natal.venus.sign} ${natal.venus.degree}° · House ${natal.venus.house}` },
+              { label: "♂ " + t("natalWheel.mars"),    value: `${natal.mars.sign} ${natal.mars.degree}° · House ${natal.mars.house}` },
             ].map(({ label, value }) => (
               <div key={label} className="flex justify-between items-center py-2 border-b border-[#C5A059]/10 last:border-0">
                 <span className="text-[#C5A059] text-sm">{label}</span>
@@ -157,12 +159,12 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
           </div>
           {numerology && (
             <div className="rounded-xl border border-[#C5A059]/20 bg-[#0B1A1A] p-5">
-              <p className="text-[#C5A059] text-[10px] tracking-[0.2em] uppercase mb-3">Numerology</p>
+              <p className="text-[#C5A059] text-[10px] tracking-[0.2em] uppercase mb-3">{t("stars.numerology")}</p>
               {[
-                { label: "Life Path",   value: `${numerology.lifePath} · ${numerology.descriptions.lifePath}` },
-                { label: "Expression",  value: `${numerology.expression} · ${numerology.descriptions.expression}` },
-                { label: "Soul Urge",   value: `${numerology.soulUrge} · ${numerology.descriptions.soulUrge}` },
-                { label: "Personality", value: `${numerology.personality} · ${numerology.descriptions.personality}` },
+                { label: t("stars.lifePath"),   value: `${numerology.lifePath} · ${numerology.descriptions.lifePath}` },
+                { label: t("stars.expression"), value: `${numerology.expression} · ${numerology.descriptions.expression}` },
+                { label: t("stars.soulUrge"),   value: `${numerology.soulUrge} · ${numerology.descriptions.soulUrge}` },
+                { label: t("stars.personality"),value: `${numerology.personality} · ${numerology.descriptions.personality}` },
               ].map(({ label, value }) => (
                 <div key={label} className="flex justify-between items-start py-2 border-b border-[#C5A059]/10 last:border-0 gap-4">
                   <span className="text-[#C5A059] text-sm shrink-0">{label}</span>
@@ -172,15 +174,15 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
             </div>
           )}
           <div className="rounded-xl border border-[#C5A059]/20 bg-[#0B1A1A] p-5">
-            <p className="text-[#C5A059] text-[10px] tracking-[0.2em] uppercase mb-3">Daily Numbers</p>
+            <p className="text-[#C5A059] text-[10px] tracking-[0.2em] uppercase mb-3">{t("stars.dailyNumbers")}</p>
             <div className="grid grid-cols-2 gap-3">
               <div className="text-center">
-                <p className="text-[#FFFDD0]/40 text-[9px] tracking-wider uppercase mb-1">Universal Day</p>
+                <p className="text-[#FFFDD0]/40 text-[9px] tracking-wider uppercase mb-1">{t("stars.universalDay")}</p>
                 <p className="text-[#C5A059] text-3xl font-['Libre_Baskerville']">{universalDay}</p>
               </div>
               {personalDay && (
                 <div className="text-center">
-                  <p className="text-[#FFFDD0]/40 text-[9px] tracking-wider uppercase mb-1">Personal Day</p>
+                  <p className="text-[#FFFDD0]/40 text-[9px] tracking-wider uppercase mb-1">{t("stars.personalDay")}</p>
                   <p className="text-[#C5A059] text-3xl font-['Libre_Baskerville']">{personalDay}</p>
                 </div>
               )}
