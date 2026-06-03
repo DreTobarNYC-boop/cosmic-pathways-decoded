@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { ArrowLeft } from "lucide-react";
 
 interface ChamberLayoutProps {
@@ -8,8 +9,20 @@ interface ChamberLayoutProps {
 }
 
 export function ChamberLayout({ title, subtitle, children, onBack }: ChamberLayoutProps) {
+  // Scroll to top when chamber opens so content is never hidden above viewport.
+  // Uses requestAnimationFrame so scroll fires after browser paints — required
+  // for iOS Safari which otherwise restores scroll position after the JS runs.
+  useEffect(() => {
+    const raf = requestAnimationFrame(() => {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    });
+    return () => cancelAnimationFrame(raf);
+  }, []);
+
   return (
-    <div className="min-h-screen bg-background" style={{ position: "relative" }}>
+    <div className="min-h-screen bg-background">
       <header className="px-5 pt-6 pb-4 flex items-center gap-3">
         <button
           onClick={onBack}
