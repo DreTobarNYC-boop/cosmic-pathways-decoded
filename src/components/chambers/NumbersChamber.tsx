@@ -288,8 +288,8 @@ export function NumbersChamber({ onBack }: { onBack: () => void }) {
             <div className="flex items-center gap-4">
               <NumberCircle value={universalDay} color="purple" size="sm" />
               <div className="flex-1">
-                <p className="text-xs uppercase tracking-wider text-muted-foreground">Universal Day</p>
-                <p className="text-sm font-semibold text-foreground">{UNIVERSAL_DAY_MEANINGS[universalDay]}</p>
+                <p className="text-xs uppercase tracking-wider text-muted-foreground">{t("numbers.universalDay")}</p>
+                <p className="text-sm font-semibold text-foreground">{t(`universalDayMeanings.${universalDay}`, UNIVERSAL_DAY_MEANINGS[universalDay])}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">{dateStr}</p>
               </div>
             </div>
@@ -300,8 +300,8 @@ export function NumbersChamber({ onBack }: { onBack: () => void }) {
             <div className="flex items-center gap-4">
               <NumberCircle value={personalDay} color="blue" size="sm" />
               <div className="flex-1">
-                <p className="text-xs uppercase tracking-wider text-muted-foreground"><WithInfo term="personalYear">Personal Day</WithInfo></p>
-                <p className="text-sm font-semibold text-foreground">{PERSONAL_DAY_MEANINGS[personalDay]}</p>
+                <p className="text-xs uppercase tracking-wider text-muted-foreground"><WithInfo term="personalYear">{t("numbers.personalDay")}</WithInfo></p>
+                <p className="text-sm font-semibold text-foreground">{t(`personalDayMeanings.${personalDay}`, PERSONAL_DAY_MEANINGS[personalDay])}</p>
               </div>
             </div>
             <AIReadingBlock content={todayReading.content} isLoading={todayReading.isLoading} error={todayReading.error} label="today's frequency" />
@@ -312,8 +312,8 @@ export function NumbersChamber({ onBack }: { onBack: () => void }) {
             <div className="flex items-center gap-4">
               <NumberCircle value={personalMonth} color="green" size="sm" />
               <div className="flex-1">
-                <p className="text-xs uppercase tracking-wider text-muted-foreground">Personal Month</p>
-                <p className="text-sm font-semibold text-foreground">{personalMonth} — {PERSONAL_MONTH_MEANINGS[personalMonth]}</p>
+                <p className="text-xs uppercase tracking-wider text-muted-foreground">{t("numbers.personalMonth")}</p>
+                <p className="text-sm font-semibold text-foreground">{personalMonth} — {t(`personalMonthMeanings.${personalMonth}`, PERSONAL_MONTH_MEANINGS[personalMonth])}</p>
               </div>
             </div>
           </SectionCard>
@@ -323,8 +323,8 @@ export function NumbersChamber({ onBack }: { onBack: () => void }) {
             <div className="flex items-center gap-4">
               <NumberCircle value={personalYear} color="rose" size="sm" />
               <div className="flex-1">
-                <p className="text-xs uppercase tracking-wider text-muted-foreground">Personal Year {today.getFullYear()}</p>
-                <p className="text-sm font-semibold text-foreground">{personalYear} — {PERSONAL_YEAR_MEANINGS[personalYear]}</p>
+                <p className="text-xs uppercase tracking-wider text-muted-foreground">{t("numbers.personalYear", { year: today.getFullYear() })}</p>
+                <p className="text-sm font-semibold text-foreground">{personalYear} — {t(`personalYearMeanings.${personalYear}`, PERSONAL_YEAR_MEANINGS[personalYear])}</p>
               </div>
             </div>
           </SectionCard>

@@ -140,6 +140,23 @@
     "Dog": "Perro",
     "Pig": "Cerdo"
   },
+  "personalMonthMeanings": {
+    "1": "Nuevos Comienzos", "2": "Asociación", "3": "Expresión", "4": "Fundación",
+    "5": "Cambio", "6": "Responsabilidad", "7": "Reflexión", "8": "Logro",
+    "9": "Finalización", "11": "Visión Maestra", "22": "Arquitecto Maestro", "33": "Sanador Maestro"
+  },
+  "personalYearMeanings": {
+    "1": "Nuevo Comienzo", "2": "Paciencia y Cooperación", "3": "Expansión Creativa", "4": "Trabajo Duro y Estructura",
+    "5": "Libertad y Aventura", "6": "Amor y Deber", "7": "Crecimiento Espiritual", "8": "Poder y Prosperidad",
+    "9": "Finales y Sabiduría", "11": "Intuición Maestra", "22": "Construcción Maestra", "33": "Enseñanza Maestra"
+  },
+  "numbers": {
+    "numerology": "Numerología",
+    "universalDay": "Día Universal",
+    "personalDay": "Día Personal",
+    "personalMonth": "Mes Personal",
+    "personalYear": "Año Personal {{year}}"
+  },
   "universalDayMeanings": {
     "1": "Nuevos comienzos e iniciativa",
     "2": "Cooperación y equilibrio",

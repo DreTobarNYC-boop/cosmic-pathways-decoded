@@ -68,7 +68,7 @@ function StrengthBadge({ value }: { value: string }) {
 }
 
 export function PalmChamber({ onBack }: PalmChamberProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [phase, setPhase] = useState<"idle" | "scanning" | "done">("idle");
   const [reading, setReading] = useState<any>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -121,7 +121,7 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
     try {
       const base64 = await fileToBase64(file);
       const { data, error } = await supabase.functions.invoke("palm-reading", {
-        body: { image_base64: base64 },
+        body: { image_base64: base64, language: i18n.language },
       });
 
       if (error) throw new Error(error.message || "Reading failed");

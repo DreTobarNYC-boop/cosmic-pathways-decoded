@@ -85,8 +85,15 @@ serve(async (req) => {
     const body = await req.json();
     const context = body.context || {};
     const image_base64 = body.image_base64 || null;
+    const language = body.language || "en";
     const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
     const GEMINI_MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-2.5-flash";
+
+    const langEnforcement = language.startsWith("es")
+      ? "CRITICAL: Escribe TODA tu respuesta en ESPAÑOL. Cada valor de texto en el JSON debe estar en español. NO uses inglés."
+      : language.startsWith("pt")
+      ? "CRITICAL: Escreva TODA a sua resposta em PORTUGUÊS BRASILEIRO. Cada valor de texto no JSON deve estar em português. NÃO use inglês."
+      : "Write your entire response in English.";
 
     if (!GEMINI_API_KEY) {
       return new Response(
@@ -96,6 +103,8 @@ serve(async (req) => {
     }
 
     const systemPrompt = `You are a master palmist. Analyze this palm and return ONLY a valid JSON object — no markdown, no backticks, nothing outside the JSON. Be warm, specific, and personal. Every field must feel written for this exact person.
+
+${langEnforcement}
 
 IMPORTANT: Keep every text field to 1-2 sentences maximum. Be vivid and precise, not verbose.
 
@@ -195,7 +204,9 @@ IMPORTANT: Keep every text field to 1-2 sentences maximum. Be vivid and precise,
   "closingMessage": "3 sentences spoken directly to their soul — reference something specific you saw in their hand. This is the moment they screenshot and share."
 }
 
-Return empty array [] for markings if none visible. sun and mercury lines present:true unless genuinely absent.`;
+Return empty array [] for markings if none visible. sun and mercury lines present:true unless genuinely absent.
+
+REMEMBER: ${langEnforcement}`;
 
     const userPromptText = image_base64
       ? `Study every detail of this palm — the lines, mounts, finger proportions, thumb shape, and any markings. Deliver the full professional reading in the exact JSON structure specified.${Object.keys(context).length > 0 ? ` Seeker context: ${JSON.stringify(context)}` : ""}`
