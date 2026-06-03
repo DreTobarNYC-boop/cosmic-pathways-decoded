@@ -9,10 +9,12 @@ interface ChamberLayoutProps {
 }
 
 export function ChamberLayout({ title, subtitle, children, onBack }: ChamberLayoutProps) {
-  // Scroll to top whenever any chamber opens — fixes Android blank screen
-  // when navigating from a scrolled position on the home screen
+  // Scroll to top whenever any chamber opens — fixes Android blank screen.
+  // Hit all three targets: some Android browsers only honour one of them.
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "instant" });
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
   }, []);
 
   return (
