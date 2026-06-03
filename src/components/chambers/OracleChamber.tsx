@@ -18,16 +18,16 @@ import { Send, Loader2, Sparkles, Triangle } from "lucide-react";
 
 /* ─── Grabovoi Codes ─── */
 
-const GRABOVOI_CODES: { code: string; meaning: string }[] = [
-  { code: "914 821", meaning: "New Beginnings" },
-  { code: "520 741 8", meaning: "Abundance" },
-  { code: "888 412 1289018", meaning: "Financial Flow" },
-  { code: "318 798", meaning: "Unexpected Miracles" },
-  { code: "419 312 893", meaning: "Soul Purpose" },
-  { code: "489 317 8", meaning: "Love Attraction" },
-  { code: "741 852 963", meaning: "Spiritual Awakening" },
-  { code: "519 748 218", meaning: "Self-Healing" },
-  { code: "714 273 218", meaning: "Inner Peace" },
+const GRABOVOI_CODES: { code: string; meaning: string; key: string }[] = [
+  { code: "914 821",         meaning: "New Beginnings",     key: "newBeginnings" },
+  { code: "520 741 8",       meaning: "Abundance",          key: "abundance" },
+  { code: "888 412 1289018", meaning: "Financial Flow",     key: "financialFlow" },
+  { code: "318 798",         meaning: "Unexpected Miracles",key: "unexpectedMiracles" },
+  { code: "419 312 893",     meaning: "Soul Purpose",       key: "soulPurpose" },
+  { code: "489 317 8",       meaning: "Love Attraction",    key: "loveAttraction" },
+  { code: "741 852 963",     meaning: "Spiritual Awakening",key: "spiritualAwakening" },
+  { code: "519 748 218",     meaning: "Self-Healing",       key: "selfHealing" },
+  { code: "714 273 218",     meaning: "Inner Peace",        key: "innerPeace" },
 ];
 
 function getTodaysCode(date: Date) {
@@ -40,13 +40,13 @@ function getTodaysCode(date: Date) {
 /* ─── Frequency mapping ─── */
 
 const FREQUENCIES = [
-  { hz: 396, name: "Liberation", desc: "Release fear" },
-  { hz: 417, name: "Transmutation", desc: "Facilitate change" },
-  { hz: 528, name: "Miracles", desc: "Transformation" },
-  { hz: 639, name: "Connection", desc: "Harmonize" },
-  { hz: 741, name: "Awakening", desc: "Consciousness" },
-  { hz: 852, name: "Intuition", desc: "Spiritual order" },
-  { hz: 963, name: "Divine", desc: "Higher self" },
+  { hz: 396, name: "Liberation",    key: "liberation",    desc: "Release fear" },
+  { hz: 417, name: "Transmutation", key: "transmutation", desc: "Facilitate change" },
+  { hz: 528, name: "Miracles",      key: "miracles",      desc: "Transformation" },
+  { hz: 639, name: "Connection",    key: "connection",    desc: "Harmonize" },
+  { hz: 741, name: "Awakening",     key: "awakening",     desc: "Consciousness" },
+  { hz: 852, name: "Intuition",     key: "intuition",     desc: "Spiritual order" },
+  { hz: 963, name: "Divine",        key: "divine",        desc: "Higher self" },
 ];
 
 function getTodaysFrequency(date: Date) {
@@ -110,7 +110,7 @@ function TheOrb({ onTap }: { onTap: () => void }) {
       {/* Triangle + ASK text */}
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
         <Triangle className="w-5 h-5 text-primary/70" />
-        <span className="text-xs uppercase tracking-[0.3em] text-primary/70 font-display font-bold">ASK</span>
+        <span className="text-xs uppercase tracking-[0.3em] text-primary/70 font-display font-bold">{t("oracle.askButton")}</span>
       </div>
     </button>
   );
@@ -289,7 +289,7 @@ export function OracleChamber({ onBack }: { onBack: () => void }) {
           <p className="text-[10px] uppercase tracking-[0.2em] text-primary/70 font-bold mb-1">{t("oracle.todaysCode")}</p>
           <div className="flex items-center gap-2">
             <span className="text-primary">△</span>
-            <span className="font-display text-lg font-bold text-foreground">{todaysCode.code} — {todaysCode.meaning}</span>
+            <span className="font-display text-lg font-bold text-foreground">{todaysCode.code} — {t(`oracle.codes.${todaysCode.key}`, todaysCode.meaning)}</span>
           </div>
         </div>
 
@@ -298,7 +298,7 @@ export function OracleChamber({ onBack }: { onBack: () => void }) {
           <p className="text-[10px] uppercase tracking-[0.2em] text-primary/70 font-bold mb-1">{t("oracle.todaysFrequency")}</p>
           <div className="flex items-center gap-2">
             <span className="text-primary">◉</span>
-            <span className="font-display text-lg font-bold text-foreground">{todaysFreq.hz} Hz — {todaysFreq.name}</span>
+            <span className="font-display text-lg font-bold text-foreground">{todaysFreq.hz} Hz — {t(`oracle.freqs.${todaysFreq.key}`, todaysFreq.name)}</span>
           </div>
         </div>
 

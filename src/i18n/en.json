@@ -303,7 +303,20 @@
     "channeling": "The Oracle is channeling…",
     "cosmosAffirms": "✦ The Cosmos Affirms",
     "oracleLabel": "✦ Oracle",
-    "sendButton": "Send"
+    "askButton": "ASK",
+    "sendButton": "Send",
+    "codes": {
+      "newBeginnings": "New Beginnings", "abundance": "Abundance",
+      "financialFlow": "Financial Flow", "unexpectedMiracles": "Unexpected Miracles",
+      "soulPurpose": "Soul Purpose", "loveAttraction": "Love Attraction",
+      "spiritualAwakening": "Spiritual Awakening", "selfHealing": "Self-Healing",
+      "innerPeace": "Inner Peace"
+    },
+    "freqs": {
+      "liberation": "Liberation", "transmutation": "Transmutation",
+      "miracles": "Miracles", "connection": "Connection",
+      "awakening": "Awakening", "intuition": "Intuition", "divine": "Divine"
+    }
   },
   "dynasty": {
     "dynasty": "{{name}}'s Dynasty",

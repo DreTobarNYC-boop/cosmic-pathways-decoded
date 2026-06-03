@@ -303,7 +303,20 @@
     "channeling": "El Oráculo está canalizando…",
     "cosmosAffirms": "✦ El Cosmos Afirma",
     "oracleLabel": "✦ Oráculo",
-    "sendButton": "Enviar"
+    "askButton": "PREGUNTAR",
+    "sendButton": "Enviar",
+    "codes": {
+      "newBeginnings": "Nuevos Comienzos", "abundance": "Abundancia",
+      "financialFlow": "Flujo Financiero", "unexpectedMiracles": "Milagros Inesperados",
+      "soulPurpose": "Propósito del Alma", "loveAttraction": "Atracción Amorosa",
+      "spiritualAwakening": "Despertar Espiritual", "selfHealing": "Autocuración",
+      "innerPeace": "Paz Interior"
+    },
+    "freqs": {
+      "liberation": "Liberación", "transmutation": "Transmutación",
+      "miracles": "Milagros", "connection": "Conexión",
+      "awakening": "Despertar", "intuition": "Intuición", "divine": "Divino"
+    }
   },
   "dynasty": {
     "dynasty": "La Dinastía de {{name}}",
