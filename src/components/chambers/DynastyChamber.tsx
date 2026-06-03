@@ -61,9 +61,10 @@ const ALL_ANIMALS = ["Rat", "Ox", "Tiger", "Rabbit", "Dragon", "Snake", "Horse",
 /* ─── Sub Components ─── */
 
 function AIBlock({ content, isLoading, label }: { content: string | null; isLoading: boolean; label: string }) {
+  const { t } = useTranslation();
   if (isLoading) return (
     <div className="flex items-center gap-2 text-muted-foreground text-sm py-3">
-      <Loader2 className="w-4 h-4 animate-spin" /><span>Channeling {label}…</span>
+      <Loader2 className="w-4 h-4 animate-spin" /><span>{t("dynasty.channeling")}</span>
     </div>
   );
   if (!content) return null;
@@ -176,7 +177,7 @@ export function DynastyChamber({ onBack }: { onBack: () => void }) {
           <p className="text-xs uppercase tracking-wider text-muted-foreground">{t("dynasty.coreTraits")}</p>
           <div className="flex flex-wrap gap-2">
             {data.traits.map(trait => (
-              <span key={trait} className="px-3 py-1 rounded-full text-xs border border-primary/30 text-primary/90 bg-primary/5">{trait}</span>
+              <span key={trait} className="px-3 py-1 rounded-full text-xs border border-primary/30 text-primary/90 bg-primary/5">{t(`dynastyTraits.${trait}`, trait)}</span>
             ))}
           </div>
           <AIBlock content={profileReading.content} isLoading={profileReading.isLoading} label="your dynasty profile" />
@@ -187,13 +188,13 @@ export function DynastyChamber({ onBack }: { onBack: () => void }) {
           <div className="card-cosmic rounded-2xl p-4 space-y-2">
             <p className="text-xs uppercase tracking-wider text-primary/80">{t("dynasty.strengths")}</p>
             {data.strengths.map(s => (
-              <p key={s} className="text-xs text-muted-foreground">• {s}</p>
+              <p key={s} className="text-xs text-muted-foreground">• {t(`dynastyTraits.${s}`, s)}</p>
             ))}
           </div>
           <div className="card-cosmic rounded-2xl p-4 space-y-2">
             <p className="text-xs uppercase tracking-wider text-destructive/80">{t("dynasty.watchFor")}</p>
             {data.watchFor.map(w => (
-              <p key={w} className="text-xs text-muted-foreground">• {w}</p>
+              <p key={w} className="text-xs text-muted-foreground">• {t(`dynastyTraits.${w}`, w)}</p>
             ))}
           </div>
         </div>
@@ -275,10 +276,10 @@ export function DynastyChamber({ onBack }: { onBack: () => void }) {
               </div>
               <p className="text-xs text-muted-foreground">
                 {compatType === "ally"
-                  ? `The ${animal} and ${selectedAnimal} share a natural harmony. Together they amplify each other's strengths and create powerful synergy.`
+                  ? t("dynasty.compatHarmony", { a: t(`chineseAnimals.${animal}`, animal), b: t(`chineseAnimals.${selectedAnimal}`, selectedAnimal) })
                   : compatType === "tension"
-                  ? `The ${animal} and ${selectedAnimal} carry opposing energies. This pairing requires awareness and compromise but can forge deep transformation.`
-                  : `The ${animal} and ${selectedAnimal} have a neutral connection — neither strongly drawn nor repelled. Growth comes through understanding.`}
+                  ? t("dynasty.compatTension", { a: t(`chineseAnimals.${animal}`, animal), b: t(`chineseAnimals.${selectedAnimal}`, selectedAnimal) })
+                  : t("dynasty.compatNeutral", { a: t(`chineseAnimals.${animal}`, animal), b: t(`chineseAnimals.${selectedAnimal}`, selectedAnimal) })}
               </p>
             </div>
           )}
@@ -289,7 +290,7 @@ export function DynastyChamber({ onBack }: { onBack: () => void }) {
           <p className="text-xs uppercase tracking-wider text-muted-foreground">{t("dynasty.fiveYearForecast")}</p>
           {forecastReading.isLoading ? (
             <div className="flex items-center gap-2 text-muted-foreground text-sm py-3">
-              <Loader2 className="w-4 h-4 animate-spin" /><span>Channeling your future…</span>
+              <Loader2 className="w-4 h-4 animate-spin" /><span>{t("dynasty.channelingFuture")}</span>
             </div>
           ) : forecast?.years ? (
             <Accordion type="single" collapsible className="space-y-2">

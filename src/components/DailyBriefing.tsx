@@ -136,7 +136,7 @@ export function DailyBriefing({ dob, name, birthPlace, birthTime, onOpenStars }:
               onClick={retry}
               className="text-xs text-[#C5A059]/70 hover:text-[#C5A059] transition-colors underline underline-offset-2"
             >
-              Retry
+              {t("briefing.retry")}
             </button>
           </div>
         )}

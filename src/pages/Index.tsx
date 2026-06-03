@@ -148,7 +148,7 @@ export default function Index() {
               className="flex items-center gap-1.5 bg-primary/20 text-primary rounded-full px-3 py-1.5 text-sm font-medium hover:bg-primary/30 transition-colors"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              Upgrade
+              {t("header.upgrade")}
             </button>
             {user && (
               <button
@@ -163,7 +163,7 @@ export default function Index() {
         </div>
         <div className="mt-3 flex items-center gap-2">
           <span className="text-lg">🌊</span>
-          <span className="font-display text-lg text-foreground">Welcome, <span className="text-primary font-bold">{firstName}</span></span>
+          <span className="font-display text-lg text-foreground">{t("header.welcome")} <span className="text-primary font-bold">{firstName}</span></span>
         </div>
       </header>
 
