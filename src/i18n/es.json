@@ -618,5 +618,11 @@
     "mostPopular": "MÁS POPULAR",
     "save": "Ahorra 17% — 2 meses gratis",
     "disclaimer": "Cancela cuando quieras · Pago seguro vía Whop"
+  },
+  "locked": {
+    "default": "Desbloquea tu lectura completa",
+    "unlock": "Desbloquear",
+    "oneScanUsed": "Ya usaste tu escaneo gratis de hoy",
+    "oneQuestionUsed": "Ya usaste tu pregunta gratis de hoy"
   }
 }

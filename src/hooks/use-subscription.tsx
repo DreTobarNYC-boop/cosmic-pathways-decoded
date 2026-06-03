@@ -1,7 +1,15 @@
-import { useState, useEffect, createContext, useContext, ReactNode } from "react";
+import { useState, useEffect, createContext, useContext, ReactNode, useCallback } from "react";
 import { useAuth } from "@/hooks/use-auth";
+import { PaywallModal } from "@/components/PaywallModal";
 
 export type SubscriptionTier = "free" | "essential" | "lifetime" | "inner_circle" | "founders";
+
+// ─────────────────────────────────────────────────────────────
+// MASTER PAYWALL SWITCH
+// false = everyone gets full access (testing mode — current)
+// true  = free tier limits + paywall active (flip ON for June 11 launch)
+// ─────────────────────────────────────────────────────────────
+export const PAYWALL_ENABLED = false;
 
 interface Subscription {
   tier: SubscriptionTier;
@@ -20,9 +28,13 @@ interface SubscriptionContextType {
   usage: UsageLimit | null;
   isLoading: boolean;
   isPremium: boolean;
+  /** True when paywall is active AND user is not premium — gate content with this */
+  isLocked: boolean;
   canAccessFeature: (feature: FeatureKey) => boolean;
   incrementUsage: (feature: "oracle" | "palm") => Promise<boolean>;
   refreshSubscription: () => Promise<void>;
+  /** Open the paywall modal from anywhere */
+  openPaywall: (feature?: string) => void;
 }
 
 type FeatureKey = 
@@ -40,11 +52,18 @@ const SubscriptionContext = createContext<SubscriptionContextType | undefined>(u
 
 export function SubscriptionProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading] = useState(false);
+  const [paywallOpen, setPaywallOpen] = useState(false);
+  const [paywallFeature, setPaywallFeature] = useState<string | undefined>(undefined);
 
-  // PAYWALL DISABLED — everyone gets full access during testing
+  // TODO (post-launch): read real subscription from Supabase / Whop webhook.
+  // For now: when PAYWALL_ENABLED is false, everyone is premium (testing).
+  // When true, everyone is treated as free until real subscription data is wired.
+  const isPremium = !PAYWALL_ENABLED;
+  const isLocked = PAYWALL_ENABLED && !isPremium;
+
   const subscription: Subscription = {
-    tier: "founders",
+    tier: isPremium ? "founders" : "free",
     status: "active",
     billing_interval: null,
     current_period_end: null,
@@ -55,13 +74,16 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     palm_scans_used: 0,
   };
 
-  const isPremium = true;
-
-  const canAccessFeature = (_feature: FeatureKey): boolean => true;
+  const canAccessFeature = (_feature: FeatureKey): boolean => isPremium;
 
   const incrementUsage = async (_feature: "oracle" | "palm"): Promise<boolean> => true;
 
   const refreshSubscription = async () => {};
+
+  const openPaywall = useCallback((feature?: string) => {
+    setPaywallFeature(feature);
+    setPaywallOpen(true);
+  }, []);
 
   return (
     <SubscriptionContext.Provider
@@ -70,12 +92,19 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         usage,
         isLoading,
         isPremium,
+        isLocked,
         canAccessFeature,
         incrementUsage,
         refreshSubscription,
+        openPaywall,
       }}
     >
       {children}
+      <PaywallModal
+        open={paywallOpen}
+        onClose={() => setPaywallOpen(false)}
+        feature={paywallFeature}
+      />
     </SubscriptionContext.Provider>
   );
 }

@@ -5,6 +5,8 @@ import { ChamberLayout } from "@/components/ChamberLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/use-toast";
 import { useTranslation } from "react-i18next";
+import { useSubscription } from "@/hooks/use-subscription";
+import { LockedContent } from "@/components/LockedContent";
 
 interface PalmChamberProps {
   onBack: () => void;
@@ -69,6 +71,7 @@ function StrengthBadge({ value }: { value: string }) {
 
 export function PalmChamber({ onBack }: PalmChamberProps) {
   const { t, i18n } = useTranslation();
+  const { isLocked, openPaywall } = useSubscription();
   const [phase, setPhase] = useState<"idle" | "scanning" | "done">("idle");
   const [reading, setReading] = useState<any>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -375,6 +378,26 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
             </div>
           )}
 
+          {/* ── PREMIUM CONTENT — gated when paywall active ── */}
+          {isLocked ? (
+            <LockedContent onUnlock={() => openPaywall(t("chambers.thePalm"))}>
+              <div className="space-y-5">
+                {reading.overallReading && (
+                  <ReadingCard>
+                    <SectionHeader label={t("palmResult.lifeReading")} />
+                    {reading.overallReading.lifeTheme && (
+                      <p className="text-sm text-[#FFFDD0]/80 leading-relaxed">{reading.overallReading.lifeTheme}</p>
+                    )}
+                  </ReadingCard>
+                )}
+                {/* Decoy blurred cards so there's visible shape behind the lock */}
+                <ReadingCard><SectionHeader label={t("palmResult.majorLines")} /><div className="h-16" /></ReadingCard>
+                <ReadingCard><SectionHeader label={t("palmResult.love")} /><div className="h-12" /></ReadingCard>
+                <ReadingCard><SectionHeader label={t("palmResult.career")} /><div className="h-12" /></ReadingCard>
+              </div>
+            </LockedContent>
+          ) : (
+          <>
           {/* ② Overall reading */}
           {reading.overallReading && (
             <ReadingCard>
@@ -633,6 +656,8 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
               <p className="text-[10px] text-[#C5A059] uppercase tracking-[0.25em]">{t("palmResult.cosmicClosing")}</p>
               <p className="font-display text-base text-[#FFFDD0] leading-relaxed">{reading.closingMessage}</p>
             </div>
+          )}
+          </>
           )}
 
           {/* Reset */}
