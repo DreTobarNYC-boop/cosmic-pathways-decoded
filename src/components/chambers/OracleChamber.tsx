@@ -95,6 +95,7 @@ const ORB_ANSWERS = [
 /* ─── Orb Component ─── */
 
 function TheOrb({ onTap }: { onTap: () => void }) {
+  const { t } = useTranslation();
   return (
     <button
       onClick={onTap}
