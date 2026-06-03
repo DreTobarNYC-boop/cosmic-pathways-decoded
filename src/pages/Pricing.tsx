@@ -1,178 +1,101 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-const tiers = [
-  {
-    name: "Free",
-    monthlyPrice: "$0",
-    annualPrice: "$0",
-    description: "Begin your journey",
-    features: [
-      "Daily horoscope",
-      "Daily numerology",
-      "1 Oracle question per day",
-      "Basic palm scan",
-    ],
-    cta: "Start Free",
-    highlight: false,
-    variantId: null,
-  },
-  {
-    name: "Essential",
-    monthlyPrice: "$8.88",
-    annualPrice: "$88",
-    description: "Full access to your frequency",
-    features: [
-      "Everything in Free",
-      "Unlimited Oracle questions",
-      "Full palm reading report",
-      "All 432Hz & 528Hz frequencies",
-      "7-day reading archive",
-      "Ad-free experience",
-      "Community access",
-    ],
-    cta: "Start Essential",
-    highlight: true,
-    monthlyVariantId: "ESSENTIAL_MONTHLY_VARIANT_ID",
-    annualVariantId: "ESSENTIAL_ANNUAL_VARIANT_ID",
-  },
-  {
-    name: "Lifetime",
-    monthlyPrice: "$688",
-    annualPrice: "$688",
-    description: "One payment. Everything. Forever.",
-    features: [
-      "All Essential features",
-      "All future features included",
-      "Never pay again",
-      "Founding member status",
-    ],
-    cta: "Get Lifetime Access",
-    highlight: false,
-    variantId: "LIFETIME_VARIANT_ID",
-  },
-  {
-    name: "Inner Circle",
-    monthlyPrice: "$1,888",
-    annualPrice: "$1,888",
-    description: "100 seats. Never reopens.",
-    features: [
-      "All Lifetime features",
-      "Monthly private call with David",
-      "Behind-the-scenes app access",
-      "Early feature access",
-      "Exclusive merchandise drops",
-      "Priority event tickets",
-      "Permanent seat at the table",
-    ],
-    cta: "Claim Your Seat",
-    highlight: false,
-    variantId: "INNER_CIRCLE_VARIANT_ID",
-    cap: 100,
-  },
-];
-
 export default function Pricing() {
-  const [isAnnual, setIsAnnual] = useState(false);
   const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen bg-[#0B1A1A] text-[#FFFDD0] px-4 py-12">
+    <div className="min-h-screen bg-[#0B1A1A] text-[#FFFDD0] px-5 py-12 flex flex-col">
       <button
         onClick={() => navigate(-1)}
-        className="flex items-center gap-2 text-[#FFFDD0]/50 hover:text-[#FFFDD0] text-sm mb-8 ml-2 transition-colors"
+        className="flex items-center gap-2 text-[#FFFDD0]/50 hover:text-[#FFFDD0] text-sm mb-10 transition-colors"
       >
         ← Back
       </button>
-      <h1 className="text-center font-display text-3xl text-[#F5D060] mb-2">
-        Choose Your Sanctuary
-      </h1>
-      <p className="text-center text-[#FFFDD0]/60 text-sm mb-8">
-        Decode your frequency. Own your path.
-      </p>
 
-      <div className="flex items-center justify-center gap-4 mb-10">
-        <span className={`text-sm ${!isAnnual ? "text-[#F5D060]" : "text-[#FFFDD0]/40"}`}>
-          Monthly
-        </span>
-        <button
-          onClick={() => setIsAnnual(!isAnnual)}
-          className={`relative w-12 h-6 rounded-full transition-colors ${
-            isAnnual ? "bg-[#F5D060]" : "bg-[#FFFDD0]/20"
-          }`}
-        >
-          <span
-            className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-white transition-transform ${
-              isAnnual ? "translate-x-6" : "translate-x-0"
-            }`}
-          />
-        </button>
-        <span className={`text-sm ${isAnnual ? "text-[#F5D060]" : "text-[#FFFDD0]/40"}`}>
-          Annual <span className="text-xs text-green-400 ml-1">Save 17%</span>
-        </span>
-      </div>
+      <div className="flex-1 flex flex-col items-center max-w-md mx-auto w-full">
+        <div className="w-16 h-16 rounded-2xl bg-[#C5A059]/10 border border-[#C5A059]/30 flex items-center justify-center mb-6">
+          <span className="text-2xl">✦</span>
+        </div>
 
-      <div className="grid grid-cols-1 gap-6 max-w-5xl mx-auto md:grid-cols-2 lg:grid-cols-4">
-        {tiers.map((tier) => (
-          <div
-            key={tier.name}
-            className={`rounded-2xl p-6 border backdrop-blur-md flex flex-col ${
-              tier.highlight
-                ? "border-[#F5D060] bg-[#F5D060]/5"
-                : "border-[#B87333]/20 bg-[#2A1F0F]/30"
-            }`}
-          >
-            {tier.highlight && (
-              <span className="text-xs text-[#0B1A1A] bg-[#F5D060] rounded-full px-3 py-0.5 self-start mb-3 font-bold">
-                MOST POPULAR
-              </span>
-            )}
-            {tier.cap && (
-              <span className="text-xs text-red-400 border border-red-400/30 rounded-full px-3 py-0.5 self-start mb-3">
-                100 SEATS ONLY
-              </span>
-            )}
+        <h1 className="text-center font-display text-3xl text-[#C5A059] mb-2">
+          Unlock Full Access
+        </h1>
+        <p className="text-center text-[#FFFDD0]/50 text-sm mb-10">
+          Every chamber. Every reading. Every day.
+        </p>
 
-            <h3 className="text-[#F5D060] font-display text-xl mb-1">{tier.name}</h3>
-            <p className="text-[#FFFDD0]/50 text-xs mb-4">{tier.description}</p>
-
-            <div className="mb-6">
-              <span className="text-3xl font-bold text-[#FFFDD0]">
-                {isAnnual ? tier.annualPrice : tier.monthlyPrice}
-              </span>
-              {tier.name === "Essential" && (
-                <span className="text-[#FFFDD0]/40 text-sm ml-1">
-                  {isAnnual ? "/yr" : "/mo"}
-                </span>
-              )}
-              {(tier.name === "Lifetime" || tier.name === "Inner Circle") && (
-                <span className="text-[#FFFDD0]/40 text-sm ml-1">one-time</span>
-              )}
+        {/* Monthly */}
+        <div className="w-full rounded-2xl border border-[#C5A059]/30 bg-[#C5A059]/5 p-6 mb-4">
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              <p className="text-xs text-[#C5A059]/70 uppercase tracking-widest mb-1">Monthly</p>
+              <div className="flex items-end gap-1">
+                <span className="font-display text-4xl font-bold text-[#FFFDD0]">$8.88</span>
+                <span className="text-[#FFFDD0]/40 text-sm mb-1">/mo</span>
+              </div>
             </div>
-
-            <ul className="space-y-2 mb-8 flex-1">
-              {tier.features.map((feature) => (
-                <li key={feature} className="flex items-start gap-2 text-sm text-[#FFFDD0]/80">
-                  <span className="text-[#F5D060] mt-0.5">✦</span>
-                  {feature}
-                </li>
-              ))}
-            </ul>
-
-            <button
-              onClick={() => alert("Payments launching soon! You'll be notified when available.")}
-              className={`w-full py-3 rounded-xl text-sm font-semibold tracking-widest transition-all ${
-                tier.highlight
-                  ? "bg-[#F5D060] text-[#0B1A1A] hover:bg-[#FFBF00]"
-                  : tier.name === "Inner Circle"
-                  ? "bg-transparent border border-[#F5D060] text-[#F5D060] hover:bg-[#F5D060]/10"
-                  : "bg-[#FFFDD0]/10 text-[#FFFDD0] hover:bg-[#FFFDD0]/20"
-              }`}
-            >
-              {tier.variantId === null ? tier.cta : "Coming Soon"}
-            </button>
+            <span className="text-xs bg-[#C5A059] text-[#0B1A1A] rounded-full px-3 py-1 font-bold">
+              MOST POPULAR
+            </span>
           </div>
-        ))}
+          <ul className="space-y-2 mb-6">
+            {[
+              "All 5 chambers — unlimited access",
+              "Full palm reading with deep analysis",
+              "Birth chart & natal wheel",
+              "Unlimited Oracle questions",
+              "5-year Dynasty forecast",
+              "Monthly, yearly & love readings",
+            ].map(f => (
+              <li key={f} className="flex items-start gap-2 text-sm text-[#FFFDD0]/75">
+                <span className="text-[#C5A059] mt-0.5 shrink-0">✦</span>
+                {f}
+              </li>
+            ))}
+          </ul>
+          <button
+            onClick={() => alert("Payments launching June 11th!")}
+            className="w-full py-3.5 rounded-xl text-sm font-bold tracking-widest bg-[#C5A059] text-[#0B1A1A] hover:bg-[#d4af37] transition-colors"
+          >
+            Coming Soon
+          </button>
+        </div>
+
+        {/* Annual */}
+        <div className="w-full rounded-2xl border border-[#FFFDD0]/15 bg-[#FFFDD0]/3 p-6">
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              <p className="text-xs text-[#FFFDD0]/50 uppercase tracking-widest mb-1">Annual</p>
+              <div className="flex items-end gap-1">
+                <span className="font-display text-4xl font-bold text-[#FFFDD0]">$88</span>
+                <span className="text-[#FFFDD0]/40 text-sm mb-1">/yr</span>
+              </div>
+              <p className="text-xs text-green-400 mt-1">Save $18.56 — 2 months free</p>
+            </div>
+          </div>
+          <ul className="space-y-2 mb-6">
+            {[
+              "Everything in Monthly",
+              "Best value — pay once a year",
+              "Lock in your rate forever",
+            ].map(f => (
+              <li key={f} className="flex items-start gap-2 text-sm text-[#FFFDD0]/75">
+                <span className="text-[#C5A059] mt-0.5 shrink-0">✦</span>
+                {f}
+              </li>
+            ))}
+          </ul>
+          <button
+            onClick={() => alert("Payments launching June 11th!")}
+            className="w-full py-3.5 rounded-xl text-sm font-bold tracking-widest border border-[#C5A059]/50 text-[#C5A059] hover:bg-[#C5A059]/10 transition-colors"
+          >
+            Coming Soon
+          </button>
+        </div>
+
+        <p className="text-center text-[#FFFDD0]/25 text-xs mt-8">
+          Cancel anytime · Secure payment
+        </p>
       </div>
     </div>
   );
