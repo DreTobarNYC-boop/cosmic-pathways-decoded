@@ -47,10 +47,14 @@ export default function Index() {
     return () => window.removeEventListener("openChamber", handleOpenChamber);
   }, []);
 
-  // Push a history entry when a chamber opens so the OS back gesture
-  // closes the chamber instead of leaving the app entirely.
+  // Scroll to top + push history when a chamber opens.
+  // Scroll at the Index level (before render) so iOS Safari and Android
+  // both see the chamber from the top of the viewport.
   useEffect(() => {
     if (activeChamber) {
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
       window.history.pushState({ chamber: activeChamber }, "");
     }
   }, [activeChamber]);
