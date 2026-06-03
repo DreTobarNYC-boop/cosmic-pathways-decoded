@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import dcodeLogo from "@/assets/dcode-logo.jpeg";
@@ -34,38 +34,54 @@ export default function Index() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { profile, isLoading, signOut, user } = useAuth();
-  const [activeChamber, setActiveChamber] = useState<string | null>(null);
+  const [activeChamber, setActiveChamber]   = useState<string | null>(null);
+  const [chamberClosing, setChamberClosing] = useState(false);
 
+  // Ref so popstate handler always reads current chamber without stale closure
+  const activeChamberRef = useRef<string | null>(null);
+  useEffect(() => { activeChamberRef.current = activeChamber; }, [activeChamber]);
+
+  // Open a chamber: scroll to top, push history, trigger slide-in
+  const openChamber = useCallback((id: string) => {
+    if (!CHAMBER_COMPONENTS[id]) return;
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    setActiveChamber(id);
+    window.history.pushState({ chamber: id }, "");
+  }, []);
+
+  // Close a chamber: trigger slide-out animation, then unmount
+  const closeChamber = useCallback(() => {
+    setChamberClosing(true);
+  }, []);
+
+  // When slide-out animation finishes, unmount the chamber
+  const handleChamberAnimationEnd = useCallback(() => {
+    if (chamberClosing) {
+      setActiveChamber(null);
+      setChamberClosing(false);
+    }
+  }, [chamberClosing]);
+
+  // Listen for custom openChamber events (from DailyBriefing)
   useEffect(() => {
     const handleOpenChamber = (e: Event) => {
       const chamberId = (e as CustomEvent<string>).detail;
-      if (chamberId && CHAMBER_COMPONENTS[chamberId]) {
-        setActiveChamber(chamberId);
-      }
+      openChamber(chamberId);
     };
     window.addEventListener("openChamber", handleOpenChamber);
     return () => window.removeEventListener("openChamber", handleOpenChamber);
-  }, []);
+  }, [openChamber]);
 
-  // Scroll to top + push history when a chamber opens.
-  // Scroll at the Index level (before render) so iOS Safari and Android
-  // both see the chamber from the top of the viewport.
-  useEffect(() => {
-    if (activeChamber) {
-      window.scrollTo(0, 0);
-      document.documentElement.scrollTop = 0;
-      document.body.scrollTop = 0;
-      window.history.pushState({ chamber: activeChamber }, "");
-    }
-  }, [activeChamber]);
-
+  // Hardware back button / swipe-back — uses ref to avoid stale closure
   useEffect(() => {
     const handlePopState = () => {
-      if (activeChamber) setActiveChamber(null);
+      if (activeChamberRef.current) setChamberClosing(true);
     };
     window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
-  }, [activeChamber]);
+  }, []);
 
   const FEATURED = [
     { id: "palm-cta", chamberId: "palm", title: t("chambers.scanYourPalm"), subtitle: t("chambers.palmReading"), icon: Fingerprint, accent: "hsl(280, 40%, 55%)" },
@@ -101,7 +117,15 @@ export default function Index() {
   if (activeChamber) {
     const ChamberComponent = CHAMBER_COMPONENTS[activeChamber];
     if (ChamberComponent) {
-      return <ChamberComponent onBack={() => setActiveChamber(null)} />;
+      return (
+        <div
+          className={chamberClosing ? "chamber-exiting" : "chamber-entering"}
+          onAnimationEnd={handleChamberAnimationEnd}
+          style={{ minHeight: "100dvh" }}
+        >
+          <ChamberComponent onBack={closeChamber} />
+        </div>
+      );
     }
   }
 
@@ -144,7 +168,7 @@ export default function Index() {
       </header>
 
       <main className="px-5 pb-10 space-y-5 max-w-lg mx-auto">
-        <DailyBriefing dob={dob} name={profile.fullName} birthPlace={profile.birthPlace} birthTime={profile.birthTime} onOpenStars={() => setActiveChamber("stars")} />
+        <DailyBriefing dob={dob} name={profile.fullName} birthPlace={profile.birthPlace} birthTime={profile.birthTime} onOpenStars={() => openChamber("stars")} />
 
         <div className="space-y-3">
           {FEATURED.map((item) => (
@@ -155,7 +179,7 @@ export default function Index() {
               icon={item.icon}
               accentColor={item.accent}
               variant="featured"
-              onClick={() => setActiveChamber(item.chamberId || item.id)}
+              onClick={() => openChamber(item.chamberId || item.id)}
             />
           ))}
         </div>
@@ -169,7 +193,7 @@ export default function Index() {
               icon={chamber.icon}
               accentColor={chamber.accent}
               variant="grid"
-              onClick={() => setActiveChamber(chamber.id)}
+              onClick={() => openChamber(chamber.id)}
             />
           ))}
         </div>
