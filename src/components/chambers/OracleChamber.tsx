@@ -144,7 +144,7 @@ interface ChatMessage {
 /* ─── Main Component ─── */
 
 export function OracleChamber({ onBack }: { onBack: () => void }) {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { profile } = useAuth();
 
   const today = useMemo(() => new Date(), []);
@@ -247,7 +247,7 @@ export function OracleChamber({ onBack }: { onBack: () => void }) {
   };
 
   return (
-    <ChamberLayout title="The Oracle" onBack={onBack}>
+    <ChamberLayout title={t("chambers.theOracle")} onBack={onBack}>
       <div className="space-y-5">
         {/* ── Header: Chinese Zodiac + Today's Oracle ── */}
         <div className="text-center space-y-3">
@@ -255,7 +255,7 @@ export function OracleChamber({ onBack }: { onBack: () => void }) {
             <Sparkles className="w-7 h-7 text-primary" />
           </div>
           <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground font-display">
-            {chineseData ? `${chineseData.char} ${chineseZodiac}` : "✦"} · TODAY'S ORACLE
+            {chineseData ? (chineseData.char + " " + t("chineseAnimals." + (chineseZodiac ?? ""), chineseZodiac ?? "")) : "✦"} · {t("oracle.todaysOracle")}
           </p>
         </div>
 
@@ -265,15 +265,15 @@ export function OracleChamber({ onBack }: { onBack: () => void }) {
           {oracleReading.isLoading ? (
             <div className="flex items-center gap-2 text-muted-foreground text-sm py-4 justify-center">
               <Loader2 className="w-4 h-4 animate-spin text-primary" />
-              <span>The Oracle is channeling…</span>
+              <span>{t("oracle.channeling")}</span>
             </div>
           ) : (
             <div className="space-y-3">
-              <p className="text-sm font-bold text-primary">Your code is activated. Here's what it means.</p>
+              <p className="text-sm font-bold text-primary">{t("oracle.codeActivated")}</p>
               <p className="text-sm text-foreground/90 leading-relaxed">
                 {(() => {
                   const raw = oracleReading.content || "";
-                  if (!raw) return "The Oracle is preparing your reading…";
+                  if (!raw) return t("oracle.preparingReading");
                   if (raw.startsWith("{")) {
                     try { return JSON.parse(raw)?.reading ?? raw; } catch { return raw; }
                   }
@@ -286,7 +286,7 @@ export function OracleChamber({ onBack }: { onBack: () => void }) {
 
         {/* ── Today's Code (Grabovoi) ── */}
         <div className="card-cosmic rounded-2xl px-5 py-4 border-primary/20">
-          <p className="text-[10px] uppercase tracking-[0.2em] text-primary/70 font-bold mb-1">TODAY'S CODE</p>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-primary/70 font-bold mb-1">{t("oracle.todaysCode")}</p>
           <div className="flex items-center gap-2">
             <span className="text-primary">△</span>
             <span className="font-display text-lg font-bold text-foreground">{todaysCode.code} — {todaysCode.meaning}</span>
@@ -295,7 +295,7 @@ export function OracleChamber({ onBack }: { onBack: () => void }) {
 
         {/* ── Today's Frequency ── */}
         <div className="card-cosmic rounded-2xl px-5 py-4 border-primary/20">
-          <p className="text-[10px] uppercase tracking-[0.2em] text-primary/70 font-bold mb-1">TODAY'S FREQUENCY</p>
+          <p className="text-[10px] uppercase tracking-[0.2em] text-primary/70 font-bold mb-1">{t("oracle.todaysFrequency")}</p>
           <div className="flex items-center gap-2">
             <span className="text-primary">◉</span>
             <span className="font-display text-lg font-bold text-foreground">{todaysFreq.hz} Hz — {todaysFreq.name}</span>
@@ -304,9 +304,9 @@ export function OracleChamber({ onBack }: { onBack: () => void }) {
 
         {/* ── The Orb ── */}
         <div className="text-center space-y-3 py-4">
-          <h3 className="font-display text-sm font-bold uppercase tracking-[0.15em] text-foreground">THE ORB</h3>
+          <h3 className="font-display text-sm font-bold uppercase tracking-[0.15em] text-foreground">{t("oracle.theOrb")}</h3>
           <p className="text-xs text-muted-foreground">
-            {orbAnswer ? "Tap to ask again" : "Tap the orb for cosmic guidance"}
+            {orbAnswer ? t("oracle.tapAgain") : t("oracle.tapOrb")}
           </p>
 
           {orbAnimating ? (
@@ -325,7 +325,7 @@ export function OracleChamber({ onBack }: { onBack: () => void }) {
 
           {orbAnswer && (
             <p className="text-xs uppercase tracking-[0.2em] text-primary font-bold animate-fade-up">
-              ✦ THE COSMOS AFFIRMS
+              {t("oracle.cosmosAffirms")}
             </p>
           )}
         </div>
@@ -341,7 +341,7 @@ export function OracleChamber({ onBack }: { onBack: () => void }) {
                     : "card-cosmic text-foreground/90"
                 }`}>
                   {msg.role === "assistant" && (
-                    <p className="text-[10px] uppercase tracking-wider text-primary/70 font-bold mb-1">✦ ORACLE</p>
+                    <p className="text-[10px] uppercase tracking-wider text-primary/70 font-bold mb-1">{t("oracle.oracleLabel")}</p>
                   )}
                   <span className="whitespace-pre-line">{msg.content}</span>
                 </div>
@@ -350,7 +350,7 @@ export function OracleChamber({ onBack }: { onBack: () => void }) {
             {chatLoading && (
               <div className="flex justify-start">
                 <div className="card-cosmic rounded-2xl px-4 py-3">
-                  <p className="text-[10px] uppercase tracking-wider text-primary/70 font-bold mb-1">✦ ORACLE</p>
+                  <p className="text-[10px] uppercase tracking-wider text-primary/70 font-bold mb-1">{t("oracle.oracleLabel")}</p>
                   <div className="flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-primary/50 animate-bounce" style={{ animationDelay: "0ms" }} />
                     <span className="w-1.5 h-1.5 rounded-full bg-primary/50 animate-bounce" style={{ animationDelay: "150ms" }} />
@@ -365,8 +365,8 @@ export function OracleChamber({ onBack }: { onBack: () => void }) {
         {/* ── Ask the Oracle ── */}
         <div className="space-y-3">
           <div className="text-center">
-            <h3 className="font-display text-base font-bold text-foreground">Ask the Oracle, {name.split(" ")[0]}</h3>
-            <p className="text-xs text-muted-foreground italic">Speak your question into the void</p>
+            <h3 className="font-display text-base font-bold text-foreground">{t("oracle.askOracle", { name: name.split(" ")[0] })}</h3>
+            <p className="text-xs text-muted-foreground italic">{t("oracle.speakQuestion")}</p>
           </div>
           <div className="flex items-end gap-2">
             <input
@@ -374,7 +374,7 @@ export function OracleChamber({ onBack }: { onBack: () => void }) {
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask the Oracle anything…"
+              placeholder={t("oracle.inputPlaceholder")}
               className="flex-1 bg-muted/20 border border-border rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50"
             />
             <button

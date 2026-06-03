@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { ArrowLeft } from "lucide-react";
 
 interface ChamberLayoutProps {
@@ -8,6 +9,12 @@ interface ChamberLayoutProps {
 }
 
 export function ChamberLayout({ title, subtitle, children, onBack }: ChamberLayoutProps) {
+  // Scroll to top whenever any chamber opens — fixes Android blank screen
+  // when navigating from a scrolled position on the home screen
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, []);
+
   return (
     <div className="min-h-screen bg-background">
       <header className="px-5 pt-6 pb-4 flex items-center gap-3">

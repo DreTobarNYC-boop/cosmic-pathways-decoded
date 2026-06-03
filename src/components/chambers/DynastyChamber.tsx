@@ -97,7 +97,7 @@ function StarRating({ rating }: { rating: number }) {
 /* ─── Main Component ─── */
 
 export function DynastyChamber({ onBack }: { onBack: () => void }) {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { profile } = useAuth();
   const [selectedAnimal, setSelectedAnimal] = useState<string | null>(null);
 
@@ -160,23 +160,23 @@ export function DynastyChamber({ onBack }: { onBack: () => void }) {
             <span className="text-5xl font-display text-primary" style={{ fontFamily: "serif" }}>{char}</span>
           </div>
           <div>
-            <p className="text-xs uppercase tracking-widest text-muted-foreground mb-1">{name.split(" ")[0]}'s Dynasty</p>
+            <p className="text-xs uppercase tracking-widest text-muted-foreground mb-1">{t("dynasty.dynasty", { name: name.split(" ")[0] })}</p>
             <h2 className="font-display text-2xl font-bold text-foreground">{yearElement} {animal}</h2>
-            <p className="text-sm text-muted-foreground mt-1">{data.emoji} Born {year}</p>
+            <p className="text-sm text-muted-foreground mt-1">{data.emoji} {t("dynasty.born", { year })}</p>
           </div>
           <div className="flex gap-2 flex-wrap justify-center">
-            <Badge label="Element" value={data.element} />
-            <Badge label="Energy" value={data.yin_yang} />
-            <Badge label="Season" value={data.season} />
+            <Badge label={t("dynasty.element")} value={data.element} />
+            <Badge label={t("dynasty.energy")} value={data.yin_yang} />
+            <Badge label={t("dynasty.season")} value={data.season} />
           </div>
         </div>
 
         {/* ─── TRAITS ─── */}
         <div className="card-cosmic rounded-2xl p-5 space-y-3">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">Core Traits</p>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">{t("dynasty.coreTraits")}</p>
           <div className="flex flex-wrap gap-2">
-            {data.traits.map(t => (
-              <span key={t} className="px-3 py-1 rounded-full text-xs border border-primary/30 text-primary/90 bg-primary/5">{t}</span>
+            {data.traits.map(trait => (
+              <span key={trait} className="px-3 py-1 rounded-full text-xs border border-primary/30 text-primary/90 bg-primary/5">{trait}</span>
             ))}
           </div>
           <AIBlock content={profileReading.content} isLoading={profileReading.isLoading} label="your dynasty profile" />
@@ -185,13 +185,13 @@ export function DynastyChamber({ onBack }: { onBack: () => void }) {
         {/* ─── STRENGTHS & WATCH FOR ─── */}
         <div className="grid grid-cols-2 gap-3">
           <div className="card-cosmic rounded-2xl p-4 space-y-2">
-            <p className="text-xs uppercase tracking-wider text-primary/80">✦ Strengths</p>
+            <p className="text-xs uppercase tracking-wider text-primary/80">{t("dynasty.strengths")}</p>
             {data.strengths.map(s => (
               <p key={s} className="text-xs text-muted-foreground">• {s}</p>
             ))}
           </div>
           <div className="card-cosmic rounded-2xl p-4 space-y-2">
-            <p className="text-xs uppercase tracking-wider text-destructive/80">⚠ Watch For</p>
+            <p className="text-xs uppercase tracking-wider text-destructive/80">{t("dynasty.watchFor")}</p>
             {data.watchFor.map(w => (
               <p key={w} className="text-xs text-muted-foreground">• {w}</p>
             ))}
@@ -200,24 +200,24 @@ export function DynastyChamber({ onBack }: { onBack: () => void }) {
 
         {/* ─── YEAR ENERGY REPORT ─── */}
         <div className="card-cosmic rounded-2xl p-5 space-y-3">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">{currentYear} Year Energy Report</p>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">{t("dynasty.yearEnergyReport", { year: currentYear })}</p>
           <AIBlock content={yearReading.content} isLoading={yearReading.isLoading} label={`${currentYear} forecast`} />
         </div>
 
         {/* ─── LUCKY ATTRIBUTES ─── */}
         <div className="card-cosmic rounded-2xl p-5 space-y-3">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">Lucky Attributes</p>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">{t("dynasty.luckyAttributes")}</p>
           <div className="grid grid-cols-3 gap-3">
             <div className="bg-muted/20 rounded-xl p-3 text-center">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Numbers</p>
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">{t("dynasty.numbers")}</p>
               <p className="font-display text-sm font-bold text-foreground">{data.numbers.join(", ")}</p>
             </div>
             <div className="bg-muted/20 rounded-xl p-3 text-center">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Directions</p>
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">{t("dynasty.directions")}</p>
               <p className="font-display text-sm font-bold text-foreground">{data.directions.join(", ")}</p>
             </div>
             <div className="bg-muted/20 rounded-xl p-3 text-center">
-              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">Colors</p>
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground mb-1">{t("dynasty.colors")}</p>
               <div className="flex gap-1.5 justify-center mt-1">
                 {data.colors.map(c => (
                   <div key={c} className="w-5 h-5 rounded-full border border-border" style={{ backgroundColor: c.toLowerCase() }} title={c} />
@@ -229,7 +229,7 @@ export function DynastyChamber({ onBack }: { onBack: () => void }) {
 
         {/* ─── COMPATIBILITY CHECK ─── */}
         <div className="card-cosmic rounded-2xl p-5 space-y-4">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">Compatibility Check</p>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">{t("dynasty.compatibilityCheck")}</p>
           <div className="flex flex-wrap gap-2">
             {ALL_ANIMALS.map(a => {
               const isMe = a === animal;
@@ -255,10 +255,10 @@ export function DynastyChamber({ onBack }: { onBack: () => void }) {
             })}
           </div>
           <div className="flex gap-3 text-[10px] text-muted-foreground">
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500/50" /> Ally</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-destructive/50" /> Tension</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-muted-foreground/30" /> Neutral</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-primary/50" /> You</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500/50" /> {t("dynasty.ally")}</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-destructive/50" /> {t("dynasty.tension")}</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-muted-foreground/30" /> {t("dynasty.neutral")}</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-primary/50" /> {t("dynasty.you")}</span>
           </div>
 
           {selectedAnimal && selectedAnimal !== animal && (
@@ -270,7 +270,7 @@ export function DynastyChamber({ onBack }: { onBack: () => void }) {
                   compatType === "tension" ? "bg-destructive/15 text-destructive" :
                   "bg-muted/30 text-muted-foreground"
                 }`}>
-                  {compatType === "ally" ? "Strong Alliance" : compatType === "tension" ? "Challenging" : "Neutral"}
+                  {compatType === "ally" ? t("dynasty.strongAlliance") : compatType === "tension" ? t("dynasty.challenging") : t("dynasty.neutral")}
                 </span>
               </div>
               <p className="text-xs text-muted-foreground">
@@ -286,7 +286,7 @@ export function DynastyChamber({ onBack }: { onBack: () => void }) {
 
         {/* ─── 5-YEAR FORECAST ─── */}
         <div className="card-cosmic rounded-2xl p-5 space-y-3">
-          <p className="text-xs uppercase tracking-wider text-muted-foreground">5-Year Forecast</p>
+          <p className="text-xs uppercase tracking-wider text-muted-foreground">{t("dynasty.fiveYearForecast")}</p>
           {forecastReading.isLoading ? (
             <div className="flex items-center gap-2 text-muted-foreground text-sm py-3">
               <Loader2 className="w-4 h-4 animate-spin" /><span>Channeling your future…</span>
