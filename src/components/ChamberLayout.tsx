@@ -9,7 +9,7 @@ interface ChamberLayoutProps {
 
 export function ChamberLayout({ title, subtitle, children, onBack }: ChamberLayoutProps) {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background" style={{ position: "relative" }}>
       <header className="px-5 pt-6 pb-4 flex items-center gap-3">
         <button
           onClick={onBack}
