@@ -600,5 +600,23 @@
     "Naivety": "Naivety",
     "Overindulgence": "Overindulgence",
     "Gullibility": "Gullibility"
+  },
+  "paywall": {
+    "unlock": "Unlock Everything",
+    "title": "Go Premium",
+    "subtitle": "Every chamber. Every reading. Every day.",
+    "benefit1": "Full palm reading with deep analysis",
+    "benefit2": "Complete birth chart & natal wheel",
+    "benefit3": "Unlimited Oracle questions",
+    "benefit4": "Monthly, yearly, love & career readings",
+    "benefit5": "5-year Dynasty forecast",
+    "benefit6": "Numerology compatibility readings",
+    "monthly": "Monthly",
+    "perMonth": "/mo",
+    "annual": "Annual",
+    "perYear": "/yr",
+    "mostPopular": "MOST POPULAR",
+    "save": "Save 17% — 2 months free",
+    "disclaimer": "Cancel anytime · Secure checkout via Whop"
   }
 }

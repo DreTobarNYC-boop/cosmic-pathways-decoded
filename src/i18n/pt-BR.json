@@ -600,5 +600,23 @@
     "Naivety": "Ingenuidade",
     "Overindulgence": "Excesso",
     "Gullibility": "Credulidade"
+  },
+  "paywall": {
+    "unlock": "Desbloqueie Tudo",
+    "title": "Seja Premium",
+    "subtitle": "Cada câmara. Cada leitura. Todos os dias.",
+    "benefit1": "Leitura de palma completa com análise profunda",
+    "benefit2": "Mapa natal completo e roda natal",
+    "benefit3": "Perguntas ilimitadas ao Oráculo",
+    "benefit4": "Leituras mensais, anuais, de amor e carreira",
+    "benefit5": "Previsão de 5 anos da Dinastia",
+    "benefit6": "Leituras de compatibilidade numerológica",
+    "monthly": "Mensal",
+    "perMonth": "/mês",
+    "annual": "Anual",
+    "perYear": "/ano",
+    "mostPopular": "MAIS POPULAR",
+    "save": "Economize 17% — 2 meses grátis",
+    "disclaimer": "Cancele quando quiser · Pagamento seguro via Whop"
   }
 }

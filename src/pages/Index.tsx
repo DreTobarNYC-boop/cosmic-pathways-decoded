@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { BentoCard } from "@/components/BentoCard";
 import { DailyBriefing } from "@/components/DailyBriefing";
+import { PaywallModal } from "@/components/PaywallModal";
 
 import { OnboardingModal } from "@/components/OnboardingModal";
 import { useAuth } from "@/hooks/use-auth";
@@ -36,6 +37,7 @@ export default function Index() {
   const { profile, isLoading, signOut, user } = useAuth();
   const [activeChamber, setActiveChamber]   = useState<string | null>(null);
   const [chamberClosing, setChamberClosing] = useState(false);
+  const [showPaywall, setShowPaywall]       = useState(false);
 
   // Ref so popstate handler always reads current chamber without stale closure
   const activeChamberRef = useRef<string | null>(null);
@@ -144,7 +146,7 @@ export default function Index() {
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => navigate("/pricing")}
+              onClick={() => setShowPaywall(true)}
               className="flex items-center gap-1.5 bg-primary/20 text-primary rounded-full px-3 py-1.5 text-sm font-medium hover:bg-primary/30 transition-colors"
             >
               <Sparkles className="w-3.5 h-3.5" />
@@ -198,6 +200,8 @@ export default function Index() {
           ))}
         </div>
       </main>
+
+      <PaywallModal open={showPaywall} onClose={() => setShowPaywall(false)} />
     </div>
   );
 }

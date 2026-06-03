@@ -188,6 +188,11 @@ body {
   to   { transform: translateX(100vw); }
 }
 
+@keyframes chamber-slide-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0);    }
+}
+
 .chamber-entering {
   animation: chamber-slide-in 0.28s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
 }
