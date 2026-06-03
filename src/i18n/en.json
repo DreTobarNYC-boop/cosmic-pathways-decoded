@@ -196,7 +196,14 @@
     "lifePathCompat": "Life Path {{n}} Compatibility",
     "bestMatches": "✦ Best Matches",
     "goodMatches": "✦ Good Matches",
-    "growthMatches": "✦ Growth Matches"
+    "growthMatches": "✦ Growth Matches",
+    "compatTitle": "Compatibility Reading",
+    "compatSubtitle": "Enter their birth date to see how you connect",
+    "compatNamePlaceholder": "Their name (optional)",
+    "compatButton": "Check Compatibility",
+    "compatReading": "Reading the connection…",
+    "compatError": "Unable to load reading. Try again.",
+    "thePerson": "them"
   },
   "universalDayMeanings": {
     "1": "New beginnings & initiative",

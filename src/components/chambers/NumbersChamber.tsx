@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { useTranslation } from "react-i18next";
 import { ChamberLayout } from "@/components/ChamberLayout";
 import { useAuth } from "@/hooks/use-auth";
@@ -462,7 +463,16 @@ export function NumbersChamber({ onBack }: { onBack: () => void }) {
 
         {/* ── COMPATIBILITY ── */}
         <TabsContent value="compatibility" className="space-y-4">
-          <CompatibilityTab lifePath={lifePath} />
+          <CompatibilityTab
+            userName={name}
+            userLifePath={lifePath}
+            userZodiac={zodiac?.sign ?? null}
+            userElement={zodiac?.element ?? null}
+            userChineseZodiac={chineseZodiac}
+            userExpression={expressionNum}
+            userSoulUrge={soulUrgeNum}
+            language={i18n.language}
+          />
         </TabsContent>
       </Tabs>
     </ChamberLayout>
@@ -471,59 +481,168 @@ export function NumbersChamber({ onBack }: { onBack: () => void }) {
 
 /* ─── Compatibility Sub-Component ─── */
 
-const COMPAT_MATRIX: Record<number, { best: number[]; good: number[]; challenge: number[] }> = {
-  1: { best: [3, 5], good: [1, 7, 9], challenge: [4, 6, 8] },
-  2: { best: [4, 8], good: [2, 6, 9], challenge: [1, 5, 7] },
-  3: { best: [1, 5], good: [3, 6, 9], challenge: [4, 7, 8] },
-  4: { best: [2, 8], good: [4, 6, 7], challenge: [1, 3, 5] },
-  5: { best: [1, 3], good: [5, 7, 9], challenge: [2, 4, 6] },
-  6: { best: [2, 9], good: [3, 4, 6], challenge: [1, 5, 7] },
-  7: { best: [5, 7], good: [1, 4, 9], challenge: [2, 3, 6] },
-  8: { best: [2, 4], good: [6, 8], challenge: [1, 3, 5, 7] },
-  9: { best: [3, 6], good: [1, 2, 5, 9], challenge: [4, 7, 8] },
-  11: { best: [2, 6], good: [4, 8, 9], challenge: [1, 5] },
-  22: { best: [4, 8], good: [2, 6, 9], challenge: [1, 3, 5] },
-  33: { best: [6, 9], good: [2, 3, 4], challenge: [1, 5, 7] },
-};
+interface CompatibilityProps {
+  userName: string;
+  userLifePath: number;
+  userZodiac: string | null;
+  userElement: string | null;
+  userChineseZodiac: string | null;
+  userExpression: number;
+  userSoulUrge: number;
+  language: string;
+}
 
-function CompatibilityTab({ lifePath }: { lifePath: number }) {
-  const { t } = useTranslation();
-  const compat = COMPAT_MATRIX[lifePath] || COMPAT_MATRIX[9];
+function CompatibilityTab({ userName, userLifePath, userZodiac, userElement, userChineseZodiac, userExpression, userSoulUrge, language }: CompatibilityProps) {
+  const { t, i18n } = useTranslation();
+  const [otherName, setOtherName]   = useState("");
+  const [otherMonth, setOtherMonth] = useState("");
+  const [otherDay, setOtherDay]     = useState("");
+  const [otherYear, setOtherYear]   = useState("");
+  const [reading, setReading]       = useState<string | null>(null);
+  const [isLoading, setIsLoading]   = useState(false);
+  const [error, setError]           = useState<string | null>(null);
+
+  const otherDOB = otherYear && otherMonth && otherDay
+    ? new Date(`${otherYear}-${otherMonth}-${otherDay}T12:00:00`)
+    : null;
+
+  const otherLifePath     = otherDOB ? getLifePath(otherDOB) : null;
+  const otherZodiac       = otherDOB ? getZodiacFromDOB(otherDOB) : null;
+  const otherChineseZodiac = otherDOB ? getChineseZodiac(otherDOB.getFullYear()) : null;
+
+  const handleCheck = async () => {
+    if (!otherDOB || isLoading) return;
+    setIsLoading(true);
+    setError(null);
+    setReading(null);
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke("generate-reading", {
+        body: {
+          readingType: "compatibility",
+          language,
+          context: {
+            language,
+            name: userName,
+            lifePath: userLifePath,
+            zodiacSign: userZodiac,
+            element: userElement,
+            chineseZodiac: userChineseZodiac,
+            expression: userExpression,
+            soulUrge: userSoulUrge,
+            otherName: otherName.trim() || t("numbers.thePerson"),
+            otherLifePath,
+            otherZodiac: otherZodiac?.sign,
+            otherElement: otherZodiac?.element,
+            otherChineseZodiac,
+          },
+        },
+      });
+      if (fnError) throw new Error(fnError.message);
+      const content = data?.reading ?? data?.content ?? (typeof data === "string" ? data : null);
+      if (!content) throw new Error("No reading returned");
+      setReading(content);
+    } catch (err: any) {
+      setError(err.message || "Failed");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const months = useMemo(() =>
+    Array.from({ length: 12 }, (_, i) => ({
+      value: String(i + 1).padStart(2, "0"),
+      label: new Intl.DateTimeFormat(i18n.language, { month: "long" }).format(new Date(2000, i, 1)),
+    })), [i18n.language]);
+
+  const days = Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, "0"));
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: currentYear - 1919 }, (_, i) => String(currentYear - i));
+
+  const sel = "bg-muted/30 border border-input rounded-md px-2 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary appearance-none w-full";
 
   return (
-    <>
-      <SectionCard>
-        <p className="text-xs uppercase tracking-wider text-muted-foreground mb-3">{t("numbers.lifePathCompat", { n: lifePath })}</p>
+    <SectionCard>
+      <div className="space-y-4">
 
-        <div className="space-y-4">
-          <div>
-            <p className="text-xs font-semibold text-primary mb-2">{t("numbers.bestMatches")}</p>
-            <div className="flex gap-2">
-              {compat.best.map(n => (
-                <NumberCircle key={n} value={n} color="green" size="sm" />
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <p className="text-xs font-semibold text-primary mb-2">{t("numbers.goodMatches")}</p>
-            <div className="flex gap-2 flex-wrap">
-              {compat.good.map(n => (
-                <NumberCircle key={n} value={n} color="blue" size="sm" />
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <p className="text-xs font-semibold text-destructive mb-2">{t("numbers.growthMatches")}</p>
-            <div className="flex gap-2 flex-wrap">
-              {compat.challenge.map(n => (
-                <NumberCircle key={n} value={n} color="rose" size="sm" />
-              ))}
-            </div>
-          </div>
+        {/* Header */}
+        <div className="text-center space-y-1">
+          <p className="font-display text-base font-bold text-foreground">{t("numbers.compatTitle")}</p>
+          <p className="text-xs text-muted-foreground">{t("numbers.compatSubtitle")}</p>
         </div>
-      </SectionCard>
-    </>
+
+        {/* Their name */}
+        <input
+          type="text"
+          value={otherName}
+          onChange={e => setOtherName(e.target.value)}
+          placeholder={t("numbers.compatNamePlaceholder")}
+          className="w-full bg-muted/30 border border-input rounded-xl px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary"
+        />
+
+        {/* Their birth date */}
+        <div className="grid grid-cols-3 gap-2">
+          <select value={otherMonth} onChange={e => setOtherMonth(e.target.value)} className={sel}>
+            <option value="" disabled>MM</option>
+            {months.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+          </select>
+          <select value={otherDay} onChange={e => setOtherDay(e.target.value)} className={sel}>
+            <option value="" disabled>DD</option>
+            {days.map(d => <option key={d} value={d}>{d}</option>)}
+          </select>
+          <select value={otherYear} onChange={e => setOtherYear(e.target.value)} className={sel}>
+            <option value="" disabled>YYYY</option>
+            {years.map(y => <option key={y} value={y}>{y}</option>)}
+          </select>
+        </div>
+
+        {/* Computed badges */}
+        {otherLifePath && (
+          <div className="flex gap-2 flex-wrap">
+            <span className="px-2.5 py-1 rounded-full text-[11px] border border-primary/30 bg-primary/10 text-primary">
+              {t("numbers.lifePathLabel")} {otherLifePath}
+            </span>
+            {otherZodiac && (
+              <span className="px-2.5 py-1 rounded-full text-[11px] border border-primary/30 bg-primary/10 text-primary">
+                {otherZodiac.sign}
+              </span>
+            )}
+            {otherChineseZodiac && (
+              <span className="px-2.5 py-1 rounded-full text-[11px] border border-primary/30 bg-primary/10 text-primary">
+                {t(`chineseAnimals.${otherChineseZodiac}`, otherChineseZodiac)}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Button */}
+        <button
+          onClick={handleCheck}
+          disabled={!otherDOB || isLoading}
+          className="w-full py-3 rounded-xl bg-primary/20 border border-primary/40 text-primary text-sm font-semibold disabled:opacity-40 hover:bg-primary/30 transition-colors flex items-center justify-center gap-2"
+        >
+          {isLoading ? (
+            <><Loader2 className="w-4 h-4 animate-spin" /> {t("numbers.compatReading")}</>
+          ) : (
+            t("numbers.compatButton")
+          )}
+        </button>
+
+        {/* Error */}
+        {error && !isLoading && (
+          <p className="text-sm text-muted-foreground italic text-center">{t("numbers.compatError")}</p>
+        )}
+
+        {/* Reading */}
+        {reading && (
+          <div className="pt-3 border-t border-primary/15 space-y-3">
+            <p className="text-[10px] text-primary uppercase tracking-[0.2em] font-bold">
+              {userName.split(" ")[0]} × {otherName.trim() || t("numbers.thePerson")}
+            </p>
+            <p className="text-sm text-foreground/85 leading-relaxed">{reading}</p>
+          </div>
+        )}
+
+      </div>
+    </SectionCard>
   );
 }

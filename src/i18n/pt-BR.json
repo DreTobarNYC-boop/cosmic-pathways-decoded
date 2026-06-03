@@ -196,7 +196,14 @@
     "lifePathCompat": "Compatibilidade do Caminho de Vida {{n}}",
     "bestMatches": "✦ Melhores Compatibilidades",
     "goodMatches": "✦ Boas Compatibilidades",
-    "growthMatches": "✦ Compatibilidades de Crescimento"
+    "growthMatches": "✦ Compatibilidades de Crescimento",
+    "compatTitle": "Leitura de Compatibilidade",
+    "compatSubtitle": "Insira a data de nascimento para ver como vocês se conectam",
+    "compatNamePlaceholder": "Nome dela/dele (opcional)",
+    "compatButton": "Ver Compatibilidade",
+    "compatReading": "Lendo a conexão…",
+    "compatError": "Não foi possível carregar a leitura. Tente novamente.",
+    "thePerson": "essa pessoa"
   },
   "universalDayMeanings": {
     "1": "Novos começos e iniciativa",
