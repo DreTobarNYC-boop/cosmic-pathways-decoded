@@ -3,6 +3,50 @@
     "name": "DCode",
     "loading": "Loading..."
   },
+  "birthChart": {
+    "yourCosmicBlueprint": "Your Cosmic Blueprint",
+    "yourPlanets": "Your Planetary Profile",
+    "areaOfLife": "Area of Life",
+    "fullDetails": "Full Chart Details",
+    "hideDetails": "Hide Details",
+    "yourNumerology": "Your Numbers",
+    "yourDailyEnergy": "Today's Energy",
+    "planets": {
+      "sun":     "Your Sun — How You Shine",
+      "moon":    "Your Moon — Your Emotional World",
+      "mercury": "Your Mind — How You Think",
+      "venus":   "Your Heart — How You Love",
+      "mars":    "Your Drive — What Fuels You"
+    },
+    "houses": {
+      "1": "Identity & Self",
+      "2": "Money & Values",
+      "3": "Communication",
+      "4": "Home & Family",
+      "5": "Creativity & Love",
+      "6": "Health & Work",
+      "7": "Partnerships & Relationships",
+      "8": "Transformation & Depth",
+      "9": "Philosophy & Adventure",
+      "10": "Career & Legacy",
+      "11": "Community & Friendship",
+      "12": "Spirituality & the Unseen"
+    },
+    "signs": {
+      "Aries": "Bold & Pioneering",
+      "Taurus": "Steady & Loyal",
+      "Gemini": "Curious & Adaptable",
+      "Cancer": "Nurturing & Intuitive",
+      "Leo": "Radiant & Expressive",
+      "Virgo": "Precise & Analytical",
+      "Libra": "Balanced & Harmonious",
+      "Scorpio": "Intense & Transformative",
+      "Sagittarius": "Free & Expansive",
+      "Capricorn": "Disciplined & Ambitious",
+      "Aquarius": "Unique & Visionary",
+      "Pisces": "Dreamy & Compassionate"
+    }
+  },
   "header": {
     "signOut": "Sign out"
   },

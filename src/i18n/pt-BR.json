@@ -3,6 +3,50 @@
     "name": "DCode",
     "loading": "Carregando..."
   },
+  "birthChart": {
+    "yourCosmicBlueprint": "Seu Mapa Cósmico",
+    "yourPlanets": "Seu Perfil Planetário",
+    "areaOfLife": "Área da Vida",
+    "fullDetails": "Ver Dados Completos",
+    "hideDetails": "Ocultar Dados",
+    "yourNumerology": "Seus Números",
+    "yourDailyEnergy": "Energia de Hoje",
+    "planets": {
+      "sun":     "Seu Sol — Como Você Brilha",
+      "moon":    "Sua Lua — Seu Mundo Emocional",
+      "mercury": "Sua Mente — Como Você Pensa",
+      "venus":   "Seu Coração — Como Você Ama",
+      "mars":    "Seu Impulso — O Que Te Move"
+    },
+    "houses": {
+      "1": "Identidade e Eu",
+      "2": "Dinheiro e Valores",
+      "3": "Comunicação",
+      "4": "Lar e Família",
+      "5": "Criatividade e Amor",
+      "6": "Saúde e Trabalho",
+      "7": "Parcerias e Relacionamentos",
+      "8": "Transformação e Profundidade",
+      "9": "Filosofia e Aventura",
+      "10": "Carreira e Legado",
+      "11": "Comunidade e Amizade",
+      "12": "Espiritualidade e o Oculto"
+    },
+    "signs": {
+      "Aries": "Audacioso e Pioneiro",
+      "Taurus": "Estável e Leal",
+      "Gemini": "Curioso e Adaptável",
+      "Cancer": "Protetor e Intuitivo",
+      "Leo": "Radiante e Expressivo",
+      "Virgo": "Preciso e Analítico",
+      "Libra": "Equilibrado e Harmonioso",
+      "Scorpio": "Intenso e Transformador",
+      "Sagittarius": "Livre e Expansivo",
+      "Capricorn": "Disciplinado e Ambicioso",
+      "Aquarius": "Único e Visionário",
+      "Pisces": "Sonhador e Compassivo"
+    }
+  },
   "header": {
     "signOut": "Sair"
   },

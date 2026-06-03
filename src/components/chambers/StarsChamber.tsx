@@ -21,7 +21,7 @@ const TABS = [
 ];
 
 const TAB_READING_TYPE: Record<string, string> = {
-  birth_chart:   "stars_today",
+  birth_chart:   "stars_birth_chart",
   today:         "daily_horoscope",
   monthly:       "stars_monthly",
   yearly:        "stars_yearly",
@@ -33,6 +33,7 @@ const TAB_READING_TYPE: Record<string, string> = {
 
 export function StarsChamber({ onBack }: { onBack: () => void }) {
   const [activeTab, setActiveTab] = useState("today");
+  const [showChartDetails, setShowChartDetails] = useState(false);
   const { profile } = useAuth();
   const { i18n } = useTranslation();
   const lang = i18n.language ?? "en";
@@ -77,7 +78,10 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
   }), [zodiac, natal, numerology, lifePath, personalDay, universalDay, chineseZodiac, profile, lang]);
 
   const readingType = TAB_READING_TYPE[activeTab] ?? "daily_horoscope";
-  const cacheKey = `${readingType}_${dateKey}_${lang}`;
+  // Birth chart doesn't change daily — cache by DOB not by date
+  const cacheKey = activeTab === "birth_chart"
+    ? `stars_birth_chart_${profile?.dateOfBirth ?? "unknown"}_${lang}`
+    : `${readingType}_${dateKey}_${lang}`;
 
   const { content: reading, isLoading, error, retry } = useCachedReading({
     readingType,
@@ -138,43 +142,87 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
       )}
 
       {activeTab === "birth_chart" && natal && (
-        <div className="flex flex-col gap-4">
-          {/* Co-Star style natal wheel */}
+        <div className="flex flex-col gap-5">
+
+          {/* ① Natal wheel */}
           <NatalChartWheel natal={natal} />
 
-          <div className="rounded-xl border border-[#C5A059]/20 bg-[#0B1A1A] p-5">
-            <p className="text-[#C5A059] text-[10px] tracking-[0.2em] uppercase mb-3">{t("stars.natalPlanets")}</p>
-            {[
-              { label: "☉ " + t("natalWheel.sun"),     value: `${natal.sun.sign} ${natal.sun.degree}° · House ${natal.sun.house}` },
-              { label: "☽ " + t("natalWheel.moon"),    value: `${natal.moon.sign} ${natal.moon.degree}° · House ${natal.moon.house}` },
-              { label: "☿ " + t("natalWheel.mercury"), value: `${natal.mercury.sign} ${natal.mercury.degree}° · House ${natal.mercury.house}` },
-              { label: "♀ " + t("natalWheel.venus"),   value: `${natal.venus.sign} ${natal.venus.degree}° · House ${natal.venus.house}` },
-              { label: "♂ " + t("natalWheel.mars"),    value: `${natal.mars.sign} ${natal.mars.degree}° · House ${natal.mars.house}` },
-            ].map(({ label, value }) => (
-              <div key={label} className="flex justify-between items-center py-2 border-b border-[#C5A059]/10 last:border-0">
-                <span className="text-[#C5A059] text-sm">{label}</span>
-                <span className="text-[#FFFDD0]/70 text-sm">{value}</span>
-              </div>
-            ))}
+          {/* ② Cosmic Blueprint — AI narrative in plain language */}
+          <div className="rounded-2xl border border-[#C5A059]/20 bg-[#0B1A1A] p-5">
+            <p className="text-[#C5A059] text-[10px] tracking-[0.2em] uppercase mb-3">
+              {t("birthChart.yourCosmicBlueprint")}
+            </p>
+            <TodayReadingCard data={reading} isLoading={isLoading} error={error} onRetry={retry} />
           </div>
-          {numerology && (
-            <div className="rounded-xl border border-[#C5A059]/20 bg-[#0B1A1A] p-5">
-              <p className="text-[#C5A059] text-[10px] tracking-[0.2em] uppercase mb-3">{t("stars.numerology")}</p>
-              {[
-                { label: t("stars.lifePath"),   value: `${numerology.lifePath} · ${numerology.descriptions.lifePath}` },
-                { label: t("stars.expression"), value: `${numerology.expression} · ${numerology.descriptions.expression}` },
-                { label: t("stars.soulUrge"),   value: `${numerology.soulUrge} · ${numerology.descriptions.soulUrge}` },
-                { label: t("stars.personality"),value: `${numerology.personality} · ${numerology.descriptions.personality}` },
-              ].map(({ label, value }) => (
-                <div key={label} className="flex justify-between items-start py-2 border-b border-[#C5A059]/10 last:border-0 gap-4">
-                  <span className="text-[#C5A059] text-sm shrink-0">{label}</span>
-                  <span className="text-[#FFFDD0]/70 text-xs text-right">{value}</span>
+
+          {/* ③ Planetary Profile — layperson planet cards */}
+          <div>
+            <p className="text-[#C5A059] text-[10px] tracking-[0.2em] uppercase mb-3">
+              {t("birthChart.yourPlanets")}
+            </p>
+            <div className="space-y-2">
+              {([
+                { key: "sun",     symbol: "☉", planet: natal.sun },
+                { key: "moon",    symbol: "☽", planet: natal.moon },
+                { key: "mercury", symbol: "☿", planet: natal.mercury },
+                { key: "venus",   symbol: "♀", planet: natal.venus },
+                { key: "mars",    symbol: "♂", planet: natal.mars },
+              ] as const).map(({ key, symbol, planet }) => (
+                <div key={key} className="rounded-xl border border-[#C5A059]/15 bg-[#0B1A1A] p-4">
+                  <div className="flex justify-between items-start gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] text-[#C5A059]/60 uppercase tracking-wider mb-0.5">
+                        {symbol} {t(`birthChart.planets.${key}`)}
+                      </p>
+                      <p className="font-display text-lg text-[#C5A059] font-bold leading-tight">
+                        {planet.sign}
+                      </p>
+                      <p className="text-xs text-[#FFFDD0]/45 mt-0.5">
+                        {t(`birthChart.signs.${planet.sign}`, planet.sign)}
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-[9px] text-[#FFFDD0]/30 uppercase tracking-wider mb-1">
+                        {t("birthChart.areaOfLife")}
+                      </p>
+                      <p className="text-xs text-[#FFFDD0]/55 max-w-[120px] text-right leading-snug">
+                        {t(`birthChart.houses.${planet.house}`, `House ${planet.house}`)}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* ④ Numerology — simplified */}
+          {numerology && (
+            <div className="rounded-2xl border border-[#C5A059]/20 bg-[#0B1A1A] p-5">
+              <p className="text-[#C5A059] text-[10px] tracking-[0.2em] uppercase mb-4">
+                {t("birthChart.yourNumerology")}
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                {[
+                  { label: t("stars.lifePath"),    num: numerology.lifePath,   desc: numerology.descriptions.lifePath },
+                  { label: t("stars.expression"),  num: numerology.expression, desc: numerology.descriptions.expression },
+                  { label: t("stars.soulUrge"),    num: numerology.soulUrge,   desc: numerology.descriptions.soulUrge },
+                  { label: t("stars.personality"), num: numerology.personality,desc: numerology.descriptions.personality },
+                ].map(({ label, num, desc }) => (
+                  <div key={label} className="rounded-xl border border-[#C5A059]/10 bg-[#0B1A1A] p-3 text-center">
+                    <p className="text-[9px] text-[#FFFDD0]/40 uppercase tracking-wider mb-1">{label}</p>
+                    <p className="text-[#C5A059] text-2xl font-['Libre_Baskerville'] mb-1">{num}</p>
+                    <p className="text-[10px] text-[#FFFDD0]/55 leading-snug">{desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
-          <div className="rounded-xl border border-[#C5A059]/20 bg-[#0B1A1A] p-5">
-            <p className="text-[#C5A059] text-[10px] tracking-[0.2em] uppercase mb-3">{t("stars.dailyNumbers")}</p>
+
+          {/* ⑤ Daily energy */}
+          <div className="rounded-2xl border border-[#C5A059]/20 bg-[#0B1A1A] p-5">
+            <p className="text-[#C5A059] text-[10px] tracking-[0.2em] uppercase mb-3">
+              {t("birthChart.yourDailyEnergy")}
+            </p>
             <div className="grid grid-cols-2 gap-3">
               <div className="text-center">
                 <p className="text-[#FFFDD0]/40 text-[9px] tracking-wider uppercase mb-1">{t("stars.universalDay")}</p>
@@ -188,15 +236,45 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
               )}
             </div>
           </div>
+
+          {/* ⑥ Collapsible technical details for astrology buffs */}
+          <button
+            onClick={() => setShowChartDetails(v => !v)}
+            className="text-xs text-[#FFFDD0]/40 hover:text-[#FFFDD0]/70 transition-colors flex items-center gap-1.5 mx-auto"
+          >
+            <span>{showChartDetails ? t("birthChart.hideDetails") : t("birthChart.fullDetails")}</span>
+            <span>{showChartDetails ? "↑" : "↓"}</span>
+          </button>
+
+          {showChartDetails && (
+            <div className="rounded-xl border border-[#C5A059]/20 bg-[#0B1A1A] p-5">
+              <p className="text-[#C5A059] text-[10px] tracking-[0.2em] uppercase mb-3">{t("stars.natalPlanets")}</p>
+              {[
+                { label: "☉ " + t("natalWheel.sun"),     value: `${natal.sun.sign} ${natal.sun.degree}° · House ${natal.sun.house}` },
+                { label: "☽ " + t("natalWheel.moon"),    value: `${natal.moon.sign} ${natal.moon.degree}° · House ${natal.moon.house}` },
+                { label: "☿ " + t("natalWheel.mercury"), value: `${natal.mercury.sign} ${natal.mercury.degree}° · House ${natal.mercury.house}` },
+                { label: "♀ " + t("natalWheel.venus"),   value: `${natal.venus.sign} ${natal.venus.degree}° · House ${natal.venus.house}` },
+                { label: "♂ " + t("natalWheel.mars"),    value: `${natal.mars.sign} ${natal.mars.degree}° · House ${natal.mars.house}` },
+              ].map(({ label, value }) => (
+                <div key={label} className="flex justify-between items-center py-2 border-b border-[#C5A059]/10 last:border-0">
+                  <span className="text-[#C5A059] text-sm">{label}</span>
+                  <span className="text-[#FFFDD0]/70 text-sm">{value}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
-      <TodayReadingCard
-        data={reading}
-        isLoading={isLoading}
-        error={error}
-        onRetry={retry}
-      />
+      {/* All non-birth-chart tabs show reading card at bottom */}
+      {activeTab !== "birth_chart" && (
+        <TodayReadingCard
+          data={reading}
+          isLoading={isLoading}
+          error={error}
+          onRetry={retry}
+        />
+      )}
     </ChamberLayout>
   );
 }

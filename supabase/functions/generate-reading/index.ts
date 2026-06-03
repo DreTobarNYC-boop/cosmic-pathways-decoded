@@ -59,6 +59,7 @@ DATA (pre-calculated, treat as fact):
   const tasks: Record<string, string> = {
     daily_horoscope: "TASK: Weave a TODAY reading. Reference the interplay between the Personal Day number and the Sun/Moon positions specifically. Make it feel like a trusted advisor is speaking directly to this person.",
     stars_today: "TASK: Weave a TODAY stars reading using the planetary data above. Be specific about what the Sun and Moon positions mean for this person today.",
+    stars_birth_chart: `TASK: Write a BIRTH CHART reading in plain language for someone who has never studied astrology. Use the planetary data above. Write 3 short paragraphs: (1) Who they are at their core — based on their Sun sign, Moon sign, and Life Path. No jargon. Speak directly to them. (2) How they love and connect — based on Venus and Moon. (3) What drives them and what they're here to do — based on Mars, Life Path, and Expression number. Every sentence should feel like something they'd want to share with a friend. Zero technical language.`,
     stars_monthly: "TASK: Weave a MONTHLY reading. Focus on the longer arc — what themes will this person navigate this month given their natal placements.",
     stars_yearly: "TASK: Weave a YEAR reading. What is the overarching energy of this year for this person based on their Life Path and planetary data.",
     stars_love: "TASK: Weave a LOVE reading. Reference Venus position and Soul Urge number specifically.",
