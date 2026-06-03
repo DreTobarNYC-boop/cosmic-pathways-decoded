@@ -33,7 +33,7 @@ function repairJSON(json: string): string {
   return result;
 }
 
-function extractJSON(raw: string): Record<string, unknown> {
+function extractJSON(raw: string, language = "en"): Record<string, unknown> {
   const cleaned = raw.replace(/```json\s*/g, "").replace(/```/g, "").trim();
 
   // 1. Try parsing as-is
@@ -48,21 +48,40 @@ function extractJSON(raw: string): Record<string, unknown> {
     }
   } catch { /* continue */ }
 
-  // 3. Clean fallback — never show raw JSON to the user
+  // 3. Language-aware fallback — never show raw JSON, never show English to Spanish/Portuguese users
+  const isEs = language.startsWith("es");
+  const isPt = language.startsWith("pt");
+  const archetypeName = isEs ? "Oráculo de Palma" : isPt ? "Oráculo da Palma" : "Palm Oracle";
+  const summaryMsg = isEs
+    ? "Tu lectura fue recibida. Por favor escanea tu palma de nuevo para la lectura completa."
+    : isPt
+    ? "Sua leitura foi recebida. Por favor escaneie sua palma novamente para a leitura completa."
+    : "Your reading was received. Please scan your palm again for the full reading.";
+  const cosmicMsg = isEs
+    ? "Escanea tu palma de nuevo — el Oráculo tiene más para revelar."
+    : isPt
+    ? "Escaneie sua palma novamente — o Oráculo tem mais para revelar."
+    : "Please scan your palm again — the Oracle has more to reveal.";
+  const closingMsg = isEs
+    ? "Escanea tu palma de nuevo para recibir tu lectura cósmica completa."
+    : isPt
+    ? "Escaneie sua palma novamente para receber sua leitura cósmica completa."
+    : "Scan your palm again to receive your complete cosmic reading.";
+
   return {
     handType: "Unknown",
     element: "Unknown",
     archetype: {
-      name: "Palm Oracle",
+      name: archetypeName,
       traits: [],
-      summary: "Your reading was received. Please scan your palm again for the full cosmic reading.",
+      summary: summaryMsg,
       shadow: "",
       hiddenGift: "",
     },
     overallReading: {
       lifeTheme: "",
       currentChapter: "",
-      cosmicMessage: "Please scan your palm again — the Oracle has more to reveal.",
+      cosmicMessage: cosmicMsg,
     },
     lines: {},
     mounts: {},
@@ -72,7 +91,7 @@ function extractJSON(raw: string): Record<string, unknown> {
     health: {},
     timeline: {},
     markings: [],
-    closingMessage: "Scan your palm again to receive your complete cosmic reading.",
+    closingMessage: closingMsg,
   };
 }
 
@@ -230,7 +249,7 @@ REMEMBER: ${langEnforcement}`;
       contents: [{ role: "user", parts: userParts }],
       generationConfig: {
         temperature: 0.8,
-        maxOutputTokens: 4000,
+        maxOutputTokens: 5000,
       },
     };
 
@@ -275,7 +294,7 @@ REMEMBER: ${langEnforcement}`;
       );
     }
 
-    const parsed = extractJSON(raw);
+    const parsed = extractJSON(raw, language);
 
     return new Response(JSON.stringify(parsed), {
       status: 200,

@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { ArrowLeft } from "lucide-react";
 
 interface ChamberLayoutProps {
@@ -9,16 +8,11 @@ interface ChamberLayoutProps {
 }
 
 export function ChamberLayout({ title, subtitle, children, onBack }: ChamberLayoutProps) {
-  // Scroll to top whenever any chamber opens — fixes Android blank screen.
-  // Hit all three targets: some Android browsers only honour one of them.
-  useEffect(() => {
-    window.scrollTo(0, 0);
-    document.documentElement.scrollTop = 0;
-    document.body.scrollTop = 0;
-  }, []);
-
+  // Fixed overlay — covers the home screen regardless of scroll position.
+  // This permanently fixes iOS Safari AND Android blank-screen issues:
+  // no scroll manipulation needed, chamber always starts at the top.
   return (
-    <div className="min-h-screen bg-background">
+    <div className="fixed inset-0 bg-background overflow-y-auto z-50">
       <header className="px-5 pt-6 pb-4 flex items-center gap-3">
         <button
           onClick={onBack}

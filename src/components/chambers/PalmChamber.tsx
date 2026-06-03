@@ -147,7 +147,7 @@ export function PalmChamber({ onBack }: PalmChamberProps) {
   };
 
   return (
-    <ChamberLayout title="The Palm" subtitle="Palm Reading" onBack={onBack}>
+    <ChamberLayout title={t("chambers.thePalm")} subtitle={t("chambers.palmReading")} onBack={onBack}>
       <input
         ref={fileRef}
         type="file"
