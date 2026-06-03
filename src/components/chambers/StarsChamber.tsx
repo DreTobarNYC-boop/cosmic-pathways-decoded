@@ -35,7 +35,7 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
   const [activeTab, setActiveTab] = useState("today");
   const [showChartDetails, setShowChartDetails] = useState(false);
   const { profile } = useAuth();
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const lang = i18n.language ?? "en";
 
   const dob = useMemo(() =>
