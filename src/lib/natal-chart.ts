@@ -139,7 +139,10 @@ export function calculateNatalChart(dob: Date, birthLat: number = 4.711): NatalC
   // Use the authoritative date-based sign (matches the Stars header) instead
   // of the astronomical approximation, which can land on the wrong sign at
   // sign boundaries. Degree is derived relative to that sign's start.
-  const sunSignName = getZodiacFromDOB(dob).sign;
+  // Read the date from UTC components to match the Julian-day calc above and
+  // stay timezone-independent.
+  const calendarDate = new Date(dob.getUTCFullYear(), dob.getUTCMonth(), dob.getUTCDate(), 12);
+  const sunSignName = getZodiacFromDOB(calendarDate).sign;
   const sunSignIndex = SIGNS.indexOf(sunSignName);
   const sunDegree = Math.max(0, Math.min(29,
     Math.round(normalizeAngle(sunLon - sunSignIndex * 30))));

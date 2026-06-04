@@ -41,15 +41,29 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
   const { isLocked, openPaywall } = useSubscription();
   const lang = i18n.language ?? "en";
 
-  const dob = useMemo(() =>
-    profile?.dateOfBirth ? new Date(profile.dateOfBirth + "T12:00:00") : null,
-  [profile?.dateOfBirth]);
+  // Date-only anchor for numerology / zodiac (calendar date, timezone-stable).
+  const dob = useMemo(() => {
+    if (!profile?.dateOfBirth) return null;
+    const [y, m, d] = profile.dateOfBirth.split("-").map(Number);
+    return new Date(y, m - 1, d, 12, 0, 0);
+  }, [profile?.dateOfBirth]);
+
+  // Precise UTC birth moment for the natal chart — uses real birth time when
+  // known (improves Moon accuracy on sign-change days), noon UTC otherwise.
+  const birthMoment = useMemo(() => {
+    if (!profile?.dateOfBirth) return null;
+    let time = "12:00";
+    if (/^\d{1,2}:\d{2}/.test(profile.birthTime ?? "")) {
+      time = profile.birthTime!.length === 4 ? "0" + profile.birthTime : profile.birthTime!;
+    }
+    return new Date(`${profile.dateOfBirth}T${time}:00Z`);
+  }, [profile?.dateOfBirth, profile?.birthTime]);
 
   const today = new Date();
   const dateKey = today.toISOString().slice(0, 10);
 
   const zodiac     = dob ? getZodiacFromDOB(dob) : null;
-  const natal      = dob ? calculateNatalChart(dob) : null;
+  const natal      = birthMoment ? calculateNatalChart(birthMoment) : null;
   const numerology = (dob && profile?.fullName)
     ? getNumerologyProfile(profile.fullName, dob)
     : null;
