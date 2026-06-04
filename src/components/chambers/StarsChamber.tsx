@@ -8,6 +8,8 @@ import { getZodiacFromDOB, getUniversalDay, getUniversalMonth, getPersonalDay, g
 import { calculateNatalChart } from "@/lib/natal-chart";
 import { NatalChartWheel } from "@/components/NatalChartWheel";
 import { getNumerologyProfile } from "@/lib/numerology-deep";
+import { useSubscription } from "@/hooks/use-subscription";
+import { LockedContent } from "@/components/LockedContent";
 
 const TABS = [
   { id: "birth_chart",   labelKey: "stars.tabs.birthChart" },
@@ -36,6 +38,7 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
   const [showChartDetails, setShowChartDetails] = useState(false);
   const { profile } = useAuth();
   const { t, i18n } = useTranslation();
+  const { isLocked, openPaywall } = useSubscription();
   const lang = i18n.language ?? "en";
 
   const dob = useMemo(() =>
@@ -144,9 +147,25 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
       {activeTab === "birth_chart" && natal && (
         <div className="flex flex-col gap-5">
 
-          {/* ① Natal wheel */}
+          {/* ① Natal wheel — free visual hook */}
           <NatalChartWheel natal={natal} />
 
+          {/* Everything below the wheel is premium. When locked, blur it. */}
+          {isLocked ? (
+            <LockedContent onUnlock={() => openPaywall(t("chambers.theStars"))}>
+              <div className="space-y-4">
+                <div className="rounded-2xl border border-[#C5A059]/20 bg-[#0B1A1A] p-5">
+                  <p className="text-[#C5A059] text-[10px] tracking-[0.2em] uppercase mb-3">{t("birthChart.yourCosmicBlueprint")}</p>
+                  <div className="h-24" />
+                </div>
+                <div className="rounded-2xl border border-[#C5A059]/20 bg-[#0B1A1A] p-5">
+                  <p className="text-[#C5A059] text-[10px] tracking-[0.2em] uppercase mb-3">{t("birthChart.yourPlanets")}</p>
+                  <div className="h-32" />
+                </div>
+              </div>
+            </LockedContent>
+          ) : (
+          <>
           {/* ② Cosmic Blueprint — AI narrative in plain language */}
           <div className="rounded-2xl border border-[#C5A059]/20 bg-[#0B1A1A] p-5">
             <p className="text-[#C5A059] text-[10px] tracking-[0.2em] uppercase mb-3">
@@ -263,17 +282,26 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
               ))}
             </div>
           )}
+          </>
+          )}
         </div>
       )}
 
-      {/* All non-birth-chart tabs show reading card at bottom */}
+      {/* All non-birth-chart tabs show reading card at bottom.
+          Today is free; every other tab is gated when paywall is active. */}
       {activeTab !== "birth_chart" && (
-        <TodayReadingCard
-          data={reading}
-          isLoading={isLoading}
-          error={error}
-          onRetry={retry}
-        />
+        isLocked && activeTab !== "today" ? (
+          <LockedContent onUnlock={() => openPaywall(t("chambers.theStars"))}>
+            <TodayReadingCard data={reading} isLoading={false} error={null} />
+          </LockedContent>
+        ) : (
+          <TodayReadingCard
+            data={reading}
+            isLoading={isLoading}
+            error={error}
+            onRetry={retry}
+          />
+        )
       )}
     </ChamberLayout>
   );

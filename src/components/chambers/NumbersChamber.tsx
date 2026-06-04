@@ -1,5 +1,7 @@
 import { useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useSubscription } from "@/hooks/use-subscription";
+import { LockedContent } from "@/components/LockedContent";
 import { useTranslation } from "react-i18next";
 import { ChamberLayout } from "@/components/ChamberLayout";
 import { useAuth } from "@/hooks/use-auth";
@@ -163,6 +165,7 @@ function getLuckyNumbers(dob: Date, name: string) {
 export function NumbersChamber({ onBack }: { onBack: () => void }) {
   const { t, i18n } = useTranslation();
   const { profile } = useAuth();
+  const { isLocked, openPaywall } = useSubscription();
   const [activeTab, setActiveTab] = useState("today");
 
   const dob = useMemo(() => profile?.dateOfBirth ? new Date(profile.dateOfBirth + "T12:00:00") : null, [profile?.dateOfBirth]);
@@ -261,7 +264,18 @@ export function NumbersChamber({ onBack }: { onBack: () => void }) {
       </div>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <Tabs
+        value={activeTab}
+        onValueChange={(tab) => {
+          // Today is free; tapping any other tab while locked opens the paywall
+          if (isLocked && tab !== "today") {
+            openPaywall(t("chambers.theNumbers"));
+            return;
+          }
+          setActiveTab(tab);
+        }}
+        className="w-full"
+      >
         <TabsList className="w-full flex overflow-x-auto gap-1 bg-muted/20 border border-border rounded-xl p-1 mb-4 no-scrollbar">
           {[
             { value: "today",         labelKey: "numbers.tabs.today" },
@@ -305,9 +319,25 @@ export function NumbersChamber({ onBack }: { onBack: () => void }) {
                 <p className="text-sm font-semibold text-foreground">{t(`personalDayMeanings.${personalDay}`, PERSONAL_DAY_MEANINGS[personalDay])}</p>
               </div>
             </div>
-            <AIReadingBlock content={todayReading.content} isLoading={todayReading.isLoading} error={todayReading.error} label="today's frequency" />
+            {isLocked ? (
+              <LockedContent onUnlock={() => openPaywall(t("chambers.theNumbers"))}>
+                <div className="h-20" />
+              </LockedContent>
+            ) : (
+              <AIReadingBlock content={todayReading.content} isLoading={todayReading.isLoading} error={todayReading.error} label="today's frequency" />
+            )}
           </SectionCard>
 
+          {/* Personal Month + Year — premium, blur together when locked */}
+          {isLocked ? (
+            <LockedContent onUnlock={() => openPaywall(t("chambers.theNumbers"))}>
+              <div className="space-y-4">
+                <SectionCard><div className="flex items-center gap-4"><NumberCircle value={personalMonth} color="green" size="sm" /><div className="flex-1"><p className="text-xs uppercase tracking-wider text-muted-foreground">{t("numbers.personalMonth")}</p><div className="h-4" /></div></div></SectionCard>
+                <SectionCard><div className="flex items-center gap-4"><NumberCircle value={personalYear} color="rose" size="sm" /><div className="flex-1"><p className="text-xs uppercase tracking-wider text-muted-foreground">{t("numbers.personalYear", { year: today.getFullYear() })}</p><div className="h-4" /></div></div></SectionCard>
+              </div>
+            </LockedContent>
+          ) : (
+          <>
           {/* Personal Month */}
           <SectionCard>
             <div className="flex items-center gap-4">
@@ -329,6 +359,8 @@ export function NumbersChamber({ onBack }: { onBack: () => void }) {
               </div>
             </div>
           </SectionCard>
+          </>
+          )}
         </TabsContent>
 
         {/* ── LIFE PATH ── */}
