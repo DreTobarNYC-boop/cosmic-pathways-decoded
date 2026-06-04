@@ -229,7 +229,9 @@ export function OracleChamber({ onBack }: { onBack: () => void }) {
     try {
       const { data, error } = await supabase.functions.invoke("generate-reading", {
         body: {
+          readingType: "oracle_chat",
           reading_type: "oracle_chat",
+          language: normalizeLanguage(i18n.language),
           context: {
             name,
             zodiacSign: zodiac?.sign || "Unknown",
