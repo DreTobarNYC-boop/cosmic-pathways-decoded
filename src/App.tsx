@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/use-auth";
 import { SubscriptionProvider } from "@/hooks/use-subscription";
+import { InstallPrompt } from "@/components/InstallPrompt";
 import Index from "./pages/Index.tsx";
 import Pricing from "./pages/Pricing.tsx";
 import Admin from "./pages/Admin.tsx";
@@ -26,6 +27,7 @@ const App = () => (
             <Route path="/admin" element={<Admin />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <InstallPrompt />
         </BrowserRouter>
       </TooltipProvider>
       </SubscriptionProvider>

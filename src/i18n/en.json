@@ -624,5 +624,13 @@
     "unlock": "Unlock",
     "oneScanUsed": "You've used your free scan today",
     "oneQuestionUsed": "You've used your free question today"
+  },
+  "install": {
+    "title": "Add DCode to your home screen",
+    "iosTap": "Tap",
+    "iosThen": "then",
+    "iosAdd": "Add to Home Screen",
+    "androidHint": "Install for the full app experience",
+    "button": "Install"
   }
 }

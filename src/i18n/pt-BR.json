@@ -624,5 +624,13 @@
     "unlock": "Desbloquear",
     "oneScanUsed": "Você já usou seu escaneamento grátis de hoje",
     "oneQuestionUsed": "Você já usou sua pergunta grátis de hoje"
+  },
+  "install": {
+    "title": "Adicione o DCode à tela inicial",
+    "iosTap": "Toque em",
+    "iosThen": "depois",
+    "iosAdd": "Adicionar à Tela",
+    "androidHint": "Instale para a experiência completa",
+    "button": "Instalar"
   }
 }
