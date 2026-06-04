@@ -14,7 +14,7 @@ import {
   reduceToSingle,
 } from "@/lib/daily";
 import { normalizeLanguage } from "@/lib/language";
-import { Send, Loader2, Sparkles, Triangle } from "lucide-react";
+import { Send, Loader2, Sparkles } from "lucide-react";
 import { useSubscription } from "@/hooks/use-subscription";
 
 /* ─── Grabovoi Codes ─── */
@@ -68,74 +68,6 @@ const CHINESE_EMOJI: Record<string, { emoji: string; char: string }> = {
   Dog: { emoji: "🐕", char: "戌" }, Pig: { emoji: "🐖", char: "亥" },
 };
 
-/* ─── Orb Answers ─── */
-
-const ORB_ANSWERS = [
-  "The cosmos affirms. Yes.",
-  "Not yet. The timing isn't aligned.",
-  "Your Air code never lies. Yes.",
-  "The universe is rearranging for you.",
-  "Trust the process. It's unfolding.",
-  "This path leads to transformation.",
-  "The stars say: proceed with courage.",
-  "Surrender to divine timing.",
-  "Your ancestors approve. Move forward.",
-  "The energy shifts in your favor soon.",
-  "A portal opens when you least expect.",
-  "Your frequency attracts the answer.",
-  "The veil is thin — trust your vision.",
-  "The Oracle sees alignment. Yes.",
-  "Release attachment. The answer comes.",
-  "Your code is activated. Trust it.",
-  "The elements conspire in your favor.",
-  "Wait. Something better is forming.",
-  "Your soul already knows. Listen.",
-  "The cosmic wheel turns toward you.",
-];
-
-/* ─── Orb Component ─── */
-
-function TheOrb({ onTap }: { onTap: () => void }) {
-  const { t } = useTranslation();
-  return (
-    <button
-      onClick={onTap}
-      className="relative w-48 h-48 mx-auto rounded-full group transition-transform active:scale-95"
-    >
-      {/* Outer glow */}
-      <div className="absolute inset-0 rounded-full bg-gradient-to-b from-[hsl(220,30%,30%)] to-[hsl(240,20%,15%)] shadow-[0_0_40px_8px_hsl(220,30%,20%/0.4)]" />
-      {/* Inner sphere gradient */}
-      <div className="absolute inset-2 rounded-full bg-gradient-to-b from-[hsl(220,20%,35%)] via-[hsl(240,15%,20%)] to-[hsl(260,20%,12%)] overflow-hidden">
-        {/* Light reflection */}
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 w-16 h-8 bg-gradient-to-b from-white/20 to-transparent rounded-full blur-sm" />
-      </div>
-      {/* Triangle + ASK text */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
-        <Triangle className="w-5 h-5 text-primary/70" />
-        <span className="text-xs uppercase tracking-[0.3em] text-primary/70 font-display font-bold">{t("oracle.askButton")}</span>
-      </div>
-    </button>
-  );
-}
-
-function OrbWithAnswer({ answer, onTap }: { answer: string; onTap: () => void }) {
-  return (
-    <button
-      onClick={onTap}
-      className="relative w-48 h-48 mx-auto rounded-full group transition-transform active:scale-95"
-    >
-      <div className="absolute inset-0 rounded-full bg-gradient-to-b from-[hsl(220,30%,30%)] to-[hsl(240,20%,15%)] shadow-[0_0_50px_12px_hsl(270,40%,30%/0.3)]" />
-      <div className="absolute inset-2 rounded-full bg-gradient-to-b from-[hsl(250,25%,30%)] via-[hsl(260,20%,18%)] to-[hsl(270,20%,12%)] overflow-hidden">
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-6 bg-gradient-to-b from-white/15 to-transparent rounded-full blur-sm" />
-      </div>
-      <div className="absolute inset-0 flex flex-col items-center justify-center px-6">
-        <p className="text-sm text-foreground font-display font-bold text-center leading-snug">{answer}</p>
-        <Triangle className="w-3 h-3 text-primary/50 mt-2" />
-      </div>
-    </button>
-  );
-}
-
 /* ─── Chat Message ─── */
 
 interface ChatMessage {
@@ -183,19 +115,6 @@ export function OracleChamber({ onBack }: { onBack: () => void }) {
     },
   });
 
-  // Orb state
-  const [orbAnswer, setOrbAnswer] = useState<string | null>(null);
-  const [orbAnimating, setOrbAnimating] = useState(false);
-
-  const tapOrb = useCallback(() => {
-    setOrbAnimating(true);
-    setOrbAnswer(null);
-    setTimeout(() => {
-      const answer = ORB_ANSWERS[Math.floor(Math.random() * ORB_ANSWERS.length)];
-      setOrbAnswer(answer);
-      setOrbAnimating(false);
-    }, 1200);
-  }, []);
 
   // Chat state
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -314,34 +233,6 @@ export function OracleChamber({ onBack }: { onBack: () => void }) {
             <span className="text-primary">◉</span>
             <span className="font-display text-lg font-bold text-foreground">{todaysFreq.hz} Hz — {t(`oracle.freqs.${todaysFreq.key}`, todaysFreq.name)}</span>
           </div>
-        </div>
-
-        {/* ── The Orb ── */}
-        <div className="text-center space-y-3 py-4">
-          <h3 className="font-display text-sm font-bold uppercase tracking-[0.15em] text-foreground">{t("oracle.theOrb")}</h3>
-          <p className="text-xs text-muted-foreground">
-            {orbAnswer ? t("oracle.tapAgain") : t("oracle.tapOrb")}
-          </p>
-
-          {orbAnimating ? (
-            <div className="relative w-48 h-48 mx-auto rounded-full">
-              <div className="absolute inset-0 rounded-full bg-gradient-to-b from-[hsl(220,30%,30%)] to-[hsl(240,20%,15%)] animate-pulse shadow-[0_0_50px_12px_hsl(270,40%,30%/0.4)]" />
-              <div className="absolute inset-2 rounded-full bg-gradient-to-b from-[hsl(250,25%,30%)] via-[hsl(260,20%,18%)] to-[hsl(270,20%,12%)]" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Loader2 className="w-6 h-6 text-primary/50 animate-spin" />
-              </div>
-            </div>
-          ) : orbAnswer ? (
-            <OrbWithAnswer answer={orbAnswer} onTap={tapOrb} />
-          ) : (
-            <TheOrb onTap={tapOrb} />
-          )}
-
-          {orbAnswer && (
-            <p className="text-xs uppercase tracking-[0.2em] text-primary font-bold animate-fade-up">
-              {t("oracle.cosmosAffirms")}
-            </p>
-          )}
         </div>
 
         {/* ── Chat Messages ── */}
