@@ -6,6 +6,8 @@ import { useCachedReading } from "@/hooks/use-cached-reading";
 import { getChineseZodiac, getZodiacFromDOB, getLifePath } from "@/lib/daily";
 import { WithInfo } from "@/components/ui/info-tooltip";
 import { Loader2, ChevronDown, Star } from "lucide-react";
+import { useSubscription } from "@/hooks/use-subscription";
+import { LockedContent } from "@/components/LockedContent";
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui/accordion";
 
 /* ─── Chinese Characters & Data ─── */
@@ -100,6 +102,7 @@ function StarRating({ rating }: { rating: number }) {
 export function DynastyChamber({ onBack }: { onBack: () => void }) {
   const { t, i18n } = useTranslation();
   const { profile } = useAuth();
+  const { isLocked, openPaywall } = useSubscription();
   const [selectedAnimal, setSelectedAnimal] = useState<string | null>(null);
 
   const dob = useMemo(() => profile?.dateOfBirth ? new Date(profile.dateOfBirth + "T12:00:00") : null, [profile?.dateOfBirth]);
@@ -199,10 +202,16 @@ export function DynastyChamber({ onBack }: { onBack: () => void }) {
           </div>
         </div>
 
-        {/* ─── YEAR ENERGY REPORT ─── */}
+        {/* ─── YEAR ENERGY REPORT — premium ─── */}
         <div className="card-cosmic rounded-2xl p-5 space-y-3">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">{t("dynasty.yearEnergyReport", { year: currentYear })}</p>
-          <AIBlock content={yearReading.content} isLoading={yearReading.isLoading} label={`${currentYear} forecast`} />
+          {isLocked ? (
+            <LockedContent onUnlock={() => openPaywall(t("chambers.theDynasty"))}>
+              <div className="h-20" />
+            </LockedContent>
+          ) : (
+            <AIBlock content={yearReading.content} isLoading={yearReading.isLoading} label={`${currentYear} forecast`} />
+          )}
         </div>
 
         {/* ─── LUCKY ATTRIBUTES ─── */}
@@ -285,10 +294,21 @@ export function DynastyChamber({ onBack }: { onBack: () => void }) {
           )}
         </div>
 
-        {/* ─── 5-YEAR FORECAST ─── */}
+        {/* ─── 5-YEAR FORECAST — premium ─── */}
         <div className="card-cosmic rounded-2xl p-5 space-y-3">
           <p className="text-xs uppercase tracking-wider text-muted-foreground">{t("dynasty.fiveYearForecast")}</p>
-          {forecastReading.isLoading ? (
+          {isLocked ? (
+            <LockedContent onUnlock={() => openPaywall(t("chambers.theDynasty"))}>
+              <div className="space-y-2">
+                {[2026, 2027, 2028].map((y) => (
+                  <div key={y} className="bg-muted/10 rounded-xl px-4 py-3 flex items-center gap-3">
+                    <span className="text-sm font-bold text-foreground">{y}</span>
+                    <StarRating rating={4} />
+                  </div>
+                ))}
+              </div>
+            </LockedContent>
+          ) : forecastReading.isLoading ? (
             <div className="flex items-center gap-2 text-muted-foreground text-sm py-3">
               <Loader2 className="w-4 h-4 animate-spin" /><span>{t("dynasty.channelingFuture")}</span>
             </div>

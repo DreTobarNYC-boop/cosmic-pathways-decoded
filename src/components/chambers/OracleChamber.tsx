@@ -15,6 +15,7 @@ import {
 } from "@/lib/daily";
 import { normalizeLanguage } from "@/lib/language";
 import { Send, Loader2, Sparkles, Triangle } from "lucide-react";
+import { useSubscription } from "@/hooks/use-subscription";
 
 /* ─── Grabovoi Codes ─── */
 
@@ -147,6 +148,7 @@ interface ChatMessage {
 export function OracleChamber({ onBack }: { onBack: () => void }) {
   const { t, i18n } = useTranslation();
   const { profile } = useAuth();
+  const { isLocked, openPaywall } = useSubscription();
 
   const today = useMemo(() => new Date(), []);
   const dob = useMemo(() => profile?.dateOfBirth ? new Date(profile.dateOfBirth + "T12:00:00") : null, [profile?.dateOfBirth]);
@@ -209,6 +211,15 @@ export function OracleChamber({ onBack }: { onBack: () => void }) {
     const text = input.trim();
     if (!text || chatLoading) return;
 
+    // Free tier: 1 Oracle question. After that, paywall.
+    if (isLocked) {
+      const questionsAsked = messages.filter(m => m.role === "user").length;
+      if (questionsAsked >= 1) {
+        openPaywall(t("chambers.theOracle"));
+        return;
+      }
+    }
+
     const userMsg: ChatMessage = { role: "user", content: text };
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
@@ -241,7 +252,7 @@ export function OracleChamber({ onBack }: { onBack: () => void }) {
     } finally {
       setChatLoading(false);
     }
-  }, [input, chatLoading, messages, name, zodiac, lifePath, chineseZodiac, profile, i18n.language]);
+  }, [input, chatLoading, messages, name, zodiac, lifePath, chineseZodiac, profile, i18n.language, isLocked, openPaywall, t]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
