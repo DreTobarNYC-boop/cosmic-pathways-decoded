@@ -57,7 +57,7 @@ export function DailyBriefing({ dob, name, birthPlace, birthTime, onOpenStars }:
       date: formatDate(today, lang),
       universalDay,
       personalDay,
-      name,
+      name: (name || "Seeker").split(" ")[0],
       birthPlace: birthPlace || "Unknown",
       birthTime: birthTime || "Unknown",
       cuspInfo: cusp.onCusp ? cusp.cuspDescription : null,

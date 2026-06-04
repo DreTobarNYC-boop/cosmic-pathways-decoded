@@ -73,7 +73,7 @@ export function StarsChamber({ onBack }: { onBack: () => void }) {
   const chineseZodiac = dob ? getChineseZodiac(dob.getFullYear()) : null;
 
   const richContext = useMemo(() => ({
-    name:          profile?.fullName ?? "Seeker",
+    name:          (profile?.fullName ?? "Seeker").split(" ")[0],
     sign:          zodiac?.sign ?? "Unknown",
     sunSign:       natal?.sun.sign ?? zodiac?.sign ?? "Unknown",
     sunDegree:     natal?.sun.degree ?? 0,

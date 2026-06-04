@@ -215,7 +215,7 @@ export function NumbersChamber({ onBack }: { onBack: () => void }) {
   // Cache key for AI readings
   const todayCacheKey = `${profile?.dateOfBirth || "guest"}-${today.toISOString().slice(0, 10)}`;
   const readingContext = {
-    name,
+    name: name.split(" ")[0],
     lifePath,
     lifePathName,
     universalDay,
@@ -554,14 +554,14 @@ function CompatibilityTab({ userName, userLifePath, userZodiac, userElement, use
           language,
           context: {
             language,
-            name: userName,
+            name: userName.split(" ")[0],
             lifePath: userLifePath,
             zodiacSign: userZodiac,
             element: userElement,
             chineseZodiac: userChineseZodiac,
             expression: userExpression,
             soulUrge: userSoulUrge,
-            otherName: otherName.trim() || t("numbers.thePerson"),
+            otherName: (otherName.trim().split(" ")[0]) || t("numbers.thePerson"),
             otherLifePath,
             otherZodiac: otherZodiac?.sign,
             otherElement: otherZodiac?.element,

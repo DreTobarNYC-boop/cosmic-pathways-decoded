@@ -124,19 +124,19 @@ export function DynastyChamber({ onBack }: { onBack: () => void }) {
   const profileReading = useCachedReading({
     readingType: "dynasty_profile",
     cacheKey: `${animal}-${yearElement}-${i18n.language}`,
-    context: { name, animal, yearElement, fixedElement: data.element, yinYang: data.yin_yang, traits: data.traits, zodiacSign: zodiac?.sign, lifePath, birthPlace, birthTime, language: i18n.language },
+    context: { name: name.split(" ")[0], animal, yearElement, fixedElement: data.element, yinYang: data.yin_yang, traits: data.traits, zodiacSign: zodiac?.sign, lifePath, birthPlace, birthTime, language: i18n.language },
   });
 
   const yearReading = useCachedReading({
     readingType: "dynasty_year",
     cacheKey: `${animal}-${currentYear}-${i18n.language}`,
-    context: { name, animal, yearElement, currentYear, birthPlace, birthTime, language: i18n.language },
+    context: { name: name.split(" ")[0], animal, yearElement, currentYear, birthPlace, birthTime, language: i18n.language },
   });
 
   const forecastReading = useCachedReading({
     readingType: "dynasty_forecast",
     cacheKey: `${animal}-${currentYear}-5yr-${i18n.language}`,
-    context: { name, animal, yearElement, startYear: currentYear, birthPlace, birthTime, language: i18n.language },
+    context: { name: name.split(" ")[0], animal, yearElement, startYear: currentYear, birthPlace, birthTime, language: i18n.language },
   });
 
   // Parse 5-year forecast

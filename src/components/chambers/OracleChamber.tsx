@@ -101,7 +101,7 @@ export function OracleChamber({ onBack }: { onBack: () => void }) {
     readingType: "oracle_daily",
     cacheKey: `${profile?.dateOfBirth || "guest"}-${today.toISOString().slice(0, 10)}`,
     context: {
-      name,
+      name: name.split(" ")[0],
       zodiacSign: zodiac?.sign || "Unknown",
       element: zodiac?.element || "Unknown",
       lifePath: lifePath || "Unknown",
@@ -152,7 +152,7 @@ export function OracleChamber({ onBack }: { onBack: () => void }) {
           reading_type: "oracle_chat",
           language: normalizeLanguage(i18n.language),
           context: {
-            name,
+            name: name.split(" ")[0],
             zodiacSign: zodiac?.sign || "Unknown",
             element: zodiac?.element || "Unknown",
             lifePath: lifePath || "Unknown",
