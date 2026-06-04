@@ -1,6 +1,8 @@
 // DCode — Natal Chart Engine
 // Real ephemeris-based planet position calculator
 
+import { getZodiacFromDOB } from "@/lib/daily";
+
 export interface PlanetPosition {
   sign: string;
   degree: number;
@@ -59,17 +61,35 @@ function getSunLongitude(jd: number): number {
 
 function getMoonLongitude(jd: number): number {
   const n = jd - 2451545.0;
-  const L = normalizeAngle(218.3165 + 13.1763966 * n);
-  const M = normalizeAngle(134.9634 + 13.0649929 * n) * (Math.PI / 180);
-  const F = normalizeAngle(93.2721 + 13.2299927 * n) * (Math.PI / 180);
-  const D = normalizeAngle(297.8502 + 12.1900933 * n) * (Math.PI / 180);
-  const lon = L
-    + 6.2886 * Math.sin(M)
-    - 1.2740 * Math.sin(2 * D - M)
-    + 0.6583 * Math.sin(2 * D)
-    - 0.2136 * Math.sin(2 * M)
-    + 0.1851 * Math.sin(2 * D + M)
-    - 0.1143 * Math.sin(2 * F);
+  const rad = Math.PI / 180;
+  // Mean elements
+  const Lp = normalizeAngle(218.3164477 + 13.17639648 * n);   // mean longitude
+  const D  = normalizeAngle(297.8501921 + 12.19074912 * n) * rad; // mean elongation
+  const M  = normalizeAngle(357.5291092 + 0.98560028 * n) * rad;  // sun mean anomaly
+  const Mp = normalizeAngle(134.9633964 + 13.06499295 * n) * rad; // moon mean anomaly
+  const F  = normalizeAngle(93.2720950 + 13.22935024 * n) * rad;  // argument of latitude
+
+  // Main periodic terms of lunar longitude (degrees)
+  const lon = Lp
+    + 6.288774 * Math.sin(Mp)
+    + 1.274027 * Math.sin(2 * D - Mp)
+    + 0.658314 * Math.sin(2 * D)
+    + 0.213618 * Math.sin(2 * Mp)
+    - 0.185116 * Math.sin(M)
+    - 0.114332 * Math.sin(2 * F)
+    + 0.058793 * Math.sin(2 * D - 2 * Mp)
+    + 0.057066 * Math.sin(2 * D - M - Mp)
+    + 0.053322 * Math.sin(2 * D + Mp)
+    + 0.045758 * Math.sin(2 * D - M)
+    - 0.040923 * Math.sin(M - Mp)
+    - 0.034720 * Math.sin(D)
+    - 0.030383 * Math.sin(M + Mp)
+    + 0.015327 * Math.sin(2 * D - 2 * F)
+    - 0.012528 * Math.sin(Mp + 2 * F)
+    + 0.010980 * Math.sin(Mp - 2 * F)
+    + 0.010675 * Math.sin(4 * D - Mp)
+    + 0.010034 * Math.sin(3 * Mp)
+    + 0.008548 * Math.sin(4 * D - 2 * Mp);
   return normalizeAngle(lon);
 }
 
@@ -115,7 +135,16 @@ export function calculateNatalChart(dob: Date, birthLat: number = 4.711): NatalC
   const venusLon = getVenusLongitude(jd);
   const marsLon = getMarsLongitude(jd);
 
-  const sun = { ...longitudeToSign(sunLon), house: getHouse(sunLon, asc) };
+  // The Sun's tropical sign is fully determined by the calendar date.
+  // Use the authoritative date-based sign (matches the Stars header) instead
+  // of the astronomical approximation, which can land on the wrong sign at
+  // sign boundaries. Degree is derived relative to that sign's start.
+  const sunSignName = getZodiacFromDOB(dob).sign;
+  const sunSignIndex = SIGNS.indexOf(sunSignName);
+  const sunDegree = Math.max(0, Math.min(29,
+    Math.round(normalizeAngle(sunLon - sunSignIndex * 30))));
+  const sun = { sign: sunSignName, degree: sunDegree, house: getHouse(sunLon, asc) };
+
   const moon = { ...longitudeToSign(moonLon), house: getHouse(moonLon, asc) };
   const mercury = { ...longitudeToSign(mercuryLon), house: getHouse(mercuryLon, asc) };
   const venus = { ...longitudeToSign(venusLon), house: getHouse(venusLon, asc) };
