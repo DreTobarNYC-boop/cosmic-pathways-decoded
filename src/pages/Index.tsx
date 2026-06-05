@@ -179,6 +179,7 @@ export default function Index() {
               title={item.title}
               subtitle={item.subtitle}
               icon={item.icon}
+              symbolId={item.chamberId || item.id}
               accentColor={item.accent}
               variant="featured"
               onClick={() => openChamber(item.chamberId || item.id)}
@@ -193,6 +194,7 @@ export default function Index() {
               title={chamber.title}
               subtitle={chamber.subtitle}
               icon={chamber.icon}
+              symbolId={chamber.id}
               accentColor={chamber.accent}
               variant="grid"
               onClick={() => openChamber(chamber.id)}
